@@ -212,7 +212,7 @@ export function ShopByConcern({ companyId, companySlug }: ShopByConcernProps) {
           </div>
           <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm">
+              <div key={i} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
                 <div className="flex items-start justify-between">
                   <Skeleton className="h-12 w-12 rounded-full" />
                   <Skeleton className="h-20 w-20 rounded-xl" />
@@ -241,19 +241,19 @@ export function ShopByConcern({ companyId, companySlug }: ShopByConcernProps) {
 
   return (
     <>
-      {/* Trust bar */}
-      <div className="border-b border-emerald-100 bg-white/50 py-5 backdrop-blur-sm">
+      {/* Trust bar - using shadcn colors */}
+      <div className="border-b border-border bg-muted/30 py-5">
         <div className="container-nezal">
           <div className="flex flex-wrap items-center justify-center gap-6 md:justify-between">
             {trustFeatures.map((feat, idx) => (
               <div key={feat.label} className="flex items-center gap-3">
-                {idx > 0 && <div className="hidden h-8 w-px bg-emerald-200 md:block" />}
-                <div className="rounded-full bg-emerald-50 p-2 text-emerald-700">
+                {idx > 0 && <div className="hidden h-8 w-px bg-border md:block" />}
+                <div className="rounded-full bg-primary/10 p-2 text-primary">
                   <feat.icon className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-[#1e3a28]">{feat.label}</p>
-                  <p className="text-xs text-emerald-700/70">{feat.sub}</p>
+                  <p className="text-sm font-semibold text-foreground">{feat.label}</p>
+                  <p className="text-xs text-muted-foreground">{feat.sub}</p>
                 </div>
               </div>
             ))}
@@ -265,17 +265,17 @@ export function ShopByConcern({ companyId, companySlug }: ShopByConcernProps) {
       <section className="py-16 md:py-20">
         <div className="container-nezal">
           <div className="mb-12 text-center">
-            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-1.5 text-sm font-medium text-emerald-700">
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
               <Flower2 className="h-4 w-4" />
               Personalised Skincare
             </div>
-            <h2 className="mt-4 text-3xl font-bold tracking-tight text-[#1e3a28] md:text-4xl">
-              Shop by <span className="text-emerald-600">Concern</span>
+            <h2 className="mt-4 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+              Shop by <span className="text-primary">Concern</span>
             </h2>
             <div className="mt-2 flex justify-center">
-              <div className="h-0.5 w-24 rounded-full bg-emerald-500" />
+              <div className="h-0.5 w-24 rounded-full bg-primary" />
             </div>
-            <p className="mx-auto mt-4 max-w-2xl text-[#4a5e50]">
+            <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
               Find the perfect solution for your unique skin needs – curated by our experts.
             </p>
           </div>
@@ -288,7 +288,6 @@ export function ShopByConcern({ companyId, companySlug }: ShopByConcernProps) {
             className="grid grid-cols-2 gap-6 lg:grid-cols-4"
           >
             {activeItems.map((item) => {
-              // 🔁 CHANGED: Always go to shop page with concern + company filter
               const shopHref = `/shop?concern=${encodeURIComponent(item.title)}${companySlug ? `&company=${companySlug}` : ''}`;
 
               const imageUrl =
@@ -303,22 +302,22 @@ export function ShopByConcern({ companyId, companySlug }: ShopByConcernProps) {
                   key={item._id}
                   variants={cardVariants}
                   whileHover={{ y: -6 }}
-                  className="group relative flex flex-col overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-sm transition-all duration-300 hover:shadow-xl"
+                  className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-300 hover:shadow-xl"
                 >
                   <div className="flex flex-col p-5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
-                        <div className="mb-2 inline-flex rounded-xl bg-emerald-50 p-2 text-emerald-700">
+                        <div className="mb-2 inline-flex rounded-xl bg-primary/10 p-2 text-primary">
                           <ConcernIcon title={item.title} />
                         </div>
-                        <h3 className="text-lg font-bold text-[#1e3a28]">{item.title}</h3>
+                        <h3 className="text-lg font-bold text-foreground">{item.title}</h3>
                         {item.description && (
-                          <p className="mt-1 text-xs leading-relaxed text-[#6b7c70] line-clamp-2">
+                          <p className="mt-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">
                             {item.description}
                           </p>
                         )}
                       </div>
-                      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-emerald-50 shadow-sm">
+                      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-muted shadow-sm">
                         <img
                           src={imageUrl}
                           alt={`${item.title} skincare concern`}
@@ -333,13 +332,13 @@ export function ShopByConcern({ companyId, companySlug }: ShopByConcernProps) {
                     <div className="mt-5 flex flex-col gap-2">
                       <Link
                         href={shopHref}
-                        className="flex w-full items-center justify-center rounded-xl bg-emerald-700 py-2.5 text-sm font-semibold text-white transition-all hover:bg-emerald-800 hover:shadow-md"
+                        className="flex w-full items-center justify-center rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 hover:shadow-md"
                       >
                         Shop Now
                       </Link>
                     </div>
                   </div>
-                  <div className="absolute bottom-0 left-0 h-1 w-0 bg-emerald-500 transition-all duration-300 group-hover:w-full" />
+                  <div className="absolute bottom-0 left-0 h-1 w-0 bg-primary transition-all duration-300 group-hover:w-full" />
                 </motion.div>
               );
             })}

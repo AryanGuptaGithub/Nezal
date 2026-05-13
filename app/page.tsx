@@ -1,8 +1,7 @@
-// app/page.tsx
 "use client"
 
 import { useEffect, useState, useMemo, useRef } from "react"
-import  ProductCard  from "@/components/product-card"
+import ProductCard from "@/components/product-card"
 import { HomeCarousel } from "@/components/home-carousel"
 import { ShopByConcern } from "@/components/shop-by-concern"
 import WhyChoose from "@/components/why-choose"
@@ -10,8 +9,7 @@ import Testimonials from "@/components/testimonials"
 import { getCachedSync, fetchWithCache, invalidateCache } from "@/lib/cacheClient"
 import { BRAND } from "@/lib/config"
 
-// ─── Types (unchanged) ───────────────────────────────────────────
-
+// ─── Types ───────────────────────────────────────────
 interface Product {
   _id: string
   name: string
@@ -39,8 +37,7 @@ interface Review {
   company: string
 }
 
-// ─── Cache config (unchanged) ────────────────────────────────────
-
+// ─── Cache config ────────────────────────────────────
 const COMPANIES_KEY = "home:companies:all"
 const SUGGESTED_PRODUCTS_KEY = "home:products:suggested:8"
 const ALL_PRODUCTS_KEY = "home:products:all:100"
@@ -48,8 +45,7 @@ const REVIEWS_KEY = "home:reviews:all"
 const TTL = 1000 * 60 * 5
 const MAX_AGE = 1000 * 60 * 60 * 24
 
-// ─── API fetchers (unchanged) ────────────────────────────────────
-
+// ─── API fetchers ────────────────────────────────────
 async function fetchCompaniesAPI(): Promise<Company[]> {
   const res = await fetch("/api/companies", { cache: "no-store" })
   if (!res.ok) throw new Error("Failed to fetch companies")
@@ -104,8 +100,7 @@ export function invalidateHomeCaches() {
   invalidateCache(REVIEWS_KEY)
 }
 
-// ─── Ticker items ─────────────────────────────────────────────────
-
+// ─── Ticker items ────────────────────────────────────
 const TICKER_ITEMS = [
   "Cruelty Free",
   "Dermatologist Tested",
@@ -117,10 +112,9 @@ const TICKER_ITEMS = [
   "Sulphate Free",
 ]
 
-// ─── Home component ──────────────────────────────────────────────
-
+// ─── Home component ──────────────────────────────────
 export default function Home() {
-  // Initial cache reads (unchanged)
+  // Initial cache reads
   const initialCompanies = useMemo(
     () => (typeof window === "undefined" ? [] : getCachedSync<Company[]>(COMPANIES_KEY, MAX_AGE) ?? []),
     []
@@ -138,7 +132,7 @@ export default function Home() {
     []
   )
 
-  // State (unchanged)
+  // State
   const [suggestedProducts, setSuggestedProducts] = useState<Product[]>(initialSuggestedProducts)
   const [allProducts, setAllProducts] = useState<Product[]>(initialAllProducts)
   const [companies, setCompanies] = useState<Company[]>(initialCompanies)
@@ -168,8 +162,7 @@ export default function Home() {
     },
   ]
 
-  // ── All existing useEffect hooks (unchanged) ──────────────────
-
+  // ── Effect hooks ───────────────────────────────────
   useEffect(() => {
     let mounted = true
     const loadCompanies = async () => {
@@ -297,43 +290,29 @@ export default function Home() {
     setWaMenuOpen(false)
   }
 
-  // ── JSX ───────────────────────────────────────────────────────
-
+  // ── JSX ────────────────────────────────────────────
   return (
-    <main className="min-h-screen bg-white overflow-x-hidden">
-
-      {/* ── Hero Carousel ── */}
+    <main className="min-h-screen bg-background overflow-x-hidden">
+      {/* Hero Carousel */}
       <section className="w-full">
         <HomeCarousel />
       </section>
 
-      {/* ── Scrolling Ticker — black strip with gold stars (Image 9, 14) ── */}
-      <div
-        className="overflow-hidden py-2.5"
-        style={{ background: "var(--color-ticker-bg)" }}
-      >
+      {/* Scrolling Ticker – black strip with gold stars */}
+      <div className="overflow-hidden py-2.5 bg-[#1A1A1A]">
         <div className="ticker-track select-none">
-          {/* Two copies for seamless loop */}
           {[...TICKER_ITEMS, ...TICKER_ITEMS].map((text, i) => (
             <span key={i} className="flex items-center gap-6 shrink-0">
-              <span
-                className="text-[13px] font-medium uppercase tracking-[0.05em] whitespace-nowrap"
-                style={{ color: "#ffffff" }}
-              >
+              <span className="text-[13px] font-medium uppercase tracking-[0.05em] whitespace-nowrap text-white">
                 {text}
               </span>
-              <span
-                className="text-base"
-                style={{ color: "var(--color-ticker-star)" }}
-              >
-                ✦
-              </span>
+              <span className="text-base text-[#F5C842]">✦</span>
             </span>
           ))}
         </div>
       </div>
 
-      {/* ── Shop By Concern (includes trust bar above it) ── */}
+      {/* Shop By Concern (includes trust bar above it) */}
       {selectedConcernCompany && (
         <ShopByConcern
           companyId={selectedConcernCompany._id}
@@ -341,20 +320,14 @@ export default function Home() {
         />
       )}
 
-      {/* ── Secondary carousel (company carousel) ── */}
-      <section
-        className="py-12 md:py-16"
-        style={{ background: "var(--color-bg-cream)" }}
-      >
+      {/* Secondary carousel (company carousel) */}
+      <section className="py-12 md:py-16 bg-muted">
         <div className="container-nezal">
           <div className="text-center mb-8">
-            <h2
-              className="text-[28px] md:text-[32px] font-bold mb-2"
-              style={{ color: "var(--color-text-heading)" }}
-            >
+            <h2 className="text-[28px] md:text-[32px] font-bold text-foreground mb-2">
               Nature&apos;s Goodness
             </h2>
-            <p style={{ color: "var(--color-text-muted)" }} className="text-[15px]">
+            <p className="text-[15px] text-muted-foreground">
               Explore our complete herbal collection
             </p>
           </div>
@@ -365,8 +338,8 @@ export default function Home() {
               ? [...Array(8)].map((_, i) => (
                   <div
                     key={i}
-                    className="rounded-2xl animate-pulse"
-                    style={{ background: "#e5e5e5", height: 280 }}
+                    className="rounded-2xl animate-pulse bg-muted-foreground/20"
+                    style={{ height: 280 }}
                   />
                 ))
               : suggestedProducts.map((product) => (
@@ -384,21 +357,15 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── 25% Off / All Products section (Image 4) ── */}
-      <section className="py-12 md:py-16">
+      {/* 25% Off / All Products section */}
+      <section className="py-12 md:py-16 bg-background">
         <div className="container-nezal">
           {/* Section heading with discount badge */}
           <div className="text-center mb-10">
-            <div
-              className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-3"
-              style={{ background: "var(--color-brand-primary)" }}
-            >
-              <span className="text-white text-xl">%</span>
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-3 bg-primary">
+              <span className="text-primary-foreground text-xl">%</span>
             </div>
-            <h2
-              className="text-[28px] md:text-[32px] font-bold"
-              style={{ color: "var(--color-text-heading)" }}
-            >
+            <h2 className="text-[28px] md:text-[32px] font-bold text-foreground">
               25% Off Site-Wide
             </h2>
           </div>
@@ -408,14 +375,14 @@ export default function Home() {
               ? [...Array(8)].map((_, i) => (
                   <div
                     key={i}
-                    className="rounded-2xl animate-pulse"
-                    style={{ background: "#e5e5e5", height: 280 }}
+                    className="rounded-2xl animate-pulse bg-muted-foreground/20"
+                    style={{ height: 280 }}
                   />
                 ))
               : allProducts.length === 0
               ? (
                 <div className="col-span-full text-center py-12">
-                  <p style={{ color: "var(--color-text-muted)" }}>
+                  <p className="text-muted-foreground">
                     No products available at the moment
                   </p>
                 </div>
@@ -436,42 +403,24 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Our Aim section (Image 5) ── */}
-      <section
-        className="py-12 md:py-16"
-        style={{ background: "var(--color-bg-cream)" }}
-      >
+      {/* Our Aim section */}
+      <section className="py-12 md:py-16 bg-muted">
         <div className="container-nezal">
           <div className="text-center mb-8">
-            <h2
-              className="text-[28px] md:text-[32px] font-bold"
-              style={{ color: "var(--color-brand-primary)" }}
-            >
+            <h2 className="text-[28px] md:text-[32px] font-bold text-primary">
               Our Aim
             </h2>
           </div>
-          <div
-            className="flex flex-col lg:flex-row gap-8 items-center rounded-2xl overflow-hidden border p-6 lg:p-10"
-            style={{
-              background: "white",
-              borderColor: "var(--color-border)",
-            }}
-          >
+          <div className="flex flex-col lg:flex-row gap-8 items-center rounded-2xl overflow-hidden border border-border p-6 lg:p-10 bg-card">
             <div className="flex-1 space-y-4">
-              <p
-                className="text-[15px] leading-relaxed"
-                style={{ color: "var(--color-text-body)" }}
-              >
+              <p className="text-[15px] leading-relaxed text-muted-foreground">
                 Introducing Nezal, the luxurious brand that deals with a range of natural skincare
                 products. If you&apos;re looking to take your beauty routine to the next level, then
                 look no further than Nezal. Our products are made with only the finest ingredients
                 and are designed to nourish and revitalize your skin. Trust us, your skin will thank
                 you for using Nezal!
               </p>
-              <p
-                className="text-[15px] leading-relaxed"
-                style={{ color: "var(--color-text-body)" }}
-              >
+              <p className="text-[15px] leading-relaxed text-muted-foreground">
                 Nezal is a range of natural products for enhancing and preserving your original
                 beauty. Nezal&apos;s products are made with natural ingredients and are free from harsh
                 chemicals. They are gentle on the skin and help to keep your skin looking young and
@@ -489,20 +438,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Why Choose Us ── */}
+      {/* Why Choose Us */}
       <section className="py-12 md:py-16">
         <WhyChoose />
       </section>
 
-      {/* ── Testimonials ── */}
-      <section
-        className="py-12 md:py-16"
-        style={{ background: "var(--color-bg-cream)" }}
-      >
+      {/* Testimonials */}
+      <section className="py-12 md:py-16 bg-muted">
         <Testimonials companySlug="default" />
       </section>
 
-      {/* ── Floating buttons ── */}
+      {/* Floating buttons */}
       <div className="fixed left-4 bottom-6 z-50 flex flex-col gap-3">
         {/* Amazon */}
         <a
@@ -510,8 +456,7 @@ export default function Home() {
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Shop on Amazon"
-          className="flex items-center justify-center w-12 h-12 rounded-full bg-white shadow-md border transition-all hover:shadow-lg"
-          style={{ borderColor: "var(--color-border)" }}
+          className="flex items-center justify-center w-12 h-12 rounded-full bg-card shadow-md border border-border transition-all hover:shadow-lg"
         >
           <img
             src="https://static.vecteezy.com/system/resources/thumbnails/050/816/837/small/amazon-shopping-transparent-icon-free-png.png"
@@ -535,40 +480,39 @@ export default function Home() {
           </button>
 
           <div
-            className={`absolute left-0 bottom-14 z-50 w-56 rounded-xl shadow-xl bg-white border transition-all transform origin-bottom-left ${
+            className={`absolute left-0 bottom-14 z-50 w-56 rounded-xl shadow-xl bg-card border border-border transition-all transform origin-bottom-left ${
               waMenuOpen
                 ? "opacity-100 scale-100 pointer-events-auto"
                 : "opacity-0 scale-95 pointer-events-none"
             }`}
-            style={{ borderColor: "var(--color-border)" }}
           >
             <div className="py-2">
               <button
                 onClick={() => openWaFor(PRIMARY_WA)}
-                className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-3 hover:bg-[var(--color-bg-cream)] transition-colors"
+                className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-3 hover:bg-muted transition-colors"
               >
                 <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ color: "#25D366" }}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
                 </svg>
                 <div>
-                  <p className="font-medium text-[13px]" style={{ color: "var(--color-text-heading)" }}>
+                  <p className="font-medium text-[13px] text-foreground">
                     Chat with {BRAND.name}
                   </p>
-                  <p className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>{PRIMARY_WA}</p>
+                  <p className="text-[11px] text-muted-foreground">{PRIMARY_WA}</p>
                 </div>
               </button>
               <button
                 onClick={() => openWaFor(SECONDARY_WA)}
-                className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-3 hover:bg-[var(--color-bg-cream)] transition-colors"
+                className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-3 hover:bg-muted transition-colors"
               >
                 <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ color: "#3b82f6" }}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M22 12v6a2 2 0 01-2 2H6l-4 4V6a2 2 0 012-2h16a2 2 0 012 2z" />
                 </svg>
                 <div>
-                  <p className="font-medium text-[13px]" style={{ color: "var(--color-text-heading)" }}>
+                  <p className="font-medium text-[13px] text-foreground">
                     Chat with Support
                   </p>
-                  <p className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>{SECONDARY_WA}</p>
+                  <p className="text-[11px] text-muted-foreground">{SECONDARY_WA}</p>
                 </div>
               </button>
             </div>
@@ -576,11 +520,11 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Scroll to top */}
+      {/* Scroll to top button */}
       <button
         onClick={scrollToTop}
         aria-label="Scroll to top"
-        className={`fixed right-6 bottom-6 z-50 flex items-center justify-center w-12 h-12 rounded-full text-white shadow-lg transition-all duration-300 ${
+        className={`fixed right-6 bottom-6 z-50 flex items-center justify-center w-12 h-12 rounded-full text-primary-foreground shadow-lg transition-all duration-300 ${
           showTopButton ? "opacity-100 translate-y-0" : "opacity-0 pointer-events-none translate-y-4"
         }`}
         style={{ background: "var(--color-brand-primary)" }}
