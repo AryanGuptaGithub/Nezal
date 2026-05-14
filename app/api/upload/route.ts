@@ -1,15 +1,23 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
-import fs from "fs/promises"
-import path from "path"
+import { v2 as cloudinary } from "cloudinary"
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+})
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
     if (!session?.user || session.user.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      )
     }
 
     const formData = await request.formData()
@@ -17,7 +25,10 @@ export async function POST(request: NextRequest) {
     const folder = (formData.get("folder") as string) || "uploads"
 
     if (!files || files.length === 0) {
-      return NextResponse.json({ error: "No files provided" }, { status: 400 })
+      return NextResponse.json(
+        { error: "No files provided" },
+        { status: 400 }
+      )
     }
 
     const uploadedUrls: string[] = []
@@ -28,17 +39,13 @@ export async function POST(request: NextRequest) {
       const bytes = await file.arrayBuffer()
       const buffer = Buffer.from(bytes)
 
-      const timestamp = Date.now()
-      const random = Math.random().toString(36).substring(7)
-      const filename = `${timestamp}-${random}-${file.name.replace(/\s+/g, '-')}`;
+      const base64 = `data:${file.type};base64,${buffer.toString("base64")}`
 
-      const uploadsDir = path.join(process.cwd(), `public/${folder}`)
-      await fs.mkdir(uploadsDir, { recursive: true })
+      const result = await cloudinary.uploader.upload(base64, {
+        folder: `nezal/${folder}`,
+      })
 
-      const filepath = path.join(uploadsDir, filename)
-      await fs.writeFile(filepath, buffer)
-
-      uploadedUrls.push(`/${folder}/${filename}`)
+      uploadedUrls.push(result.secure_url)
     }
 
     return NextResponse.json({
@@ -47,6 +54,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("Error uploading files:", error)
+
     return NextResponse.json(
       { error: "Failed to upload files" },
       { status: 500 }
