@@ -1,9 +1,11 @@
+// app/api/categories/route.ts
 import { connectDB } from "@/lib/db";
 import { Category } from "@/lib/models/category";
 import { Company } from "@/lib/models/company";
 import { User } from "@/lib/models/user";
 import { NextResponse, type NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,40 +19,44 @@ export async function GET(request: NextRequest) {
     let query: any = { isActive: true };
 
     if (company) {
-      const companyDoc = await Company.findOne({ slug: company });
-      if (companyDoc) {
-        query.company = companyDoc._id;
-      }
-    }
+  const mongoose = require('mongoose');
+  if (mongoose.Types.ObjectId.isValid(company)) {
+    query.company = company;
+  } else {
+    const companyDoc = await Company.findOne({ slug: company });
+    if (companyDoc) query.company = companyDoc._id;
+  }
+}
 
     if (all === "true") {
       query = {};
     }
 
     const categories = await Category.find(query)
-      .setOptions({ strictPopulate: false })
       .populate("company", "name slug")
-      .populate("parent", "name slug")
-      .sort({ createdAt: -1 });
+      .populate("parent", "name slug _id")
+      .sort({ createdAt: -1 })
+      .lean();
 
     if (flat) {
       return NextResponse.json(categories);
     }
 
-    // Build hierarchical structure
-    const mainCategories = categories.filter((cat) => !cat.parent);
-    const subCategories = categories.filter((cat) => cat.parent);
+    const mainCategories = categories.filter((cat: any) => !cat.parent);
+    const subCategories = categories.filter((cat: any) => cat.parent);
 
-    const hierarchical = mainCategories.map((main) => ({
-      ...main.toObject(),
+    const hierarchical = mainCategories.map((main: any) => ({
+      ...main,
       subCategories: subCategories.filter(
-        (sub) => sub.parent && sub.parent._id.toString() === main._id.toString()
+        (sub: any) =>
+          sub.parent &&
+          sub.parent._id.toString() === main._id.toString()
       ),
     }));
 
     return NextResponse.json(hierarchical);
   } catch (error) {
-    // console.error("Error fetching categories:", error);
+    console.error("Error fetching categories:", error);
     return NextResponse.json(
       { error: "Failed to fetch categories" },
       { status: 500 }
@@ -60,9 +66,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
 
-    //  SECURITY CHECK: Only admins can create categories
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -72,7 +77,10 @@ export async function POST(request: Request) {
     const user = await User.findOne({ email: session.user.email });
 
     if (!user || user.role !== "admin") {
-      return NextResponse.json({ error: "Access denied. Admin privileges required." }, { status: 403 });
+      return NextResponse.json(
+        { error: "Access denied. Admin privileges required." },
+        { status: 403 }
+      );
     }
 
     const body = await request.json();
@@ -80,7 +88,9 @@ export async function POST(request: Request) {
 
     const category = new Category({
       name,
-      slug: slug || name.toLowerCase().replace(/\s+/g, "-"),
+      slug:
+        slug?.trim() ||
+        name.toLowerCase().replace(/\s+/g, "-").trim(),
       description,
       image,
       company,
@@ -92,7 +102,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(category, { status: 201 });
   } catch (error) {
-    // console.error("Error creating category:", error);
+    console.error("Error creating category:", error);
     return NextResponse.json(
       { error: "Failed to create category" },
       { status: 500 }

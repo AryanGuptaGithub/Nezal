@@ -6,10 +6,26 @@ import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
+import { motion } from "framer-motion"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, CheckCircle2, Circle, CircleX, CreditCard, MapPin, Package, Truck } from "lucide-react"
+import { Separator } from "@/components/ui/separator"
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Circle,
+  CircleX,
+  CreditCard,
+  MapPin,
+  Package,
+  Truck,
+  Clock,
+  Receipt,
+  ShoppingBag,
+  Wallet,
+  Calendar,
+} from "lucide-react"
 
 const currencyFormatter = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" })
 const numberFormatter = new Intl.NumberFormat("en-IN")
@@ -24,22 +40,22 @@ const statusLabelMap: Record<string, string> = {
 }
 
 const statusSteps = [
-  { key: "pending", label: "Pending", description: "Order received successfully." },
-  { key: "processing", label: "Processing", description: "Your items are being prepared." },
-  { key: "shipped", label: "Shipped", description: "Package has left the warehouse." },
-  { key: "delivered", label: "Delivered", description: "Order delivered to your address." },
+  { key: "pending", label: "Pending", description: "Order received successfully.", icon: Clock },
+  { key: "processing", label: "Processing", description: "Your items are being prepared.", icon: Package },
+  { key: "shipped", label: "Shipped", description: "Package has left the warehouse.", icon: Truck },
+  { key: "delivered", label: "Delivered", description: "Order delivered to your address.", icon: CheckCircle2 },
 ]
 
 const getStatusBadgeColor = (status?: string) => {
-  if (!status) return "bg-gray-100 text-gray-800"
+  if (!status) return "bg-gray-100 text-gray-800 border-gray-200"
   switch (status.toLowerCase()) {
-    case "pending": return "bg-yellow-100 text-yellow-800"
-    case "processing": return "bg-blue-100 text-blue-800"
-    case "shipped": return "bg-purple-100 text-purple-800"
-    case "delivered": return "bg-green-100 text-green-800"
+    case "pending": return "bg-amber-50 text-amber-700 border-amber-200"
+    case "processing": return "bg-blue-50 text-blue-700 border-blue-200"
+    case "shipped": return "bg-purple-50 text-purple-700 border-purple-200"
+    case "delivered": return "bg-emerald-50 text-emerald-700 border-emerald-200"
     case "cancelled":
-    case "canceled": return "bg-red-100 text-red-800"
-    default: return "bg-gray-100 text-gray-800"
+    case "canceled": return "bg-rose-50 text-rose-700 border-rose-200"
+    default: return "bg-gray-100 text-gray-700 border-gray-200"
   }
 }
 
@@ -123,6 +139,7 @@ export default function OrderDetailsPage() {
               productName: product?.name ?? item.productName,
               quantity: Number(item.quantity ?? 0),
               price: Number(item.price ?? 0),
+              selectedSize: item.selectedSize,
             }
           })
         : []
@@ -200,8 +217,11 @@ export default function OrderDetailsPage() {
 
   if (status === "loading" || loading) {
     return (
-      <main className="min-h-screen bg-[--color-bg-page] flex items-center justify-center">
-        <p className="text-[--color-text-muted] text-lg">Loading order details...</p>
+      <main className="min-h-screen bg-gradient-to-b from-[--color-bg-page] to-white flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-[--color-brand-primary] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-[--color-text-muted]">Loading order details...</p>
+        </div>
       </main>
     )
   }
@@ -210,11 +230,17 @@ export default function OrderDetailsPage() {
 
   if (error) {
     return (
-      <main className="min-h-screen bg-[--color-bg-page] flex items-center justify-center">
-        <Card className="border border-[--color-border] rounded-2xl">
+      <main className="min-h-screen bg-[--color-bg-page] flex items-center justify-center p-4">
+        <Card className="border-0 shadow-xl rounded-2xl max-w-md w-full">
           <CardContent className="py-8 text-center space-y-4">
-            <p className="text-[--color-brand-red] font-medium">{error}</p>
-            <Button onClick={fetchOrder} className="bg-[--color-brand-primary] hover:bg-[--color-brand-primary-dark] text-white">Retry</Button>
+            <CircleX className="h-12 w-12 text-rose-500 mx-auto" />
+            <p className="text-[--color-text-heading] font-medium">{error}</p>
+            <Button
+              onClick={fetchOrder}
+              className="bg-[--color-brand-primary] hover:bg-[--color-brand-primary-dark] text-white rounded-xl"
+            >
+              Try Again
+            </Button>
           </CardContent>
         </Card>
       </main>
@@ -233,185 +259,323 @@ export default function OrderDetailsPage() {
   const statusLabel = statusInfo.label
 
   return (
-    <main className="min-h-screen bg-[--color-bg-page]">
-      <div className="container-nezal py-6 md:py-8 space-y-6">
-        {/* Breadcrumb / Back */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <Button variant="ghost" onClick={() => router.push("/profile/orders")} className="w-full sm:w-auto justify-start text-[--color-text-heading] hover:text-[--color-brand-primary]">
-            <ArrowLeft className="h-4 w-4 mr-2" />
+    <main className="min-h-screen bg-gradient-to-b from-[--color-bg-page] to-white">
+      <div className="container-nezal py-8 md:py-12 space-y-8">
+        {/* Header with back button and status */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <Button
+            variant="ghost"
+            onClick={() => router.push("/profile/orders")}
+            className="w-fit justify-start text-[--color-text-heading] hover:text-[--color-brand-primary] group"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2 transition-transform group-hover:-translate-x-1" />
             Back to Orders
           </Button>
-          <Badge className={`${statusBadge} px-3 py-1 text-sm`}>{statusLabel}</Badge>
-        </div>
+          <div className="flex items-center gap-3">
+            <Badge className={`${statusBadge} px-4 py-1.5 text-sm font-semibold border rounded-full`}>
+              {statusLabel}
+            </Badge>
+            {order.orderStatus?.toLowerCase() === "delivered" && (
+              <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 rounded-full">
+                <CheckCircle2 className="h-3 w-3 mr-1" /> Completed
+              </Badge>
+            )}
+          </div>
+        </motion.div>
 
-        {/* Order Summary Cards */}
-        <Card className="border border-[--color-border] rounded-2xl shadow-sm bg-white">
-          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle className="text-lg font-bold text-[--color-text-heading]">Order #{order.orderNumber ?? order._id}</CardTitle>
-              <p className="text-sm text-[--color-text-muted]">
-                Placed on {createdAt ? createdAt.toLocaleString() : "—"}
-              </p>
-            </div>
-            <p className="text-xs text-[--color-text-muted]">Last updated {updatedAt ? updatedAt.toLocaleString() : "—"}</p>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-xl border border-[--color-border] p-4">
-                <div className="flex items-center gap-2 text-sm font-semibold text-[--color-text-heading]">
-                  <Package className="h-4 w-4 text-[--color-brand-primary]" />
-                  Items
+        {/* Order summary cards - modern stats */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
+        >
+          <Card className="border-0 shadow-md rounded-2xl bg-white overflow-hidden hover:shadow-lg transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-[--color-text-muted]">Order #{order.orderNumber?.slice(-8) ?? order._id.slice(-8)}</p>
+                  <p className="text-2xl font-bold text-[--color-text-heading] mt-1">{currencyFormatter.format(order.totalAmount)}</p>
                 </div>
-                <p className="mt-2 text-2xl font-bold text-[--color-text-heading]">{numberFormatter.format(itemCount)}</p>
-                <p className="text-xs text-[--color-text-muted]">Subtotal {currencyFormatter.format(itemsSubtotal)}</p>
-              </div>
-              <div className="rounded-xl border border-[--color-border] p-4">
-                <div className="flex items-center gap-2 text-sm font-semibold text-[--color-text-heading]">
-                  <CreditCard className="h-4 w-4 text-[--color-brand-primary]" />
-                  Payment
+                <div className="h-12 w-12 rounded-full bg-[--color-brand-primary]/10 flex items-center justify-center">
+                  <Receipt className="h-6 w-6 text-[--color-brand-primary]" />
                 </div>
-                <p className="mt-2 text-2xl font-bold text-[--color-text-heading]">{currencyFormatter.format(order.totalAmount)}</p>
-                <p className="text-xs text-[--color-text-muted]">
-                  {(order.paymentStatus ?? "Unknown").toUpperCase()} · {order.paymentMethod?.toUpperCase() ?? "—"}
-                </p>
               </div>
-              <div className="rounded-xl border border-[--color-border] p-4">
-                <div className="flex items-center gap-2 text-sm font-semibold text-[--color-text-heading]">
-                  <Truck className="h-4 w-4 text-[--color-brand-primary]" />
-                  Status
-                </div>
-                <p className="mt-2 text-lg font-semibold text-[--color-text-heading]">{statusLabel}</p>
-                <p className="text-xs text-[--color-text-muted]">Reference {order.razorpayOrderId ?? "—"}</p>
+              <div className="mt-3 flex items-center text-xs text-[--color-text-muted]">
+                <Calendar className="h-3 w-3 mr-1" />
+                {createdAt ? createdAt.toLocaleDateString() : "—"}
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Delivery Progress */}
-        <Card className="border border-[--color-border] rounded-2xl shadow-sm bg-white">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold text-[--color-text-heading]">Delivery Progress</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 md:grid-cols-4">
-              {statusInfo.steps.map((step) => {
-                const stateClass = step.current
-                  ? "border-[--color-brand-primary] bg-[--color-brand-primary]/5"
-                  : step.reached
-                    ? "border-emerald-300 bg-emerald-50"
-                    : "border-[--color-border]"
-                return (
-                  <div key={step.key} className={`rounded-lg border p-3 ${stateClass}`}>
-                    <div className="flex items-center gap-2 text-sm font-semibold">
-                      {step.current ? (
-                        <Circle className="h-4 w-4 text-[--color-brand-primary]" />
-                      ) : step.reached ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                      ) : (
-                        <Circle className="h-4 w-4 text-[--color-text-muted]" />
-                      )}
-                      {step.label}
-                    </div>
-                    <p className="text-xs text-[--color-text-muted] mt-1">{step.description}</p>
-                  </div>
-                )
-              })}
+          <Card className="border-0 shadow-md rounded-2xl bg-white overflow-hidden">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-[--color-text-muted]">Total Items</p>
+                  <p className="text-2xl font-bold text-[--color-text-heading] mt-1">{numberFormatter.format(itemCount)}</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-emerald-50 flex items-center justify-center">
+                  <ShoppingBag className="h-6 w-6 text-emerald-600" />
+                </div>
+              </div>
+              <p className="text-xs text-[--color-text-muted] mt-3">Subtotal {currencyFormatter.format(itemsSubtotal)}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-md rounded-2xl bg-white overflow-hidden">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-[--color-text-muted]">Payment</p>
+                  <p className="text-lg font-semibold text-[--color-text-heading] mt-1">{order.paymentMethod?.toUpperCase() ?? "—"}</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center">
+                  <CreditCard className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
+              <Badge variant="outline" className="mt-3 text-xs rounded-full bg-blue-50 border-blue-200">
+                {order.paymentStatus ?? "Unknown"}
+              </Badge>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-md rounded-2xl bg-white overflow-hidden">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-[--color-text-muted]">Last updated</p>
+                  <p className="text-sm font-medium text-[--color-text-heading] mt-1">{updatedAt ? updatedAt.toLocaleDateString() : "—"}</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-purple-50 flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-purple-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Delivery Progress - Timeline style */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Card className="border-0 shadow-md rounded-2xl bg-white overflow-hidden">
+            <CardHeader className="border-b border-[--color-border] bg-gradient-to-r from-[--color-brand-primary]/5 to-transparent">
+              <CardTitle className="text-lg font-bold text-[--color-text-heading] flex items-center gap-2">
+                <Truck className="h-5 w-5 text-[--color-brand-primary]" />
+                Order Timeline
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
               {statusInfo.cancelled ? (
-                <div className="rounded-lg border border-red-300 bg-red-50 p-3">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-red-600">
-                    <CircleX className="h-4 w-4" />
-                    Cancelled
+                <div className="flex items-center gap-4 p-4 bg-rose-50 rounded-xl border border-rose-200">
+                  <CircleX className="h-8 w-8 text-rose-500" />
+                  <div>
+                    <p className="font-semibold text-rose-700">Order Cancelled</p>
+                    <p className="text-sm text-rose-600">This order has been cancelled. For any queries, please contact support.</p>
                   </div>
-                  <p className="text-xs text-red-500 mt-1">This order was cancelled.</p>
                 </div>
-              ) : null}
-            </div>
-          </CardContent>
-        </Card>
+              ) : (
+                <div className="relative">
+                  {/* Desktop horizontal stepper (hidden on mobile) */}
+                  <div className="hidden md:flex justify-between">
+                    {statusInfo.steps.map((step, idx) => {
+                      const isActive = step.current
+                      const isCompleted = step.completed
+                      const Icon = step.icon
+                      return (
+                        <div key={step.key} className="flex-1 relative">
+                          <div className="flex flex-col items-center text-center">
+                            <div
+                              className={`relative z-10 flex h-12 w-12 items-center justify-center rounded-full border-2 transition-all ${
+                                isCompleted
+                                  ? "border-emerald-500 bg-emerald-500 text-white"
+                                  : isActive
+                                  ? "border-[--color-brand-primary] bg-[--color-brand-primary] text-white shadow-md"
+                                  : "border-gray-300 bg-white text-gray-400"
+                              }`}
+                            >
+                              {isCompleted ? <CheckCircle2 className="h-6 w-6" /> : <Icon className="h-6 w-6" />}
+                            </div>
+                            <p
+                              className={`mt-3 font-semibold text-sm ${
+                                isCompleted || isActive ? "text-[--color-text-heading]" : "text-[--color-text-muted]"
+                              }`}
+                            >
+                              {step.label}
+                            </p>
+                            <p className="text-xs text-[--color-text-muted] max-w-[140px]">{step.description}</p>
+                          </div>
+                          {idx < statusInfo.steps.length - 1 && (
+                            <div
+                              className={`absolute top-5 left-[calc(50%+1.5rem)] w-[calc(100%-3rem)] h-0.5 ${
+                                step.completed ? "bg-emerald-500" : "bg-gray-200"
+                              }`}
+                              style={{ transform: "translateY(-50%)" }}
+                            />
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Mobile vertical timeline */}
+                  <div className="md:hidden space-y-6">
+                    {statusInfo.steps.map((step, idx) => {
+                      const isActive = step.current
+                      const isCompleted = step.completed
+                      const Icon = step.icon
+                      return (
+                        <div key={step.key} className="flex gap-4">
+                          <div className="flex flex-col items-center">
+                            <div
+                              className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${
+                                isCompleted
+                                  ? "border-emerald-500 bg-emerald-500 text-white"
+                                  : isActive
+                                  ? "border-[--color-brand-primary] bg-[--color-brand-primary] text-white"
+                                  : "border-gray-300 bg-white text-gray-400"
+                              }`}
+                            >
+                              {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+                            </div>
+                            {idx < statusInfo.steps.length - 1 && (
+                              <div className={`w-0.5 h-8 mt-1 ${step.completed ? "bg-emerald-500" : "bg-gray-200"}`} />
+                            )}
+                          </div>
+                          <div className="flex-1 pb-4">
+                            <p className={`font-semibold ${isActive ? "text-[--color-brand-primary]" : "text-[--color-text-heading]"}`}>
+                              {step.label}
+                            </p>
+                            <p className="text-xs text-[--color-text-muted]">{step.description}</p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
 
         {/* Order Items */}
-        <Card className="border border-[--color-border] rounded-2xl shadow-sm bg-white">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold text-[--color-text-heading]">Items</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {order.items.length ? (
-              order.items.map((item, idx) => {
-                const quantity = Number(item.quantity ?? 0)
-                const price = Number(item.price ?? 0)
-                const subtotal = quantity * price
-                const productName = item.productName ?? item.product?.name ?? `Item ${idx + 1}`
-                const productImage = item.product?.image
-                const companyName = item.product?.company && typeof item.product.company === "object" ? item.product.company.name : undefined
-                const companySlug = item.product?.company && typeof item.product.company === "object" ? item.product.company.slug : undefined
-                const productSlug = item.product?.slug
-                const productHref = productSlug && companySlug ? `/shop/${companySlug}/product/${productSlug}` : undefined
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <Card className="border-0 shadow-md rounded-2xl bg-white overflow-hidden">
+            <CardHeader className="border-b border-[--color-border] bg-gradient-to-r from-[--color-brand-primary]/5 to-transparent">
+              <CardTitle className="text-lg font-bold text-[--color-text-heading] flex items-center gap-2">
+                <Package className="h-5 w-5 text-[--color-brand-primary]" />
+                Items in this order
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 divide-y divide-[--color-border]">
+              {order.items.length ? (
+                order.items.map((item, idx) => {
+                  const quantity = Number(item.quantity ?? 0)
+                  const price = Number(item.price ?? 0)
+                  const subtotal = quantity * price
+                  const productName = item.productName ?? item.product?.name ?? `Item ${idx + 1}`
+                  const productImage = item.product?.image
+                  const companyName = item.product?.company && typeof item.product.company === "object" ? item.product.company.name : undefined
+                  const companySlug = item.product?.company && typeof item.product.company === "object" ? item.product.company.slug : undefined
+                  const productSlug = item.product?.slug
+                  const productHref = productSlug && companySlug ? `/shop/${companySlug}/product/${productSlug}` : undefined
 
-                return (
-                  <div key={`${item.productId ?? idx}-${idx}`} className="flex flex-col gap-4 rounded-lg border border-[--color-border] p-4 sm:flex-row sm:items-center">
-                    {productImage ? (
-                      <Image src={productImage} alt={productName} width={80} height={80} className="h-20 w-20 rounded-md object-cover" />
-                    ) : (
-                      <div className="h-20 w-20 rounded-md bg-[--color-bg-cream] flex items-center justify-center text-xs text-[--color-text-muted]">No image</div>
-                    )}
-                    <div className="flex-1 space-y-1">
-                      {productHref ? (
-                        <Link href={productHref} className="text-sm font-semibold text-[--color-text-heading] hover:text-[--color-brand-primary] hover:underline">
-                          {productName}
-                        </Link>
-                      ) : (
-                        <p className="text-sm font-semibold text-[--color-text-heading]">{productName}</p>
-                      )}
-                      {companyName ? <p className="text-xs text-[--color-text-muted]">{companyName}</p> : null}
-                      {item.selectedSize && (
-                        <p className="text-xs text-[--color-text-muted]">
-                          Size: {item.selectedSize.size} ({item.selectedSize.quantity}{item.selectedSize.unit})
-                        </p>
-                      )}
-                      <p className="text-xs text-[--color-text-muted]">Quantity {numberFormatter.format(quantity)}</p>
+                  return (
+                    <div key={`${item.productId ?? idx}-${idx}`} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center hover:bg-[--color-bg-page]/50 transition-colors">
+                      <div className="shrink-0">
+                        {productImage ? (
+                          <Image
+                            src={productImage}
+                            alt={productName}
+                            width={96}
+                            height={96}
+                            className="h-24 w-24 rounded-xl object-cover border border-[--color-border] bg-white"
+                          />
+                        ) : (
+                          <div className="h-24 w-24 rounded-xl bg-[--color-bg-cream] flex items-center justify-center text-xs text-[--color-text-muted] border border-[--color-border]">
+                            No image
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-1.5">
+                        {productHref ? (
+                          <Link
+                            href={productHref}
+                            className="text-base font-semibold text-[--color-text-heading] hover:text-[--color-brand-primary] hover:underline line-clamp-1"
+                          >
+                            {productName}
+                          </Link>
+                        ) : (
+                          <p className="text-base font-semibold text-[--color-text-heading]">{productName}</p>
+                        )}
+                        {companyName && <p className="text-xs text-[--color-text-muted]">{companyName}</p>}
+                        {item.selectedSize && (
+                          <p className="text-xs text-[--color-text-muted]">
+                            Size: {item.selectedSize.size} ({item.selectedSize.quantity}{item.selectedSize.unit})
+                          </p>
+                        )}
+                        <div className="flex items-center gap-4 text-sm">
+                          <span className="text-[--color-text-heading]">Qty: {numberFormatter.format(quantity)}</span>
+                          <span className="text-[--color-text-muted]">× {currencyFormatter.format(price)}</span>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-lg font-bold text-[--color-text-heading]">{currencyFormatter.format(subtotal)}</p>
+                        <p className="text-xs text-[--color-text-muted]">Subtotal</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-[--color-text-heading]">{currencyFormatter.format(price)}</p>
-                      <p className="text-xs text-[--color-text-muted]">Subtotal {currencyFormatter.format(subtotal)}</p>
-                    </div>
-                  </div>
-                )
-              })
-            ) : (
-              <p className="text-sm text-[--color-text-muted]">No items available for this order.</p>
-            )}
-          </CardContent>
-        </Card>
+                  )
+                })
+              ) : (
+                <div className="p-8 text-center text-[--color-text-muted]">No items available for this order.</div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
 
         {/* Shipping & Payment Details */}
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* Shipping Address */}
-          <Card className="border border-[--color-border] rounded-2xl shadow-sm bg-white">
-            <CardHeader>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="grid gap-6 md:grid-cols-2"
+        >
+          {/* Shipping Address Card */}
+          <Card className="border-0 shadow-md rounded-2xl bg-white overflow-hidden">
+            <CardHeader className="border-b border-[--color-border] bg-gradient-to-r from-[--color-brand-primary]/5 to-transparent">
               <CardTitle className="text-lg font-bold text-[--color-text-heading] flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-[--color-brand-primary]" />
+                <MapPin className="h-5 w-5 text-[--color-brand-primary]" />
                 Shipping Address
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="p-5">
               {order.shippingAddress ? (
                 <div className="space-y-2 text-sm">
-                  {order.shippingAddress.name ? (
+                  {order.shippingAddress.name && (
                     <p className="font-semibold text-[--color-text-heading]">{order.shippingAddress.name}</p>
-                  ) : null}
-                  {order.shippingAddress.phone ? (
-                    <p className="text-[--color-text-body]">Phone {order.shippingAddress.phone}</p>
-                  ) : null}
-                  <div className="text-[--color-text-body] space-y-1">
-                    {[order.shippingAddress.street, order.shippingAddress.address]
-                      .filter(Boolean)
-                      .map((line, lineIdx) => (
-                        <p key={`addr-line-${lineIdx}`}>{line}</p>
-                      ))}
+                  )}
+                  {order.shippingAddress.phone && (
+                    <p className="text-[--color-text-body] flex items-center gap-1">
+                      <span className="text-[--color-text-muted]">Phone:</span> {order.shippingAddress.phone}
+                    </p>
+                  )}
+                  <div className="text-[--color-text-body] space-y-1 pt-1">
+                    {[order.shippingAddress.street, order.shippingAddress.address].filter(Boolean).map((line, idx) => (
+                      <p key={`addr-line-${idx}`}>{line}</p>
+                    ))}
                     <p>
-                      {[order.shippingAddress.city, order.shippingAddress.state]
-                        .filter(Boolean)
-                        .join(", ")}
+                      {[order.shippingAddress.city, order.shippingAddress.state].filter(Boolean).join(", ")}
                     </p>
                     <p>
                       {[order.shippingAddress.pincode ?? order.shippingAddress.zipCode, order.shippingAddress.country]
@@ -426,34 +590,40 @@ export default function OrderDetailsPage() {
             </CardContent>
           </Card>
 
-          {/* Payment Details */}
-          <Card className="border border-[--color-border] rounded-2xl shadow-sm bg-white">
-            <CardHeader>
+          {/* Payment Details Card */}
+          <Card className="border-0 shadow-md rounded-2xl bg-white overflow-hidden">
+            <CardHeader className="border-b border-[--color-border] bg-gradient-to-r from-[--color-brand-primary]/5 to-transparent">
               <CardTitle className="text-lg font-bold text-[--color-text-heading] flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-[--color-brand-primary]" />
-                Payment Details
+                <Wallet className="h-5 w-5 text-[--color-brand-primary]" />
+                Payment Summary
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div className="flex items-center justify-between">
+            <CardContent className="p-5 space-y-4">
+              <div className="flex justify-between items-center">
                 <span className="text-[--color-text-muted]">Payment status</span>
-                <Badge variant="outline" className="border-[--color-border]">{order.paymentStatus ?? "Unknown"}</Badge>
+                <Badge variant="outline" className="rounded-full border-[--color-border]">
+                  {order.paymentStatus ?? "Unknown"}
+                </Badge>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[--color-text-muted]">Payment method</span>
+              <Separator />
+              <div className="flex justify-between">
+                <span className="text-[--color-text-muted]">Method</span>
                 <span className="font-medium text-[--color-text-heading]">{order.paymentMethod?.toUpperCase() ?? "—"}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[--color-text-muted]">Transaction ID</span>
-                <span className="font-medium text-[--color-text-heading]">{order.razorpayPaymentId ?? "—"}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[--color-text-muted]">Order total</span>
-                <span className="font-semibold text-[--color-text-heading]">{currencyFormatter.format(order.totalAmount)}</span>
+              {order.razorpayPaymentId && (
+                <div className="flex justify-between">
+                  <span className="text-[--color-text-muted]">Transaction ID</span>
+                  <span className="font-mono text-xs text-[--color-text-heading]">{order.razorpayPaymentId.slice(-12)}</span>
+                </div>
+              )}
+              <Separator />
+              <div className="flex justify-between text-base font-bold">
+                <span>Order total</span>
+                <span className="text-[--color-brand-primary]">{currencyFormatter.format(order.totalAmount)}</span>
               </div>
             </CardContent>
           </Card>
-        </div>
+        </motion.div>
       </div>
     </main>
   )

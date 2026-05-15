@@ -38,7 +38,7 @@ export default function Footer() {
           </div>
 
           {/* Col 2 – Categories */}
-          <div>
+          {/* <div>
             <h4
               className="text-[14px] font-semibold mb-4"
               style={{ color: "var(--color-text-footer-heading)" }}
@@ -65,7 +65,7 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
-          </div>
+          </div> */}
 
           {/* Col 3 – More Details */}
           <div>
@@ -92,6 +92,35 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
+          </div>
+
+           {/* Col 3 – More Details */}
+          <div>
+            <h4
+              className="text-[14px] font-semibold mb-4"
+              style={{ color: "var(--color-text-footer-heading)" }}
+            >
+             Policies
+            </h4>
+           {/* Policies */}
+<ul className="space-y-2 mt-5">
+  {[
+    { label: "Privacy Policy", href: "/privacy-policy" },
+    { label: "Refund Policy", href: "/refund-policy" },
+    { label: "Terms of Service", href: "/termsofservice" },
+    { label: "Orders & Returns", href: "/orders-returns" },  // ← add this
+  ].map((item) => (
+    <li key={item.label}>
+      <Link
+        href={item.href}
+        className="text-[13px] transition-colors hover:text-white"
+        style={{ color: "var(--color-text-footer)" }}
+      >
+        {item.label}
+      </Link>
+    </li>
+  ))}
+</ul>
           </div>
 
           {/* Col 4 – Connect */}
@@ -193,24 +222,7 @@ export default function Footer() {
               Maharashtra India, 400101
             </address>
 
-            {/* Policies */}
-            <ul className="space-y-2 mt-5">
-              {[
-                { label: "Privacy Policy", href: "/privacy-policy" },
-                { label: "Refund Policy", href: "/refund-policy" },
-                { label: "Terms of Service", href: "/termsofservice" },
-              ].map((item) => (
-                <li key={item.label}>
-                  <Link
-                    href={item.href}
-                    className="text-[13px] transition-colors hover:text-white"
-                    style={{ color: "var(--color-text-footer)" }}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+         
           </div>
         </div>
 

@@ -1,3 +1,4 @@
+// app/admin/categories/page.tsx
 "use client"
 
 import type React from "react"
@@ -15,8 +16,8 @@ interface Category {
   name: string
   slug: string
   description?: string
-  company: { name: string }
-  parent?: { name: string; slug: string }
+  company: { _id: string; name: string }  // add _id
+  parent?: { _id: string; name: string; slug: string }  // add _id
   isActive: boolean
 }
 
@@ -286,85 +287,62 @@ export default function CategoriesPage() {
         )}
 
         {/* Categories List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>All Categories</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {categories.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">No categories found</p>
-            ) : (
-              <div className="space-y-4">
-                {categories
-                  .filter(c => !c.parent)
-                  .map((mainCategory) => (
-                    <div key={mainCategory._id} className="border border-border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-foreground">{mainCategory.name}</h3>
-                          <span className="text-xs text-muted-foreground">({mainCategory.slug})</span>
-                          <span className="text-xs text-muted-foreground">{mainCategory.company.name}</span>
-                          <span
-                            className={`px-2 py-1 rounded text-xs font-medium ${mainCategory.isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
-                              }`}
-                          >
-                            {mainCategory.isActive ? "Active" : "Inactive"}
-                          </span>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(mainCategory)}
-                            className="bg-transparent"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleDelete(mainCategory._id)}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      {mainCategory.description && (
-                        <p className="text-sm text-muted-foreground mb-3">{mainCategory.description}</p>
-                      )}
-                      <div className="ml-6 space-y-2">
-                        {categories
-                          .filter(c => c.parent && c.parent._id === mainCategory._id)
-                          .map((subCategory) => (
-                            <div key={subCategory._id} className="flex items-center justify-between bg-muted/30 p-2 rounded">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-foreground">• {subCategory.name}</span>
-                                <span className="text-xs text-muted-foreground">({subCategory.slug})</span>
-                                <span
-                                  className={`px-2 py-1 rounded text-xs font-medium ${subCategory.isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
-                                    }`}
-                                >
-                                  {subCategory.isActive ? "Active" : "Inactive"}
-                                </span>
-                              </div>
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleEdit(subCategory)}
-                                  className="bg-transparent"
-                                >
-                                  <Edit2 className="w-4 h-4" />
-                                </Button>
-                                <Button size="sm" variant="destructive" onClick={() => handleDelete(subCategory._id)}>
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  ))}
+<Card>                                           
+  <CardHeader>
+    <CardTitle>All Categories</CardTitle>
+  </CardHeader>
+  <CardContent>
+    {categories.length === 0 ? (
+      <p className="text-muted-foreground text-center py-8">No categories found</p>
+    ) : (
+      <div className="space-y-4">
+        {categories.map((category) => (
+          <div key={category._id} className="border border-border rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-semibold text-foreground">{category.name}</h3>
+                <span className="text-xs text-muted-foreground">({category.slug})</span>
+                <span className="text-xs text-muted-foreground">{category.company.name}</span>
+                {category.parent && (
+                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                    Sub of: {category.parent.name}
+                  </span>
+                )}
+                <span
+                  className={`px-2 py-1 rounded text-xs font-medium ${
+                    category.isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+                  }`}
+                >
+                  {category.isActive ? "Active" : "Inactive"}
+                </span>
               </div>
+              <div className="flex gap-2 shrink-0">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleEdit(category)}
+                  className="bg-transparent"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => handleDelete(category._id)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            {category.description && (
+              <p className="text-sm text-muted-foreground mt-2">{category.description}</p>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        ))}
+      </div>
+    )}
+  </CardContent>
+</Card>
       </div>
     </main>
   )

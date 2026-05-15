@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useRef } from "react"
 import ProductCard from "@/components/product-card"
 import { HomeCarousel } from "@/components/home-carousel"
-import { ShopByConcern } from "@/components/shop-by-concern"
+import { ShopByCategory } from "@/components/shop-by-category"
 import WhyChoose from "@/components/why-choose"
 import Testimonials from "@/components/testimonials"
 import { getCachedSync, fetchWithCache, invalidateCache } from "@/lib/cacheClient"
@@ -312,13 +312,13 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Shop By Concern (includes trust bar above it) */}
-      {selectedConcernCompany && (
-        <ShopByConcern
-          companyId={selectedConcernCompany._id}
-          companySlug={selectedConcernCompany.slug}
-        />
-      )}
+   {/* Shop By Category (includes trust bar above it) */}
+{selectedConcernCompany && (
+  <ShopByCategory
+    companyId={selectedConcernCompany._id}
+    companySlug={selectedConcernCompany.slug}
+  />
+)}
 
       {/* Secondary carousel (company carousel) */}
       <section className="py-12 md:py-16 bg-muted">

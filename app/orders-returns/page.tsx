@@ -1,12 +1,12 @@
-// app/refund-policy/page.tsx
+// app/orders-returns/page.tsx
 import Link from "next/link"
 
 export const metadata = {
-  title: "Refund Policy | Nezal Herbocare",
-  description: "Refund and Return Policy for Nezal Herbocare",
+  title: "Orders & Returns | Nezal Herbocare",
+  description: "Orders and Returns policy for Nezal Herbocare",
 }
 
-export default function RefundPolicyPage() {
+export default function OrdersReturnsPage() {
   return (
     <main className="min-h-screen bg-background">
       {/* Hero */}
@@ -15,9 +15,9 @@ export default function RefundPolicyPage() {
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
             <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
             <span>/</span>
-            <span>Refund Policy</span>
+            <span>Orders & Returns</span>
           </div>
-          <h1 className="text-4xl font-bold text-foreground">Refund Policy</h1>
+          <h1 className="text-4xl font-bold text-foreground">Orders & Returns</h1>
         </div>
       </div>
 
@@ -36,7 +36,7 @@ export default function RefundPolicyPage() {
               To start a return, contact us at{" "}
               <a href="mailto:info@nezalherbocare.com" className="underline hover:text-foreground transition-colors">
                 info@nezalherbocare.com
-              </a>. If your return is accepted, we'll send you a return shipping label and instructions on how and where to send your package. Items sent back without first requesting a return will not be accepted.
+              </a>. If your return is accepted, we'll send you a return shipping label and instructions. Items sent back without first requesting a return will not be accepted.
             </p>
           </div>
 
@@ -79,7 +79,7 @@ export default function RefundPolicyPage() {
         {/* Footer note */}
         <div className="mt-16 pt-8 border-t border-border text-center">
           <p className="text-sm text-muted-foreground">
-            Questions about returns? Email us at{" "}
+            Questions? Email us at{" "}
             <a href="mailto:info@nezalherbocare.com" className="underline hover:text-foreground transition-colors">
               info@nezalherbocare.com
             </a>

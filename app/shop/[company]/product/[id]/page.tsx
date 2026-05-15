@@ -12,6 +12,10 @@ import FAQ from "@/components/FAQ"
 import { getCachedSync, fetchWithCache } from "@/lib/cacheClient"
 import { trackViewContent, trackAddToCart } from "@/lib/facebook-pixel"
 import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
+
+
+
 
 // ── Cache config ──────────────────────────────────────────
 const TTL = 1000 * 60 * 5
@@ -219,6 +223,7 @@ const ProductDetailPage = memo(function ProductDetailPage() {
   const { toast } = useToast()
   const addItem = useCartStore((state) => state.addItem)
   const getTotalItems = useCartStore((state) => state.getTotalItems)
+  const router = useRouter()  
 
   const initialProduct = useMemo(() => getCachedSync<Product>(productCacheKey(id), MAX_AGE), [id])
   const initialReviews = useMemo(
@@ -359,6 +364,44 @@ const ProductDetailPage = memo(function ProductDetailPage() {
     trackAddToCart(product._id, product.name, itemDiscountPrice || itemPrice, quantity)
     toast({ title: "Added to cart!", description: `${quantity} × ${product.name}${selectedSize ? ` (${selectedSize.size}${selectedSize.unit})` : ""} added.` })
     setQuantity(1)
+  }
+
+ const handleShopNow = () => {
+    if (!product) return
+
+    if (!session?.user) {
+      toast({ 
+        title: "Login required", 
+        description: "Please sign in to purchase.", 
+        variant: "destructive" 
+      })
+      router.push("/auth/login")
+      return
+    }
+
+    if (product.sizes && product.sizes.length > 0 && !selectedSize) {
+      toast({ 
+        title: "Select a size", 
+        description: "Please choose a size before purchasing.", 
+        variant: "destructive" 
+      })
+      return
+    }
+
+    if (isOutOfStock) return
+
+    addItem({
+      productId: product._id,
+      name: product.name,
+      price: selectedSize ? selectedSize.price : product.price,
+      discountPrice: selectedSize ? selectedSize.discountPrice : product.discountPrice,
+      image: product.image,
+      quantity,
+      company: product.company || { name: "Unknown", slug: "unknown" },
+      selectedSize: selectedSize || undefined,
+    })
+
+    router.push("/checkout")
   }
 
   const handleSubmitReview = async (event: FormEvent<HTMLFormElement>) => {
@@ -733,6 +776,8 @@ const ProductDetailPage = memo(function ProductDetailPage() {
             {/* CTA buttons */}
             <div className="space-y-3">
               <div className="flex gap-3">
+
+
                 <button
                   onClick={handleAddToCart}
                   disabled={isOutOfStock}
@@ -755,6 +800,7 @@ const ProductDetailPage = memo(function ProductDetailPage() {
                     color: "#ffffff",
                     cursor: isOutOfStock ? "not-allowed" : "pointer",
                   }}
+                  onClick={handleShopNow} 
                 >
                   <Zap className="w-5 h-5" />
                   Shop Now

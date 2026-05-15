@@ -22,6 +22,13 @@
   --input: 36 20% 86%;
   --ring: 142 76% 36%;
   --radius: 0.5rem;
+
+    --color-brand-primary: #1B6B2F;
+  --color-brand-primary-dark: #14501F;
+  --color-text-heading: #1A1A1A;
+  --color-text-muted: #888888;
+  --color-border: hsl(var(--border));
+  --color-bg-cream: #F5F0E8;
 }
 
 /* ========== Dark mode (optional – adjust to your brand) ========== */

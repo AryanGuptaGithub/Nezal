@@ -297,7 +297,7 @@ export default function CheckoutPage() {
                   </div>
                 ))}
 
-                <div className="border-t border-[--color-border] pt-4 space-y-2">
+                <div className="border-t border-red-500 pt-4 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-[--color-text-muted]">Subtotal</span>
                     <span className="font-semibold text-[--color-text-heading]">₹{totalPrice.toFixed(2)}</span>

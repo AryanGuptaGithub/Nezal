@@ -1,11 +1,10 @@
-  import mongoose from "mongoose"
+import mongoose from "mongoose"
 import { NextResponse, type NextRequest } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { connectDB } from "@/lib/db"
 import { Review } from "@/lib/models/review"
 import "@/lib/models/user"
-
 
 function mapReview(review: any) {
   return {
@@ -30,30 +29,40 @@ function mapReview(review: any) {
   }
 }
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const session = await getServerSession(authOptions)
-    
-    //  SECURITY CHECK: Only admins can reply to reviews
+
     if (!session?.user || session.user.role !== "admin") {
-      return NextResponse.json({ error: "Access denied. Admin privileges required." }, { status: 403 })
+      return NextResponse.json(
+        { error: "Access denied. Admin privileges required." },
+        { status: 403 }
+      )
     }
 
-    const reviewId = params.id
-    if (!mongoose.Types.ObjectId.isValid(reviewId)) {
+    const { id } = await params
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid review id" }, { status: 400 })
     }
 
     const body = await request.json()
     const message = typeof body.message === "string" ? body.message.trim() : ""
+
     if (!message) {
-      return NextResponse.json({ error: "Reply message is required" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Reply message is required" },
+        { status: 400 }
+      )
     }
 
     await connectDB()
 
     const review = await Review.findByIdAndUpdate(
-      reviewId,
+      id,
       {
         reply: {
           message,
@@ -62,16 +71,24 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
           repliedByName: session.user.name || "Admin",
         },
       },
-      { new: true },
+      { new: true }
     )
 
     if (!review) {
-      return NextResponse.json({ error: "Review not found" }, { status: 404 })
+      return NextResponse.json(
+        { error: "Review not found" },
+        { status: 404 }
+      )
     }
 
-    return NextResponse.json({ review: mapReview(review.toObject()) })
+    return NextResponse.json({
+      review: mapReview(review.toObject()),
+    })
   } catch (error) {
     console.error("Error replying to review:", error)
-    return NextResponse.json({ error: "Failed to reply to review" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to reply to review" },
+      { status: 500 }
+    )
   }
 }

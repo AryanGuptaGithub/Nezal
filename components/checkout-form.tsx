@@ -1,14 +1,10 @@
-// components/checkout-form.tsx
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
 
 interface CheckoutFormProps {
   totalAmount: number
@@ -26,7 +22,136 @@ interface CheckoutFormProps {
   isSubmitting?: boolean
 }
 
-export function CheckoutForm({ totalAmount, onSubmit, availablePaymentMethods, initialData, isSubmitting = false }: CheckoutFormProps) {
+const CheckIcon = () => (
+  <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
+    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+)
+
+const SpinnerIcon = () => (
+  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+  </svg>
+)
+
+const MapPinIcon = () => (
+  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
+  </svg>
+)
+
+const ShieldIcon = () => (
+  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+)
+
+const LockIcon = () => (
+  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
+  </svg>
+)
+
+const TruckIcon = () => (
+  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="3" width="15" height="13" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" />
+  </svg>
+)
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label className="block text-[11px] font-semibold uppercase tracking-widest text-(--color-text-muted) mb-1.5">
+      {children}
+    </label>
+  )
+}
+
+function StyledInput({ icon, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { icon?: React.ReactNode }) {
+  return (
+    <div className="relative">
+      {icon && (
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-(--color-text-muted) pointer-events-none">
+          {icon}
+        </span>
+      )}
+      <Input
+        {...props}
+        className={[
+          "h-11 rounded-xl border border-(--color-border) bg-white",
+          "text-sm text-(--color-text-heading) placeholder:text-(--color-text-muted)",
+          "focus-visible:ring-2 focus-visible:ring-(--color-brand-primary)/20",
+          "focus-visible:border-(--color-brand-primary) transition-all duration-200",
+          icon ? "pl-9" : "pl-3.5",
+          props.disabled ? "bg-(--color-bg-cream) text-(--color-text-muted) cursor-not-allowed opacity-70" : "",
+        ].join(" ")}
+      />
+    </div>
+  )
+}
+
+function PaymentOption({
+  label,
+  description,
+  icon,
+  selected,
+  onSelect,
+}: {
+  label: string
+  description: string
+  icon: React.ReactNode
+  selected: boolean
+  onSelect: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={[
+        "w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-all duration-200 cursor-pointer",
+        selected
+          ? "border-(--color-brand-primary) bg-(--color-brand-primary)/5 shadow-md"
+          : "border-(--color-border) bg-white hover:border-(--color-brand-primary)/40 hover:bg-(--color-bg-cream)",
+      ].join(" ")}
+    >
+      <div className={[
+        "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200",
+        selected
+          ? "border-(--color-brand-primary) bg-(--color-brand-primary) text-white"
+          : "border-(--color-border)",
+      ].join(" ")}>
+        {selected && <CheckIcon />}
+      </div>
+
+      <div className={[
+        "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-lg transition-all duration-200",
+        selected
+          ? "bg-(--color-brand-primary)/10 text-(--color-brand-primary)"
+          : "bg-(--color-bg-cream) text-(--color-text-muted)",
+      ].join(" ")}>
+        {icon}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <p className={[
+          "text-sm font-semibold transition-colors duration-200",
+          selected ? "text-(--color-brand-primary)" : "text-(--color-text-heading)",
+        ].join(" ")}>
+          {label}
+        </p>
+        <p className="text-xs text-(--color-text-muted) mt-0.5 leading-relaxed">{description}</p>
+      </div>
+    </button>
+  )
+}
+
+export function CheckoutForm({
+  totalAmount,
+  onSubmit,
+  availablePaymentMethods,
+  initialData,
+  isSubmitting = false,
+}: CheckoutFormProps) {
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
     phone: initialData?.phone || "",
@@ -48,151 +173,189 @@ export function CheckoutForm({ totalAmount, onSubmit, availablePaymentMethods, i
     await onSubmit(formData, paymentMethod)
   }
 
+  const steps = ["Cart", "Delivery", "Confirm"]
+
   return (
-    <Card className="border border-[--color-border] rounded-2xl shadow-sm bg-white">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-xl font-bold text-[--color-text-heading]">Shipping Address</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[--color-text-heading]">Full Name</label>
-              <Input
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="John Doe"
-                required
-                className="border-[--color-border] focus-visible:ring-[--color-brand-primary] rounded-lg h-10"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[--color-text-heading]">Phone Number</label>
-              <Input
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="+91 9876543210"
-                required
-                className="border-[--color-border] focus-visible:ring-[--color-brand-primary] rounded-lg h-10"
-              />
-            </div>
-          </div>
+    <div className="w-full max-w-lg mx-auto space-y-4">
 
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[--color-text-heading]">Street Address</label>
-            <Input
-              name="street"
-              value={formData.street}
-              onChange={handleChange}
-              placeholder="123 Main St"
-              required
-              className="border-[--color-border] focus-visible:ring-[--color-brand-primary] rounded-lg h-10"
-            />
-          </div>
+      {/* Progress stepper */}
+      <div className="flex items-center gap-2 mb-6 px-1">
+        {steps.map((step, i) => {
+          const state = i === 0 ? "done" : i === 1 ? "active" : "idle"
+          return (
+            <div key={step} className="flex items-center gap-2 flex-1 last:flex-none">
+              <div className="flex items-center gap-1.5">
+                <div className={[
+                  "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold flex-shrink-0",
+                  state === "done"   ? "bg-(--color-brand-primary) text-white" : "",
+                  state === "active" ? "bg-(--color-text-heading) text-white" : "",
+                  state === "idle"   ? "bg-(--color-border) text-(--color-text-muted)" : "",
+                ].join(" ")}>
+                  {state === "done" ? <CheckIcon /> : i + 1}
+                </div>
+                <span className={[
+                  "text-xs font-medium hidden sm:block",
+                  state === "done"   ? "text-(--color-brand-primary)" : "",
+                  state === "active" ? "text-(--color-text-heading)" : "",
+                  state === "idle"   ? "text-(--color-text-muted)" : "",
+                ].join(" ")}>
+                  {step}
+                </span>
+              </div>
+              {i < steps.length - 1 && (
+                <div className="flex-1 h-px bg-(--color-border)" />
+              )}
+            </div>
+          )
+        })}
+      </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[--color-text-heading]">City</label>
-              <Input
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                placeholder="City"
-                required
-                className="border-[--color-border] focus-visible:ring-[--color-brand-primary] rounded-lg h-10"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[--color-text-heading]">State</label>
-              <Input
-                name="state"
-                value={formData.state}
-                onChange={handleChange}
-                placeholder="State"
-                required
-                className="border-[--color-border] focus-visible:ring-[--color-brand-primary] rounded-lg h-10"
-              />
-            </div>
-          </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[--color-text-heading]">ZIP Code</label>
-              <Input
-                name="zipCode"
-                value={formData.zipCode}
-                onChange={handleChange}
-                placeholder="ZIP Code"
-                required
-                className="border-[--color-border] focus-visible:ring-[--color-brand-primary] rounded-lg h-10"
-              />
+        <Card className="border border-(--color-border) rounded-2xl shadow-sm bg-white overflow-hidden">
+          <CardHeader className="pb-0 pt-5 px-6 flex-row items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-(--color-brand-primary)/10 flex items-center justify-center text-(--color-brand-primary) flex-shrink-0">
+              <MapPinIcon />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[--color-text-heading]">Country</label>
-              <Input
-                name="country"
-                value={formData.country}
-                disabled
-                className="bg-[--color-bg-cream] text-[--color-text-muted] rounded-lg h-10"
-              />
-            </div>
-          </div>
+            <CardTitle className="text-base font-semibold text-(--color-text-heading)">
+              Shipping Address
+            </CardTitle>
+          </CardHeader>
 
-          {/* Payment Method Selection */}
-          <div className="border-t border-[--color-border] pt-5">
-            <label className="text-sm font-semibold text-[--color-text-heading] block mb-3">
-              Payment Method
-            </label>
-            <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-              <div className="space-y-3">
+          <CardContent className="px-6 pt-5 pb-6 space-y-4">
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <FieldLabel>Full Name</FieldLabel>
+                <StyledInput
+                  name="name" value={formData.name} onChange={handleChange}
+                  placeholder="Rohan Mehta" required
+                  icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>}
+                />
+              </div>
+              <div>
+                <FieldLabel>Phone Number</FieldLabel>
+                <StyledInput
+                  name="phone" value={formData.phone} onChange={handleChange}
+                  placeholder="+91 98765 43210" required
+                  icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.8 19.79 19.79 0 01.22 4.22 2 2 0 012.2 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 9.27a16 16 0 006.72 6.72l1.34-1.34a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" /></svg>}
+                />
+              </div>
+            </div>
+
+            <div>
+              <FieldLabel>Street Address</FieldLabel>
+              <StyledInput
+                name="street" value={formData.street} onChange={handleChange}
+                placeholder="123 Brigade Road, Apt 4B" required
+                icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <FieldLabel>City</FieldLabel>
+                <StyledInput
+                  name="city" value={formData.city} onChange={handleChange}
+                  placeholder="Mumbai" required
+                  icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" /><line x1="12" y1="12" x2="12" y2="17" /><line x1="9.5" y1="14.5" x2="14.5" y2="14.5" /></svg>}
+                />
+              </div>
+              <div>
+                <FieldLabel>State</FieldLabel>
+                <StyledInput
+                  name="state" value={formData.state} onChange={handleChange}
+                  placeholder="Maharashtra" required
+                  icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11" /></svg>}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <FieldLabel>ZIP Code</FieldLabel>
+                <StyledInput
+                  name="zipCode" value={formData.zipCode} onChange={handleChange}
+                  placeholder="400001" required
+                  icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="9" x2="20" y2="9" /><line x1="4" y1="15" x2="20" y2="15" /><line x1="10" y1="3" x2="8" y2="21" /><line x1="16" y1="3" x2="14" y2="21" /></svg>}
+                />
+              </div>
+              <div>
+                <FieldLabel>Country</FieldLabel>
+                <StyledInput
+                  name="country" value={formData.country} disabled
+                  icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" /></svg>}
+                />
+              </div>
+            </div>
+
+            {/* Payment */}
+            <div className="border-t border-(--color-border) pt-5 mt-1">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-(--color-text-muted) mb-3">
+                Payment Method
+              </p>
+              <div className="space-y-2.5">
                 {availablePaymentMethods.includes("razorpay") && (
-                  <div className="flex items-center space-x-3 border border-[--color-border] rounded-xl p-4 cursor-pointer hover:border-[--color-brand-primary] transition-colors bg-white">
-                    <RadioGroupItem value="razorpay" id="razorpay" className="text-[--color-brand-primary]" />
-                    <Label htmlFor="razorpay" className="cursor-pointer flex-1">
-                      <span className="font-medium text-[--color-text-heading]">Razorpay</span>
-                      <p className="text-xs text-[--color-text-muted] mt-0.5">
-                        Pay securely using credit card, debit card, or UPI
-                      </p>
-                    </Label>
-                  </div>
+                  <PaymentOption
+                    label="Razorpay"
+                    description="Credit card, debit card, UPI, net banking & more"
+                    icon="⚡"
+                    selected={paymentMethod === "razorpay"}
+                    onSelect={() => setPaymentMethod("razorpay")}
+                  />
                 )}
                 {availablePaymentMethods.includes("cod") && (
-                  <div className="flex items-center space-x-3 border border-[--color-border] rounded-xl p-4 cursor-pointer hover:border-[--color-brand-primary] transition-colors bg-white">
-                    <RadioGroupItem value="cod" id="cod" className="text-[--color-brand-primary]" />
-                    <Label htmlFor="cod" className="cursor-pointer flex-1">
-                      <span className="font-medium text-[--color-text-heading]">Cash on Delivery (COD)</span>
-                      <p className="text-xs text-[--color-text-muted] mt-0.5">
-                        Pay when you receive your order
-                      </p>
-                    </Label>
-                  </div>
+                  <PaymentOption
+                    label="Cash on Delivery"
+                    description="Pay in cash when your order arrives at your door"
+                    icon="💵"
+                    selected={paymentMethod === "cod"}
+                    onSelect={() => setPaymentMethod("cod")}
+                  />
                 )}
               </div>
-            </RadioGroup>
-          </div>
+            </div>
 
+          </CardContent>
+        </Card>
+
+        {/* Submit */}
+        <div className="space-y-3">
           <Button
             type="submit"
-            className="w-full bg-[--color-brand-primary] hover:bg-[--color-brand-primary-dark] text-white font-semibold py-5 rounded-xl text-base"
             disabled={isSubmitting}
-            size="lg"
+            className="w-full h-14 rounded-2xl bg-(--color-brand-primary) hover:bg-(--color-brand-primary-dark) text-white font-semibold text-[15px] transition-all duration-200 active:scale-[0.99] shadow-lg flex items-center justify-center gap-2"
           >
             {isSubmitting ? (
-              <span className="flex items-center gap-2">
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Processing...
-              </span>
+              <>
+                <SpinnerIcon />
+                <span>Processing your order…</span>
+              </>
             ) : (
-              `Proceed – ₹${totalAmount.toLocaleString()}`
+              <>
+                <span>Proceed to Pay</span>
+                <span className="font-bold opacity-60">·</span>
+                <span className="font-bold">₹{totalAmount.toLocaleString("en-IN")}</span>
+              </>
             )}
           </Button>
-        </form>
-      </CardContent>
-    </Card>
+
+          <div className="flex items-center justify-center gap-5 pt-1">
+            <span className="flex items-center gap-1.5 text-[11px] text-(--color-text-muted)">
+              <ShieldIcon />Secure checkout
+            </span>
+            <span className="w-px h-3 bg-(--color-border)" />
+            <span className="flex items-center gap-1.5 text-[11px] text-(--color-text-muted)">
+              <LockIcon />256-bit SSL
+            </span>
+            <span className="w-px h-3 bg-(--color-border)" />
+            <span className="flex items-center gap-1.5 text-[11px] text-(--color-text-muted)">
+              <TruckIcon />Free returns
+            </span>
+          </div>
+        </div>
+
+      </form>
+    </div>
   )
 }

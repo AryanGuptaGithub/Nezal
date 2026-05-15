@@ -1,3 +1,4 @@
+// app/api/orders/route.ts
 import { connectDB } from "@/lib/db";
 import { Order } from "@/lib/models/order";
 import { User } from "@/lib/models/user";

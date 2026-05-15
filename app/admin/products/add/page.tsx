@@ -1,3 +1,4 @@
+// C:\Users\DELL\Downloads\Aryan\Nezal\Nezal\app\admin\products\add\page.tsx
 "use client"
 
 import type React from "react"
@@ -237,24 +238,25 @@ export default function AddProductPage() {
 
     try {
       const bodyData = {
-        ...formData,
-        image: imageUrls[0],
-        images: imageUrls,
-        price: Number(formData.price),
-        discountPrice: formData.discountPrice ? Number(formData.discountPrice) : undefined,
-        stock: Number(formData.stock),
-        ingredients: formData.ingredients.split(",").map((i) => i.trim()).filter(Boolean),
-        benefits: formData.benefits.split(",").map((b) => b.trim()).filter(Boolean),
-        suitableFor: formData.suitableFor.split(",").map((s) => s.trim()).filter(Boolean),
-        results,
-        sizes: sizes.map((s) => ({
-          ...s,
-          quantity: Number(s.quantity),
-          price: Number(s.price),
-          discountPrice: s.discountPrice ? Number(s.discountPrice) : undefined,
-          stock: Number(s.stock),
-        })),
-      }
+  ...formData,
+  category: formData.category || undefined,  // ← add this line
+  image: imageUrls[0],
+  images: imageUrls,
+  price: Number(formData.price),
+  discountPrice: formData.discountPrice ? Number(formData.discountPrice) : undefined,
+  stock: Number(formData.stock),
+  ingredients: formData.ingredients.split(",").map((i) => i.trim()).filter(Boolean),
+  benefits: formData.benefits.split(",").map((b) => b.trim()).filter(Boolean),
+  suitableFor: formData.suitableFor.split(",").map((s) => s.trim()).filter(Boolean),
+  results,
+  sizes: sizes.map((s) => ({
+    ...s,
+    quantity: Number(s.quantity),
+    price: Number(s.price),
+    discountPrice: s.discountPrice ? Number(s.discountPrice) : undefined,
+    stock: Number(s.stock),
+  })),
+}
       
       // console.log("📤 Sending product data:", bodyData)
       // console.log("🎨 Results being sent:", results)
@@ -368,25 +370,30 @@ export default function AddProductPage() {
                       ))}
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Sub Category *</label>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                  >
-                    <option value="">Select Sub Category</option>
-                    {categories
-                      .find(c => c._id === formData.mainCategory)
-                      ?.subCategories?.map((sub) => (
-                        <option key={sub._id} value={sub._id}>
-                          {sub.name}
-                        </option>
-                      )) || []}
-                  </select>
-                </div>
+               <div>
+  <label className="block text-sm font-medium text-foreground mb-2">Sub Category</label>
+  <select
+    name="category"
+    value={formData.category}
+    onChange={handleChange}
+    required={!!(categories.find(c => c._id === formData.mainCategory)?.subCategories?.length)}
+    disabled={!categories.find(c => c._id === formData.mainCategory)?.subCategories?.length}
+    className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+    <option value="">
+      {categories.find(c => c._id === formData.mainCategory)?.subCategories?.length
+        ? "Select Sub Category"
+        : "No sub categories available"}
+    </option>
+    {categories
+      .find(c => c._id === formData.mainCategory)
+      ?.subCategories?.map((sub) => (
+        <option key={sub._id} value={sub._id}>
+          {sub.name}
+        </option>
+      )) || []}
+  </select>
+</div>
               </div>
 
               {/* Description */}
@@ -647,13 +654,13 @@ export default function AddProductPage() {
                           <div key={index} className="relative group border border-border rounded-lg p-3 bg-background flex justify-between items-center">
                             <div className="flex-1">
                               <p className="font-medium text-sm text-foreground">
-                                {size.size} ({size.quantity}{size.unit})
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Price: ₹{size.price}
-                                {size.discountPrice ? ` → ₹${size.discountPrice}` : ""}
-                                {" "} | Stock: {size.stock}
-                              </p>
+  {size.size}
+</p>
+<p className="text-xs text-muted-foreground">
+  Qty: {size.quantity} {size.unit} | Price: ₹{size.price}
+  {size.discountPrice ? ` → ₹${size.discountPrice}` : ""}
+  {" "} | Stock: {size.stock}
+</p>
                             </div>
                             <button
                               type="button"

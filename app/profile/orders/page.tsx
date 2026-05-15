@@ -1,14 +1,14 @@
-// app/profile/orders/page.tsx
 "use client"
 
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye } from "lucide-react"
+import { Eye, Package, CreditCard, Calendar, ChevronRight } from "lucide-react"
 
 interface OrderItem {
   product?: {
@@ -42,6 +42,30 @@ interface Order {
   updatedAt?: string
   paymentMethod?: string
 }
+
+const getStatusColor = (status?: string) => {
+  if (!status) return "bg-gray-100 text-gray-800 border-gray-200"
+  switch (status.toLowerCase()) {
+    case "pending": return "bg-amber-50 text-amber-700 border-amber-200"
+    case "processing": return "bg-blue-50 text-blue-700 border-blue-200"
+    case "shipped": return "bg-purple-50 text-purple-700 border-purple-200"
+    case "delivered": return "bg-emerald-50 text-emerald-700 border-emerald-200"
+    case "cancelled":
+    case "canceled": return "bg-rose-50 text-rose-700 border-rose-200"
+    default: return "bg-gray-100 text-gray-700 border-gray-200"
+  }
+}
+
+const getStatusIcon = (status?: string) => {
+  switch (status?.toLowerCase()) {
+    case "delivered": return <Package className="h-4 w-4" />
+    case "shipped": return <Package className="h-4 w-4" />
+    default: return <Calendar className="h-4 w-4" />
+  }
+}
+
+const currencyFormatter = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" })
+const dateFormatter = new Intl.DateTimeFormat("en-IN", { dateStyle: "medium" })
 
 export default function OrdersPage() {
   const { data: session, status } = useSession()
@@ -88,23 +112,13 @@ export default function OrdersPage() {
     }
   }
 
-  const getStatusColor = (status?: string) => {
-    if (!status) return "bg-gray-100 text-gray-800"
-    switch (status.toLowerCase()) {
-      case "pending": return "bg-yellow-100 text-yellow-800"
-      case "processing": return "bg-blue-100 text-blue-800"
-      case "shipped": return "bg-purple-100 text-purple-800"
-      case "delivered": return "bg-green-100 text-green-800"
-      case "cancelled":
-      case "canceled": return "bg-red-100 text-red-800"
-      default: return "bg-gray-100 text-gray-800"
-    }
-  }
-
   if (status === "loading" || loading) {
     return (
-      <main className="min-h-screen bg-[--color-bg-page] flex items-center justify-center">
-        <p className="text-[--color-text-muted] text-lg">Loading orders...</p>
+      <main className="min-h-screen bg-gradient-to-b from-[--color-bg-page] to-white flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-[--color-brand-primary] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-[--color-text-muted]">Loading your orders...</p>
+        </div>
       </main>
     )
   }
@@ -113,112 +127,173 @@ export default function OrdersPage() {
 
   if (error) {
     return (
-      <main className="min-h-screen bg-[--color-bg-page] flex items-center justify-center">
-        <Card className="border border-[--color-border] rounded-2xl">
-          <CardContent className="py-8 text-center">
-            <p className="text-[--color-brand-red] font-medium mb-2">Failed to load orders</p>
-            <p className="text-sm text-[--color-text-muted] mb-4">{error}</p>
-            <Button onClick={fetchOrders} className="bg-[--color-brand-primary] hover:bg-[--color-brand-primary-dark] text-white">Retry</Button>
+      <main className="min-h-screen bg-[--color-bg-page] flex items-center justify-center p-4">
+        <Card className="border-0 shadow-xl rounded-2xl max-w-md w-full">
+          <CardContent className="py-8 text-center space-y-4">
+            <div className="text-rose-500 mb-2">
+              <Package className="h-12 w-12 mx-auto" />
+            </div>
+            <p className="text-[--color-text-heading] font-medium">Failed to load orders</p>
+            <p className="text-sm text-[--color-text-muted]">{error}</p>
+            <Button
+              onClick={fetchOrders}
+              className="bg-[--color-brand-primary] hover:bg-[--color-brand-primary-dark] text-white rounded-xl"
+            >
+              Try Again
+            </Button>
           </CardContent>
         </Card>
       </main>
     )
   }
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  }
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
+  }
+
   return (
-    <main className="min-h-screen bg-[--color-bg-page]">
+    <main className="min-h-screen bg-gradient-to-b from-[--color-bg-page] to-white">
       <div className="container-nezal py-8 md:py-12">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-[--color-text-heading] mb-2">My Orders</h1>
-          <p className="text-[--color-text-body]">View and track your orders</p>
-        </div>
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <h1 className="text-3xl md:text-4xl font-bold text-[--color-text-heading] mb-2">My Orders</h1>
+          <p className="text-[--color-text-muted]">
+            {orders.length === 0
+              ? "You haven't placed any orders yet."
+              : `You have ${orders.length} order${orders.length > 1 ? "s" : ""} with us`}
+          </p>
+        </motion.div>
 
         {orders.length === 0 ? (
-          <Card className="border border-[--color-border] rounded-2xl">
-            <CardContent className="py-12 text-center">
-              <p className="text-[--color-text-muted] mb-4">You haven't placed any orders yet.</p>
-              <Link href="/shop">
-                <Button className="bg-[--color-brand-primary] hover:bg-[--color-brand-primary-dark] text-white">Start Shopping</Button>
-              </Link>
-            </CardContent>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card className="border-0 shadow-md rounded-2xl bg-white text-center">
+              <CardContent className="py-16 space-y-4">
+                <Package className="h-16 w-16 text-[--color-text-muted] mx-auto" />
+                <p className="text-[--color-text-muted]">No orders yet</p>
+                <Link href="/shop">
+                  <Button className="bg-[--color-brand-primary] hover:bg-[--color-brand-primary-dark] text-white rounded-xl px-8">
+                    Start Shopping
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </motion.div>
         ) : (
-          <div className="space-y-4">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-5"
+          >
             {orders.map((order) => {
               const items = order.items ?? []
               const createdAt = order.createdAt ? new Date(order.createdAt) : null
               const total = Number(order.totalAmount ?? 0)
               const statusLabel = order.orderStatus ?? "Unknown"
               const paymentStatusLabel = order.paymentStatus ?? "Unknown"
+              const itemCount = items.reduce((sum, i) => sum + Number(i.quantity ?? 0), 0)
+
+              // Get first item for preview
+              const firstItem = items[0]
+              const firstItemName = firstItem?.productName ?? firstItem?.product?.name ?? "Item"
+              const remainingCount = itemCount - 1
 
               return (
-                <Card key={order._id} className="border border-[--color-border] rounded-2xl shadow-sm">
-                  <CardHeader>
-                    <div className="flex justify-between items-start flex-wrap gap-4">
-                      <div>
-                        <CardTitle className="text-lg font-bold text-[--color-text-heading]">
-                          Order #{order.orderNumber ?? order._id}
-                        </CardTitle>
-                        <p className="text-sm text-[--color-text-muted] mt-1">
-                          {createdAt ? createdAt.toLocaleDateString() : "—"}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-2 items-center justify-end">
-                        <Badge className={`${getStatusColor(statusLabel)} px-2 py-1 rounded-full text-xs`}>{statusLabel}</Badge>
-                        <Badge variant="outline" className="px-2 py-1 rounded-full text-xs border-[--color-border]">{paymentStatusLabel}</Badge>
-                        {order.paymentMethod ? (
-                          <Badge variant="secondary" className="px-2 py-1 rounded-full text-xs">{order.paymentMethod.toUpperCase()}</Badge>
-                        ) : null}
+                <motion.div key={order._id} variants={cardVariants}>
+                  <Card className="border-0 shadow-md rounded-2xl bg-white overflow-hidden hover:shadow-lg transition-all duration-300">
+                    {/* Card Header with gradient background */}
+                    <div className="bg-gradient-to-r from-[--color-brand-primary]/5 to-transparent border-b border-[--color-border] px-6 py-4">
+                      <div className="flex flex-wrap justify-between items-start gap-3">
+                        <div>
+                          <div className="flex items-center gap-2 text-sm text-[--color-text-muted] mb-1">
+                            <Calendar className="h-3.5 w-3.5" />
+                            {createdAt ? dateFormatter.format(createdAt) : "—"}
+                          </div>
+                          <CardTitle className="text-lg font-bold text-[--color-text-heading]">
+                            Order #{order.orderNumber ?? order._id.slice(-8)}
+                          </CardTitle>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge className={`${getStatusColor(statusLabel)} px-3 py-1 rounded-full text-xs font-medium border`}>
+                            {getStatusIcon(statusLabel)}
+                            <span className="ml-1">{statusLabel}</span>
+                          </Badge>
+                          <Badge variant="outline" className="rounded-full border-[--color-border] bg-white">
+                            {paymentStatusLabel}
+                          </Badge>
+                          {order.paymentMethod && (
+                            <Badge variant="secondary" className="rounded-full bg-gray-100 text-gray-700">
+                              {order.paymentMethod.toUpperCase()}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
+
+                    <CardContent className="p-6 space-y-4">
+                      {/* Items preview */}
                       <div>
-                        <h4 className="font-semibold text-[--color-text-heading] mb-2">Items</h4>
-                        <div className="space-y-2">
-                          {items.length === 0 ? (
-                            <p className="text-sm text-[--color-text-muted]">No items found for this order.</p>
+                        <div className="flex items-center gap-2 text-sm font-medium text-[--color-text-heading] mb-2">
+                          <Package className="h-4 w-4 text-[--color-brand-primary]" />
+                          Items ({itemCount})
+                        </div>
+                        <div className="text-sm text-[--color-text-body]">
+                          {firstItem ? (
+                            <div className="flex justify-between items-center">
+                              <span className="truncate">{firstItemName}</span>
+                              {remainingCount > 0 && (
+                                <span className="text-[--color-text-muted] text-xs bg-gray-100 px-2 py-0.5 rounded-full">
+                                  +{remainingCount} more
+                                </span>
+                              )}
+                            </div>
                           ) : (
-                            items.map((item, idx) => {
-                              const quantity = Number(item.quantity ?? 0)
-                              const price = Number(item.price ?? 0)
-                              const productName = item.productName ?? item.product?.name ?? "Item"
-                              return (
-                                <div key={idx} className="space-y-1">
-                                  <div className="flex justify-between text-sm">
-                                    <span className="text-[--color-text-body]">{productName} x {quantity}</span>
-                                    <span className="font-medium text-[--color-text-heading]">₹{(price * quantity).toFixed(2)}</span>
-                                  </div>
-                                  {item.selectedSize && (
-                                    <p className="text-xs text-[--color-text-muted] ml-0">
-                                      Size: {item.selectedSize.size} ({item.selectedSize.quantity}{item.selectedSize.unit})
-                                    </p>
-                                  )}
-                                </div>
-                              )
-                            })
+                            <span className="text-[--color-text-muted]">No items</span>
                           )}
                         </div>
                       </div>
 
-                      <div className="border-t border-[--color-border] pt-4 flex justify-between">
-                        <span className="font-semibold text-[--color-text-heading]">Total Amount</span>
-                        <span className="font-bold text-lg text-[--color-text-heading]">₹{total.toFixed(2)}</span>
+                      {/* Total and action */}
+                      <div className="flex justify-between items-center pt-2 border-t border-[--color-border]">
+                        <div>
+                          <p className="text-xs text-[--color-text-muted]">Total amount</p>
+                          <p className="text-xl font-bold text-[--color-text-heading]">
+                            {currencyFormatter.format(total)}
+                          </p>
+                        </div>
+                        <Link href={`/profile/orders/${order._id}`}>
+                          <Button
+                            variant="outline"
+                            className="border-[--color-border] text-[--color-text-heading] hover:bg-[--color-bg-cream] rounded-xl gap-2"
+                          >
+                            View Details
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </Link>
                       </div>
-
-                      <Link href={`/profile/orders/${order._id}`}>
-                        <Button variant="outline" className="w-full border-[--color-border] text-[--color-text-heading] hover:bg-[--color-bg-cream]">
-                          <Eye className="w-4 h-4 mr-2" />
-                          View Details
-                        </Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               )
             })}
-          </div>
+          </motion.div>
         )}
       </div>
     </main>

@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Leaf, Shield, Package, Users, Flower2 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────
-interface ConcernProduct {
+interface CategoryProduct {
   _id: string;
   name: string;
   slug: string;
@@ -24,28 +24,28 @@ interface ConcernProduct {
   };
 }
 
-interface ShopByConcernItem {
+interface ShopByCategoryItem {
   _id: string;
   title: string;
   image: string;
   description?: string;
   isActive: boolean;
   priority: number;
-  product?: ConcernProduct | string;
+  product?: CategoryProduct | string;
 }
 
-interface ShopByConcernSettings {
+interface ShopByCategorySettings {
   isVisible: boolean;
   limit: number;
 }
 
-interface ShopByConcernProps {
+interface ShopByCategoryProps {
   companyId: string;
   companySlug: string;
 }
 
-// ── Concern SVG Icons ────────────────────────────────
-const ConcernIcon = ({ title }: { title: string }) => {
+// ── Category SVG Icons ────────────────────────────────
+const CategoryIcon = ({ title }: { title: string }) => {
   const t = title.toLowerCase();
   if (t.includes("face"))
     return (
@@ -79,8 +79,8 @@ const ConcernIcon = ({ title }: { title: string }) => {
   return <Leaf className="h-5 w-5" />;
 };
 
-// ── Get related image based on concern title ──────────
-const getConcernImage = (title: string): string => {
+// ── Get category image based on title ─────────────────
+const getCategoryImage = (title: string): string => {
   const t = title.toLowerCase();
   if (t.includes("face")) {
     return "https://gotoskincare.com/cdn/shop/articles/0221_GT_Website_BlogImagery_8.jpg?v=1613451516&width=1024";
@@ -106,7 +106,7 @@ const getConcernImage = (title: string): string => {
   return "https://images.unsplash.com/photo-1612817288484-6f916006741a?w=400&h=400&fit=crop";
 };
 
-// ── Trust bar ─────────────────────────────────────────
+// ── Trust bar (unchanged) ──────────────────────────────
 const trustFeatures = [
   { icon: Leaf, label: "Natural Ingredients", sub: "Pure herbal extracts" },
   { icon: Shield, label: "Safe & Effective", sub: "Dermatologically tested" },
@@ -114,24 +114,24 @@ const trustFeatures = [
   { icon: Users, label: "Loved by Many", sub: "10,000+ happy customers" },
 ];
 
-// ── Main Component ────────────────────────────────────
-export function ShopByConcern({ companyId, companySlug }: ShopByConcernProps) {
-  const [items, setItems] = useState<ShopByConcernItem[]>([]);
-  const [settings, setSettings] = useState<ShopByConcernSettings>({ isVisible: true, limit: 6 });
+// ── Main Component ─────────────────────────────────────
+export function ShopByCategory({ companyId, companySlug }: ShopByCategoryProps) {
+  const [items, setItems] = useState<ShopByCategoryItem[]>([]);
+  const [settings, setSettings] = useState<ShopByCategorySettings>({ isVisible: true, limit: 6 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const addItem = useCartStore((s) => s.addItem);
   const { toast } = useToast();
 
-  // Fetch concerns
+  // Fetch categories (backend still uses "concern" endpoint)
   useEffect(() => {
-    const fetchConcerns = async () => {
+    const fetchCategories = async () => {
       try {
         setLoading(true);
         setError(null);
         const response = await fetch(`/api/companies/${companyId}/shop-by-concern`);
-        if (!response.ok) throw new Error("Failed to fetch shop by concern data");
+        if (!response.ok) throw new Error("Failed to fetch category data");
         const data = await response.json();
         setSettings(data.settings || { isVisible: true, limit: 6 });
         if (Array.isArray(data.items)) {
@@ -160,17 +160,17 @@ export function ShopByConcern({ companyId, companySlug }: ShopByConcernProps) {
                     : undefined,
               };
             })
-            .filter((item: ShopByConcernItem | null): item is ShopByConcernItem => item !== null);
+            .filter((item: ShopByCategoryItem | null): item is ShopByCategoryItem => item !== null);
           setItems(transformed);
         }
       } catch (err) {
-        console.error("Error fetching shop by concern data:", err);
+        console.error("Error fetching category data:", err);
         setError(err instanceof Error ? err.message : "Unknown error");
       } finally {
         setLoading(false);
       }
     };
-    if (companyId) fetchConcerns();
+    if (companyId) fetchCategories();
   }, [companyId, companySlug]);
 
   const activeItems = useMemo(
@@ -182,10 +182,10 @@ export function ShopByConcern({ companyId, companySlug }: ShopByConcernProps) {
     [items, settings.limit]
   );
 
-  const handleAddToCart = (e: React.MouseEvent, item: ShopByConcernItem) => {
+  const handleAddToCart = (e: React.MouseEvent, item: ShopByCategoryItem) => {
     e.preventDefault();
     e.stopPropagation();
-    const p = item.product && typeof item.product === "object" ? (item.product as ConcernProduct) : null;
+    const p = item.product && typeof item.product === "object" ? (item.product as CategoryProduct) : null;
     if (!p) {
       toast({ title: "Unavailable", description: "Product info not available.", variant: "destructive" });
       return;
@@ -261,22 +261,22 @@ export function ShopByConcern({ companyId, companySlug }: ShopByConcernProps) {
         </div>
       </div>
 
-      {/* Shop By Concern section */}
+      {/* Shop by Category section */}
       <section className="py-16 md:py-20">
         <div className="container-nezal">
           <div className="mb-12 text-center">
             <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
               <Flower2 className="h-4 w-4" />
-              Personalised Skincare
+              Explore by Category
             </div>
             <h2 className="mt-4 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
-              Shop by <span className="text-primary">Concern</span>
+              Shop by <span className="text-primary">Category</span>
             </h2>
             <div className="mt-2 flex justify-center">
               <div className="h-0.5 w-24 rounded-full bg-primary" />
             </div>
             <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-              Find the perfect solution for your unique skin needs – curated by our experts.
+              Browse our curated collections and find exactly what you're looking for.
             </p>
           </div>
 
@@ -295,7 +295,7 @@ export function ShopByConcern({ companyId, companySlug }: ShopByConcernProps) {
                   ? (item.image || (typeof item.product === "object" ? item.product?.image : ""))
                   : item.image || (typeof item.product === "object" ? item.product?.image : "")
                   ? `/${item.image || (typeof item.product === "object" ? item.product?.image : "")}`
-                  : getConcernImage(item.title);
+                  : getCategoryImage(item.title);
 
               return (
                 <motion.div
@@ -308,7 +308,7 @@ export function ShopByConcern({ companyId, companySlug }: ShopByConcernProps) {
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
                         <div className="mb-2 inline-flex rounded-xl bg-primary/10 p-2 text-primary">
-                          <ConcernIcon title={item.title} />
+                          <CategoryIcon title={item.title} />
                         </div>
                         <h3 className="text-lg font-bold text-foreground">{item.title}</h3>
                         {item.description && (
@@ -320,7 +320,7 @@ export function ShopByConcern({ companyId, companySlug }: ShopByConcernProps) {
                       <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-muted shadow-sm">
                         <img
                           src={imageUrl}
-                          alt={`${item.title} skincare concern`}
+                          alt={`${item.title} category`}
                           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                           onError={(e) => {
                             (e.currentTarget as HTMLImageElement).src =

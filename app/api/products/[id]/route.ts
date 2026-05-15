@@ -1,3 +1,4 @@
+// C:\Users\DELL\Downloads\Aryan\Nezal\Nezal\app\api\products\[id]\route.ts
 import { connectDB } from "@/lib/db";
 import { Product } from "@/lib/models/product";
 import { type NextRequest, NextResponse } from "next/server";

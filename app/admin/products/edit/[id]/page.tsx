@@ -327,7 +327,7 @@ export default function EditProductPage() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+ const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (imageUrls.length === 0) {
@@ -338,26 +338,23 @@ export default function EditProductPage() {
     setSubmitting(true)
     setMessage("")
 
+    const toArray = (val: string | string[]): string[] =>
+      Array.isArray(val)
+        ? val.flatMap(v => v.split(",").map(s => s.trim())).filter(Boolean)
+        : val.split(",").map(s => s.trim()).filter(Boolean)
+
     try {
       const bodyData = {
         ...formData,
+        category: formData.category || undefined,
         image: imageUrls[0],
         images: imageUrls,
         price: Number(formData.price),
         discountPrice: formData.discountPrice ? Number(formData.discountPrice) : undefined,
         stock: Number(formData.stock),
-        ingredients:
-          typeof formData.ingredients === "string"
-            ? formData.ingredients.split(",").map((i) => i.trim()).filter(Boolean)
-            : formData.ingredients,
-        benefits:
-          typeof formData.benefits === "string"
-            ? formData.benefits.split(",").map((b) => b.trim()).filter(Boolean)
-            : formData.benefits,
-        suitableFor:
-          typeof formData.suitableFor === "string"
-            ? formData.suitableFor.split(",").map((s) => s.trim()).filter(Boolean)
-            : formData.suitableFor,
+        ingredients: toArray(formData.ingredients),
+        benefits: toArray(formData.benefits),
+        suitableFor: toArray(formData.suitableFor),
         results,
         sizes: sizes.map((s) => ({
           ...s,
@@ -368,10 +365,6 @@ export default function EditProductPage() {
         })),
       }
 
-      // console.log("📤 Updating product with:", bodyData)
-      // console.log("🎨 Results being sent:", results)
-      // console.log("✅ Suitable For being sent:", bodyData.suitableFor)
-
       const res = await fetch(`/api/products/${productId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -379,14 +372,12 @@ export default function EditProductPage() {
       })
 
       const responseData = await res.json()
-      // console.log("📥 Update API Response:", responseData)
 
       if (!res.ok) {
         console.error("❌ Update API Error:", responseData)
         throw new Error(responseData.error || "Failed to update product")
       }
 
-      // console.log("✅ Product updated:", responseData)
       setMessage("Product updated successfully!")
       setTimeout(() => router.push("/admin/products"), 1500)
     } catch (error) {
@@ -489,24 +480,29 @@ export default function EditProductPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Sub Category *</label>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                  >
-                    <option value="">Select Sub Category</option>
-                    {categories
-                      .find(c => c._id === formData.mainCategory)
-                      ?.subCategories?.map((sub) => (
-                        <option key={sub._id} value={sub._id}>
-                          {sub.name}
-                        </option>
-                      )) || []}
-                  </select>
-                </div>
+  <label className="block text-sm font-medium text-foreground mb-2">Sub Category</label>
+  <select
+    name="category"
+    value={formData.category}
+    onChange={handleChange}
+    required={!!(categories.find(c => c._id === formData.mainCategory)?.subCategories?.length)}
+    disabled={!categories.find(c => c._id === formData.mainCategory)?.subCategories?.length}
+    className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+    <option value="">
+      {categories.find(c => c._id === formData.mainCategory)?.subCategories?.length
+        ? "Select Sub Category"
+        : "No sub categories available"}
+    </option>
+    {categories
+      .find(c => c._id === formData.mainCategory)
+      ?.subCategories?.map((sub) => (
+        <option key={sub._id} value={sub._id}>
+          {sub.name}
+        </option>
+      )) || []}
+  </select>
+</div>
               </div>
 
               {/* Description */}
@@ -780,14 +776,14 @@ export default function EditProductPage() {
                             className="relative group border border-border rounded-lg p-3 bg-background flex flex-col md:flex-row md:items-center md:justify-between gap-3"
                           >
                             <div className="flex-1">
-                              <p className="font-medium text-sm text-foreground">
-                                {size.size} ({size.quantity}{size.unit})
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Price: ₹{size.price}
-                                {size.discountPrice ? ` → ₹${size.discountPrice}` : ""}
-                                {" "} | Stock: {size.stock}
-                              </p>
+                             <p className="font-medium text-sm text-foreground">
+  {size.size}
+</p>
+<p className="text-xs text-muted-foreground">
+  Qty: {size.quantity} {size.unit} | Price: ₹{size.price}
+  {size.discountPrice ? ` → ₹${size.discountPrice}` : ""}
+  {" "} | Stock: {size.stock}
+</p>
                             </div>
                             <div className="flex gap-2 w-full md:w-auto">
                               <Button

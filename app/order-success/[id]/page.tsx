@@ -62,7 +62,7 @@ export default function OrderSuccessPage() {
 
   return (
     <main className="min-h-screen bg-[--color-bg-page] flex items-center justify-center p-4">
-      <Card className="w-full max-w-md border border-[--color-border] rounded-2xl shadow-sm bg-white">
+      <Card className="w-full max-w-md border-2 border-green-800  rounded-2xl shadow-sm bg-white">
         <CardHeader className="text-center pb-2">
           <div className="flex justify-center mb-4">
             <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
@@ -85,12 +85,12 @@ export default function OrderSuccessPage() {
 
           <div className="space-y-3 pt-4">
             <Link href={`/profile/orders/${orderId}`} className="block">
-              <Button className="w-full bg-[--color-brand-primary] hover:bg-[--color-brand-primary-dark] text-white font-semibold py-5 rounded-xl">
+              <Button className="w-full bg-black hover:bg-green-800 text-white font-semibold py-5 rounded-xl">
                 View Your Order Details
               </Button>
             </Link>
             <Link href="/shop" className="block">
-              <Button variant="outline" className="w-full border-[--color-border] text-[--color-text-heading] hover:bg-[--color-bg-cream] py-4 rounded-xl">
+              <Button variant="outline" className="w-full border-green-800 text-green-800 hover:bg-green-800 hover:text-white py-4 rounded-xl">
                 Continue Shopping
               </Button>
             </Link>
