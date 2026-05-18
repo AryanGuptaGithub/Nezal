@@ -5,6 +5,7 @@ import { useSession, signOut } from "next-auth/react"
 import { useRouter, usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import {
+   House,
   LayoutDashboard,
   Package,
   ShoppingCart,
@@ -33,6 +34,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
+{ href: "/", label: "Home Page", icon: <House className="w-5 h-5" /> },
   { href: "/admin", label: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
   { href: "/admin/orders", label: "Orders", icon: <ShoppingCart className="w-5 h-5" /> },
   { href: "/admin/products", label: "Products", icon: <Package className="w-5 h-5" /> },

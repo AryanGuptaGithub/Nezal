@@ -599,7 +599,7 @@ const currentImage =
             {/* Thumbnails */}
             {allImages.length > 1 && (
               <div className="flex gap-3 overflow-x-auto pb-1">
-                {allImages.map((img, idx) => (
+                {allImages.filter(Boolean).map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setSelectedImage(idx)}

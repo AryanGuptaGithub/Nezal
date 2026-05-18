@@ -6,6 +6,7 @@ import { HomeCarousel } from "@/components/home-carousel"
 import { ShopByCategory } from "@/components/shop-by-category"
 import WhyChoose from "@/components/why-choose"
 import Testimonials from "@/components/testimonials"
+
 import { getCachedSync, fetchWithCache, invalidateCache } from "@/lib/cacheClient"
 import { BRAND } from "@/lib/config"
 
@@ -112,6 +113,112 @@ const TICKER_ITEMS = [
   "Sulphate Free",
 ]
 
+
+const PROMO_BANNERS = [
+  {
+    image: "/products/neem-tulsi-facewash.jpg",
+    label: "Face Wash",
+    sub: "From ₹199",
+    href: "/collections/foaming-face-wash",
+  },
+  {
+    image: "/products/bhringraj-hair-serum.jpg",
+    label: "Hair Serum",
+    sub: "Reduce Hair Fall",
+    href: "/collections/hair-serum",
+  },
+  {
+    image: "/products/aloe-vera-body-lotion.jpg",
+    label: "Body Lotion",
+    sub: "All-Day Hydration",
+    href: "/collections/body-lotion",
+  },
+  {
+    image: "/products/body-massage-oil-cedarwood.jpg",
+    label: "Massage Oil",
+    sub: "Relax & Restore",
+    href: "/collections/body-massage-oil",
+  },
+  {
+    image: "/products/almond-nourishing-cream.jpg",
+    label: "Face Cream",
+    sub: "Deep Nourishment",
+    href: "/collections/face-serum",
+  },
+  {
+    image: "/products/rose-bathing-salt.jpg",
+    label: "Bath Salts",
+    sub: "Turn Bath Into Ritual",
+    href: "/collections/bath-salt",
+  },
+]
+
+function PromoBannerGrid() {
+  return (
+    <section className="py-12 md:py-16 bg-[#FAFAF8]">
+      <div className="container-nezal">
+        {/* Heading */}
+        <div className="text-center mb-10">
+          <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-brand-primary)]">
+            Our Collections
+          </span>
+          <h2 className="mt-2 text-[28px] md:text-[32px] font-bold text-[var(--color-text-heading)]">
+            Shop by Product
+          </h2>
+        </div>
+ 
+        {/* Grid — 3 cols desktop, 2 cols mobile */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+          {PROMO_BANNERS.map((banner) => (
+            <a
+              key={banner.href}
+              href={banner.href}
+              className="group flex flex-col items-center gap-3"
+            >
+              {/* Image circle container — matches reference style */}
+              <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-white border border-[var(--color-border)] shadow-sm group-hover:shadow-md transition-shadow duration-300">
+                {/* Soft pink blob background like the reference */}
+                <div
+                  className="absolute inset-0 flex items-center justify-center"
+                  style={{
+                    background: "radial-gradient(ellipse at center, rgba(var(--color-brand-primary-rgb, 42,122,91), 0.07) 0%, transparent 70%)",
+                  }}
+                />
+                <img
+                  src={banner.image}
+                  alt={banner.label}
+                  className="relative z-10 w-full h-full object-contain p-6 transition-transform duration-500 group-hover:scale-105"
+                />
+              </div>
+ 
+              {/* Label */}
+              <div className="text-center">
+                <p className="font-bold text-[var(--color-text-heading)] text-sm md:text-base">
+                  {banner.label}
+                </p>
+                <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                  {banner.sub}
+                </p>
+              </div>
+            </a>
+          ))}
+        </div>
+ 
+        {/* View all link */}
+        <div className="mt-10 text-center">
+          <a
+            href="/shop"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-brand-primary)] hover:underline"
+          >
+            View All Products →
+          </a>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+
 // ─── Home component ──────────────────────────────────
 export default function Home() {
   // Initial cache reads
@@ -143,6 +250,7 @@ export default function Home() {
   const [showTopButton, setShowTopButton] = useState(false)
   const [waMenuOpen, setWaMenuOpen] = useState(false)
   const [isClient, setIsClient] = useState(false)
+  const [showAllProducts, setShowAllProducts] = useState(false)
 
   const waMenuRef = useRef<HTMLDivElement | null>(null)
   const waButtonRef = useRef<HTMLButtonElement | null>(null)
@@ -357,51 +465,85 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 25% Off / All Products section */}
-      <section className="py-12 md:py-16 bg-background">
-        <div className="container-nezal">
-          {/* Section heading with discount badge */}
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-3 bg-primary">
-              <span className="text-primary-foreground text-xl">%</span>
-            </div>
-            <h2 className="text-[28px] md:text-[32px] font-bold text-foreground">
-              25% Off Site-Wide
-            </h2>
-          </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-            {!isClient || loading
-              ? [...Array(8)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="rounded-2xl animate-pulse bg-muted-foreground/20"
-                    style={{ height: 280 }}
-                  />
-                ))
-              : allProducts.length === 0
-              ? (
-                <div className="col-span-full text-center py-12">
-                  <p className="text-muted-foreground">
-                    No products available at the moment
-                  </p>
-                </div>
-              )
-              : allProducts.map((product) => (
-                  <ProductCard
-                    key={product._id}
-                    id={product._id}
-                    name={product.name}
-                    price={product.price}
-                    discountPrice={product.discountPrice}
-                    image={product.image}
-                    company={product.company}
-                    size="sm"
-                  />
-                ))}
+
+<PromoBannerGrid />
+
+
+
+
+
+
+
+    {/* 25% Off — limited preview with View More */}
+<section className="py-12 md:py-16 bg-background">
+  <div className="container-nezal">
+ 
+    {/* Heading */}
+    <div className="text-center mb-10">
+      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)] text-xs font-bold uppercase tracking-widest mb-3">
+        <span>✦</span> Limited Time
+      </div>
+      <h2 className="text-[28px] md:text-[32px] font-bold text-foreground">
+        25% Off Site-Wide
+      </h2>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Use code <span className="font-bold text-[var(--color-brand-primary)]">NEZAL25</span> at checkout
+      </p>
+    </div>
+ 
+    {/* Product grid — show 8 or all */}
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+      {!isClient || loading
+        ? [...Array(8)].map((_, i) => (
+            <div
+              key={i}
+              className="rounded-2xl animate-pulse bg-muted-foreground/20"
+              style={{ height: 280 }}
+            />
+          ))
+        : allProducts.length === 0
+        ? (
+          <div className="col-span-full text-center py-12">
+            <p className="text-muted-foreground">No products available at the moment</p>
           </div>
-        </div>
-      </section>
+        )
+        : (showAllProducts ? allProducts : allProducts.slice(0, 8)).map((product) => (
+            <ProductCard
+              key={product._id}
+              id={product._id}
+              name={product.name}
+              price={product.price}
+              discountPrice={product.discountPrice}
+              image={product.image}
+              company={product.company}
+              size="sm"
+            />
+          ))}
+    </div>
+ 
+    {/* View More / View Less button */}
+    {!loading && allProducts.length > 8 && (
+      <div className="mt-10 flex flex-col items-center gap-3">
+        <button
+          onClick={() => setShowAllProducts((v) => !v)}
+          className="group inline-flex items-center gap-2 px-8 py-3 rounded-full border-2 border-[var(--color-brand-primary)] text-[var(--color-brand-primary)] font-semibold text-sm hover:bg-[var(--color-brand-primary)] hover:text-white transition-all duration-200"
+        >
+          {showAllProducts ? (
+            <>Show Less <span className="transition-transform group-hover:-translate-y-0.5">↑</span></>
+          ) : (
+            <>View All {allProducts.length} Products <span className="transition-transform group-hover:translate-y-0.5">↓</span></>
+          )}
+        </button>
+        {!showAllProducts && (
+          <p className="text-xs text-muted-foreground">
+            Showing 8 of {allProducts.length} products
+          </p>
+        )}
+      </div>
+    )}
+  </div>
+</section>
 
       {/* Our Aim section */}
       <section className="py-12 md:py-16 bg-muted">

@@ -559,11 +559,12 @@ export default function AdminDashboard() {
   return (
     <main className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-2">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between ">
+          <div className="space-y-2 ">
             <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
             <p className="text-sm text-muted-foreground">Business performance overview for {dateRangeLabel}</p>
           </div>
+
           <div className="flex flex-wrap gap-2 items-center justify-start lg:justify-end">
             {presetOptions.map((preset) => (
               <Button
@@ -587,6 +588,11 @@ export default function AdminDashboard() {
                 <Calendar mode="range" selected={customRange} onSelect={handleCustomSelect} numberOfMonths={2} />
               </PopoverContent>
             </Popover>
+          </div>
+
+          <div>
+            <button onClick={() => router.push('/')} className=" px-3 py-2 rounded-xl hover:bg-[#efa906] bg-[#0e7d09]  text-[#ffffff]">Home Page</button>
+            
           </div>
         </div>
 

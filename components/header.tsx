@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   User, LogOut, ShoppingBag, ChevronDown,
-  Search, Heart, Menu, X, Leaf, ChevronRight,
+  Search, Heart, Menu, X, Leaf, ChevronRight, LayoutDashboard,
 } from "lucide-react";
 import { useEffect, useState, useRef, useMemo } from "react";
 import { getCachedSync, fetchWithCache, initCache } from "@/lib/cacheClient";
@@ -63,7 +63,6 @@ const NAV_CATEGORIES = [
   {
     heading: "Body Care",
     key: "body-care",
-    // Split into two sections for the mega menu
     sections: [
       {
         label: "Soaps",
@@ -108,7 +107,6 @@ const NAV_CATEGORIES = [
   },
 ];
 
-// Flatten all collections for a given category (handles both flat and sectioned)
 function getFlatCollections(cat: typeof NAV_CATEGORIES[number]) {
   if ("sections" in cat && cat.sections) {
     return cat.sections.flatMap((s) => s.collections);
@@ -202,7 +200,6 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
         {/* Zone 2 — Collection cards */}
         <div className="p-5 overflow-y-auto max-h-[480px]">
           {isBodyCare ? (
-            // Body Care — two sub-sections: Soaps + Body Care
             <div className="flex flex-col gap-6">
               {(activeCategory as any).sections.map((section: { label: string; collections: { label: string; slug: string; tagline: string }[] }) => (
                 <div key={section.label}>
@@ -224,7 +221,6 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
               ))}
             </div>
           ) : (
-            // All other categories — flat grid
             <>
               <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-3">
                 {activeCategory.heading} Collections
@@ -366,6 +362,8 @@ export function Header() {
     return pathname?.startsWith(href);
   }
 
+  const isAdmin = session?.user?.role === "admin";
+
   const navLinks = [
     { label: "Home",     href: "/" },
     { label: "About Us", href: "/about-us" },
@@ -389,21 +387,20 @@ export function Header() {
 
               {/* DESKTOP NAV */}
               <nav className="hidden flex-1 items-center gap-1 lg:flex">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`rounded-md px-3 py-2 text-[15px] font-medium transition-colors ${
-                      isActive(link.href)
-                        ? "text-[var(--color-brand-primary)]"
-                        : "text-[var(--color-text-heading)] hover:text-[var(--color-brand-primary)]"
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
 
-                {/* SHOP + MEGA MENU */}
+                {/* Home — first link */}
+                <Link
+                  href="/"
+                  className={`rounded-md px-3 py-2 text-[15px] font-medium transition-colors ${
+                    isActive("/")
+                      ? "text-[var(--color-brand-primary)]"
+                      : "text-[var(--color-text-heading)] hover:text-[var(--color-brand-primary)]"
+                  }`}
+                >
+                  Home
+                </Link>
+
+                {/* SHOP + MEGA MENU — placed right after Home */}
                 <div className="relative" ref={shopMenuRef}>
                   <button
                     type="button"
@@ -422,107 +419,136 @@ export function Header() {
                     <MegaMenu onClose={() => setShopMenuOpen(false)} />
                   )}
                 </div>
+
+                {/* Remaining links — About Us, Blogs, Contact */}
+                {navLinks.slice(1).map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`rounded-md px-3 py-2 text-[15px] font-medium transition-colors ${
+                      isActive(link.href)
+                        ? "text-[var(--color-brand-primary)]"
+                        : "text-[var(--color-text-heading)] hover:text-[var(--color-brand-primary)]"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
               </nav>
 
               {/* RIGHT SIDE */}
               <div className="ml-auto flex items-center gap-2">
 
-                {/* SEARCH */}
-                <form
-                  onSubmit={handleSearch}
-                  className="hidden items-center gap-2 rounded-full border px-3 py-1.5 md:flex"
-                  style={{ borderColor: "var(--color-border)", background: "#F5F5F5" }}
-                >
-                  <Search className="h-4 w-4" style={{ color: "var(--color-text-muted)" }} />
-                  <input
-                    ref={searchRef}
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search"
-                    className="w-full bg-transparent text-sm outline-none"
-                  />
-                </form>
-
-                {/* WISHLIST */}
-                <Link
-                  href="/profile/wishlist"
-                  className="relative rounded-full p-2 transition-colors hover:bg-red-50 group"
-                  aria-label="My Wishlist"
-                >
-                  <Heart className="h-5 w-5 text-gray-400 group-hover:text-red-500 transition-colors" />
-                </Link>
-
-                {/* CART */}
-                <CartIcon />
-
-                {/* ACCOUNT */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      className="flex items-center gap-2 rounded-full pl-1 pr-3 py-1 transition-colors hover:bg-[var(--color-bg-cream)]"
+                {isAdmin ? (
+                  /* ADMIN — Dashboard button only */
+                  <Link
+                    href="/admin"
+                    className="flex items-center gap-2 rounded-full px-4 py-2 bg-green-600 text-white text-sm font-semibold hover:bg-green-700 transition-colors"
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    Dashboard
+                  </Link>
+                ) : (
+                  /* REGULAR USER — Search, Wishlist, Cart, Account */
+                  <>
+                    {/* SEARCH */}
+                    <form
+                      onSubmit={handleSearch}
+                      className="hidden items-center gap-2 rounded-full border px-3 py-1.5 md:flex"
+                      style={{ borderColor: "var(--color-border)", background: "#F5F5F5" }}
                     >
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-green-700 text-sm font-bold shrink-0">
-                        {session?.user?.name
-                          ? session.user.name.charAt(0).toUpperCase()
-                          : <User className="h-4 w-4" />}
-                      </div>
-                      {session?.user?.name && (
-                        <span className="hidden text-sm font-medium text-[var(--color-text-heading)] lg:block max-w-[80px] truncate">
-                          {session.user.name.split(" ")[0]}
-                        </span>
-                      )}
-                    </button>
-                  </DropdownMenuTrigger>
+                      <Search className="h-4 w-4" style={{ color: "var(--color-text-muted)" }} />
+                      <input
+                        ref={searchRef}
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search"
+                        className="w-full bg-transparent text-sm outline-none"
+                      />
+                    </form>
 
-                  <DropdownMenuContent align="end" className="mt-2 w-52 rounded-xl border-green-300 p-1 shadow-xl bg-white">
-                    {session?.user ? (
-                      <>
-                        <div className="px-3 py-2 border-b border-gray-100 mb-1">
-                          <p className="text-sm font-semibold text-[var(--color-text-heading)] truncate">{session.user.name}</p>
-                          <p className="text-xs text-gray-400 truncate">{session.user.email}</p>
-                        </div>
-                        <DropdownMenuItem asChild>
-                          <Link href="/profile" className="flex items-center gap-2 rounded-lg px-3 py-2">
-                            <User className="h-4 w-4" /> Profile
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href="/profile/orders" className="flex items-center gap-2 rounded-lg px-3 py-2">
-                            <ShoppingBag className="h-4 w-4" /> Orders
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href="/profile/wishlist" className="flex items-center gap-2 rounded-lg px-3 py-2">
-                            <Heart className="h-4 w-4" /> Wishlist
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => signOut({ callbackUrl: "/" })}
-                          className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-red-500 mt-1 border-t border-gray-100"
+                    {/* WISHLIST */}
+                    <Link
+                      href="/profile/wishlist"
+                      className="relative rounded-full p-2 transition-colors hover:bg-red-50 group"
+                      aria-label="My Wishlist"
+                    >
+                      <Heart className="h-5 w-5 text-gray-400 group-hover:text-red-500 transition-colors" />
+                    </Link>
+
+                    {/* CART */}
+                    <CartIcon />
+
+                    {/* ACCOUNT */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="flex items-center gap-2 rounded-full pl-1 pr-3 py-1 transition-colors hover:bg-[var(--color-bg-cream)]"
                         >
-                          <LogOut className="h-4 w-4" /> Sign Out
-                        </DropdownMenuItem>
-                      </>
-                    ) : (
-                      <>
-                        <DropdownMenuItem asChild>
-                          <Link href="/auth/login" className="rounded-lg px-3 py-2 hover:bg-green-500 rounded-xl hover:text-white">
-                            Sign In
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href="/auth/register" className="rounded-lg px-3 py-2 hover:bg-green-500 rounded-xl hover:text-white">
-                            Register
-                          </Link>
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-green-700 text-sm font-bold shrink-0">
+                            {session?.user?.name
+                              ? session.user.name.charAt(0).toUpperCase()
+                              : <User className="h-4 w-4" />}
+                          </div>
+                          {session?.user?.name && (
+                            <span className="hidden text-sm font-medium text-[var(--color-text-heading)] lg:block max-w-[80px] truncate">
+                              {session.user.name.split(" ")[0]}
+                            </span>
+                          )}
+                        </button>
+                      </DropdownMenuTrigger>
 
-                {/* MOBILE TOGGLE */}
+                      <DropdownMenuContent align="end" className="mt-2 w-52 rounded-xl border-green-300 p-1 shadow-xl bg-white">
+                        {session?.user ? (
+                          <>
+                            <div className="px-3 py-2 border-b border-gray-100 mb-1">
+                              <p className="text-sm font-semibold text-[var(--color-text-heading)] truncate">{session.user.name}</p>
+                              <p className="text-xs text-gray-400 truncate">{session.user.email}</p>
+                            </div>
+                            <DropdownMenuItem asChild>
+                              <Link href="/profile" className="flex items-center gap-2 rounded-lg px-3 py-2">
+                                <User className="h-4 w-4" /> Profile
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link href="/profile/orders" className="flex items-center gap-2 rounded-lg px-3 py-2">
+                                <ShoppingBag className="h-4 w-4" /> Orders
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link href="/profile/wishlist" className="flex items-center gap-2 rounded-lg px-3 py-2">
+                                <Heart className="h-4 w-4" /> Wishlist
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => signOut({ callbackUrl: "/" })}
+                              className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-red-500 mt-1 border-t border-gray-100"
+                            >
+                              <LogOut className="h-4 w-4" /> Sign Out
+                            </DropdownMenuItem>
+                          </>
+                        ) : (
+                          <>
+                            <DropdownMenuItem asChild>
+                              <Link href="/auth/login" className="rounded-lg px-3 py-2 hover:bg-green-500 rounded-xl hover:text-white">
+                                Sign In
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link href="/auth/register" className="rounded-lg px-3 py-2 hover:bg-green-500 rounded-xl hover:text-white">
+                                Register
+                              </Link>
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </>
+                )}
+
+                {/* MOBILE TOGGLE — always visible regardless of admin/user */}
                 <button
                   type="button"
                   className="rounded-full p-2 lg:hidden"
@@ -530,6 +556,7 @@ export function Header() {
                 >
                   {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </button>
+
               </div>
 
             </div>
