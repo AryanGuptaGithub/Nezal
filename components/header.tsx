@@ -161,9 +161,10 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 overflow-hidden rounded-2xl border bg-white shadow-2xl"
+      className="absolute left-0 top-full z-50 mt-2  overflow-hidden rounded-2xl border-3 bg-white shadow-2xl"
       style={{ borderColor: "var(--color-border)", width: isBodyCare ? "920px" : "820px" }}
     >
+
       <div className={`grid ${isBodyCare ? "grid-cols-[180px_1fr_180px]" : "grid-cols-[180px_1fr_180px]"}`}>
 
         {/* Zone 1 — Category list */}
