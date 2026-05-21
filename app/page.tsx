@@ -213,7 +213,7 @@ function PromoBannerGrid() {
         <div className="mt-10 text-center">
           <a
             href="/shop"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-brand-primary)] hover:underline"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-brand-primary)] hover:bg-[#0d600e] hover:text-white border px-3 py-2 rounded-xl"
           >
             View All Products →
           </a>
