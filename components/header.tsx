@@ -192,7 +192,7 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
             <Link
               href="/shop"
               onClick={onClose}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold text-[var(--color-brand-primary)] hover:bg-white transition-colors"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold text-[var(--color-brand-primary)] hover:bg-[#127208] hover:text-white transition-colors border "
             >
               Shop All →
             </Link>
@@ -245,7 +245,7 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
             <Link
               href={`/collections?category=${activeCategory.key}`}
               onClick={onClose}
-              className="text-xs font-semibold text-[var(--color-brand-primary)] hover:underline"
+              className="text-xs font-semibold text-[var(--color-brand-primary)] hover:bg-[#09882f] hover:text-white border px-3 py-2 rounded-xl"
             >
               View all {activeCategory.heading} →
             </Link>
@@ -272,9 +272,9 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
 
           <div className="mt-auto pt-4 border-t mt-4" style={{ borderColor: "var(--color-border)" }}>
             <a
-              href="/nezal-brochure.pdf"
+              href="/New Nezal Brochure.pdf"
               download="Nezal-Product-Brochure.pdf"
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-brand-primary)] hover:bg-white transition-colors"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-brand-primary)] hover:bg-[#097407] hover:text-white transition-colors border"
             >
               ↓ Download Brochure
             </a>

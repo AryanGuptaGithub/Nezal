@@ -145,53 +145,60 @@ export default function ProductCard({
         style={{ borderColor: "var(--color-border)" }}
         onClick={() => router.push(`/shop/${company.slug}/product/${id}`)}
       >
-        {/* IMAGE */}
-        <div className="relative aspect-square overflow-hidden bg-[var(--color-bg-cream)]">
-          {/* DISCOUNT BADGE */}
-          {discount > 0 && (
-            <div className="absolute right-3 top-3 z-10 rounded-full bg-red-500 px-2 py-1 text-xs font-bold text-white">
-              {discount}% OFF
-            </div>
-          )}
 
-          {/* ❤️ WISHLIST BUTTON — top left */}
-          <div
-            className="absolute left-2 top-2 z-10"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <WishlistButton productId={id} />
-          </div>
+      {/* IMAGE */}
+<div className="group relative aspect-square overflow-hidden rounded-2xl bg-[var(--color-bg-cream)] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
 
-          {image && !imgError ? (
-            <Image
-              src={image}
-              alt={name}
-              fill
-              className="object-contain p-4 transition-transform duration-500 group-hover:scale-105"
-              sizes="(max-width:768px) 50vw, 25vw"
-              onLoad={() => setImgLoaded(true)}
-              onError={() => {
-                setImgError(true);
-                setImgLoaded(true);
-              }}
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center">
-              <div className="relative h-20 w-20">
-                <Image
-                  src="/companylogo.png"
-                  alt="Logo"
-                  fill
-                  className="object-contain"
-                />
-              </div>
-            </div>
-          )}
+  {/* subtle gradient overlay for depth */}
+  <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-transparent via-transparent to-black/5" />
 
-          {!imgLoaded && image && !imgError && (
-            <div className="absolute inset-0 animate-pulse bg-neutral-100" />
-          )}
-        </div>
+  {/* DISCOUNT BADGE */}
+  {discount > 0 && (
+    <div className="absolute right-3 top-3 z-20 rounded-full bg-gradient-to-r from-red-500 to-red-600 px-2.5 py-1 text-xs font-semibold text-white shadow-md">
+      {discount}% OFF
+    </div>
+  )}
+
+  {/* ❤️ WISHLIST BUTTON */}
+  <div
+    className="absolute left-3 top-3 z-20 rounded-full bg-white/80 p-1 shadow-sm backdrop-blur-md transition hover:bg-white"
+    onClick={(e) => e.stopPropagation()}
+  >
+    <WishlistButton productId={id} />
+  </div>
+
+  {/* IMAGE */}
+  {image && !imgError ? (
+    <Image
+      src={image}
+      alt={name}
+      fill
+    className="object-cover"
+  sizes="(max-width:768px) 50vw, 25vw"
+      onLoad={() => setImgLoaded(true)}
+      onError={() => {
+        setImgError(true);
+        setImgLoaded(true);
+      }}
+    />
+  ) : (
+    <div className="flex h-full items-center justify-center">
+      <div className="relative h-20 w-20 opacity-70">
+        <Image
+          src="/companylogo.png"
+          alt="Logo"
+          fill
+          className="object-contain"
+        />
+      </div>
+    </div>
+  )}
+
+  {/* LOADING SKELETON */}
+  {!imgLoaded && image && !imgError && (
+    <div className="absolute inset-0 z-10 animate-pulse bg-gradient-to-br from-neutral-100 to-neutral-200" />
+  )}
+</div>
 
         {/* CONTENT */}
         <div className="flex flex-1 flex-col gap-3 p-4">

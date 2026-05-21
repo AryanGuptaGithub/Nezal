@@ -1,8 +1,7 @@
-// C:\Users\DELL\Downloads\Aryan\Nezal\Nezal\app\admin\products\add\page.tsx
+// app/admin/products/add/page.tsx
 "use client"
 
 import type React from "react"
-
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
@@ -35,6 +34,14 @@ interface Size {
   discountPrice?: number
   stock: number
   sku?: string
+}
+
+// ── FIX: normalize textarea input (comma or newline separated) → string[] ──
+function normalizeTextarea(val: string): string[] {
+  return val
+    .split(/[\n,]+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
 }
 
 export default function AddProductPage() {
@@ -84,15 +91,14 @@ export default function AddProductPage() {
       router.push("/auth/login")
       return
     }
-
-    fetchCompaniesAndCategories()
+    fetchCompanies()
   }, [session, router])
 
-  const fetchCompaniesAndCategories = async () => {
+  const fetchCompanies = async () => {
     try {
-      const companiesRes = await fetch("/api/companies")
-      const companiesData = companiesRes.ok ? await companiesRes.json() : []
-      setCompanies(companiesData)
+      const res = await fetch("/api/companies")
+      const data = res.ok ? await res.json() : []
+      setCompanies(data)
     } catch (error) {
       console.error("Error fetching companies:", error)
       setCompanies([])
@@ -101,16 +107,10 @@ export default function AddProductPage() {
 
   const fetchCategoriesForCompany = async (companyId: string) => {
     try {
-      // Fetch categories for the selected company
-      const categoriesRes = await fetch(`/api/categories?company=${companyId}`)
-      const categoriesData = categoriesRes.ok ? await categoriesRes.json() : []
-      setCategories(categoriesData)
-      // Reset category selections when company changes
-      setFormData((prev) => ({
-        ...prev,
-        mainCategory: "",
-        category: "",
-      }))
+      const res = await fetch(`/api/categories?company=${companyId}`)
+      const data = res.ok ? await res.json() : []
+      setCategories(data)
+      setFormData((prev) => ({ ...prev, mainCategory: "", category: "" }))
     } catch (error) {
       console.error("Error fetching categories:", error)
       setCategories([])
@@ -119,12 +119,14 @@ export default function AddProductPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
-    
-    // Fetch categories when company changes
     if (name === "company" && value) {
       fetchCategoriesForCompany(value)
     }
-    
+    // ── FIX: when mainCategory changes, reset subcategory ──
+    if (name === "mainCategory") {
+      setFormData((prev) => ({ ...prev, mainCategory: value, category: "" }))
+      return
+    }
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
@@ -134,36 +136,19 @@ export default function AddProductPage() {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
-
     setUploading(true)
     try {
       const formDataToSend = new FormData()
-      Array.from(files).forEach((file) => {
-        formDataToSend.append("files", file)
-      })
-
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formDataToSend,
-      })
-
+      Array.from(files).forEach((file) => formDataToSend.append("files", file))
+      const res = await fetch("/api/upload", { method: "POST", body: formDataToSend })
       if (!res.ok) throw new Error("Upload failed")
-
       const data = await res.json()
       setImageUrls((prev) => [...prev, ...data.urls])
     } catch (error) {
       setMessage("Error uploading images. Please try again.")
-      console.error("Error:", error)
     } finally {
       setUploading(false)
       e.target.value = ""
-    }
-  }
-
-  const handleAddImageUrl = () => {
-    if (imageUrlInput.trim()) {
-      setImageUrls((prev) => [...prev, imageUrlInput.trim()])
-      setImageUrlInput("")
     }
   }
 
@@ -176,17 +161,8 @@ export default function AddProductPage() {
       setMessage("Please fill in all size fields with valid values")
       return
     }
-
     setSizes((prev) => [...prev, { ...sizeInput }])
-    setSizeInput({
-      size: "",
-      unit: "ml",
-      quantity: 0,
-      price: 0,
-      discountPrice: 0,
-      stock: 0,
-      sku: "",
-    })
+    setSizeInput({ size: "", unit: "ml", quantity: 0, price: 0, discountPrice: 0, stock: 0, sku: "" })
     setMessage("")
   }
 
@@ -197,39 +173,45 @@ export default function AddProductPage() {
   const handleResultFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
-
     setUploadingResult(true)
     try {
       const formDataToSend = new FormData()
-      Array.from(files).forEach((file) => {
-        formDataToSend.append("files", file)
-      })
-
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formDataToSend,
-      })
-
+      Array.from(files).forEach((file) => formDataToSend.append("files", file))
+      const res = await fetch("/api/upload", { method: "POST", body: formDataToSend })
       if (!res.ok) throw new Error("Upload failed")
-
       const data = await res.json()
-      if (data.urls && data.urls[0]) {
-        setResultImageUrl(data.urls[0])
-      }
+      if (data.urls?.[0]) setResultImageUrl(data.urls[0])
     } catch (error) {
       setMessage("Error uploading result image. Please try again.")
-      console.error("Error:", error)
     } finally {
       setUploadingResult(false)
       e.target.value = ""
     }
   }
 
+  // ── helper: which category ID to actually submit ──
+  const resolvedCategoryId = (): string | undefined => {
+    // If a subcategory was selected, use it
+    if (formData.category && formData.category !== "") return formData.category
+    // Otherwise fall back to mainCategory
+    if (formData.mainCategory && formData.mainCategory !== "") return formData.mainCategory
+    return undefined
+  }
+
+  const selectedMainCat = categories.find((c) => c._id === formData.mainCategory)
+  const hasSubCategories = (selectedMainCat?.subCategories?.length ?? 0) > 0
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (imageUrls.length === 0) {
       setMessage("Please add at least one image.")
+      return
+    }
+
+    // ── FIX: validate that we have at least a main category ──
+    if (!formData.mainCategory) {
+      setMessage("Please select a main category.")
       return
     }
 
@@ -238,29 +220,34 @@ export default function AddProductPage() {
 
     try {
       const bodyData = {
-  ...formData,
-  category: formData.category || undefined,  // ← add this line
-  image: imageUrls[0],
-  images: imageUrls,
-  price: Number(formData.price),
-  discountPrice: formData.discountPrice ? Number(formData.discountPrice) : undefined,
-  stock: Number(formData.stock),
-  ingredients: formData.ingredients.split(",").map((i) => i.trim()).filter(Boolean),
-  benefits: formData.benefits.split(",").map((b) => b.trim()).filter(Boolean),
-  suitableFor: formData.suitableFor.split(",").map((s) => s.trim()).filter(Boolean),
-  results,
-  sizes: sizes.map((s) => ({
-    ...s,
-    quantity: Number(s.quantity),
-    price: Number(s.price),
-    discountPrice: s.discountPrice ? Number(s.discountPrice) : undefined,
-    stock: Number(s.stock),
-  })),
-}
-      
-      // console.log("📤 Sending product data:", bodyData)
-      // console.log("🎨 Results being sent:", results)
-      // console.log("✅ Suitable For being sent:", bodyData.suitableFor)
+        name: formData.name,
+        slug: formData.slug,
+        description: formData.description,
+        price: Number(formData.price),
+        discountPrice: formData.discountPrice ? Number(formData.discountPrice) : undefined,
+        image: imageUrls[0],
+        images: imageUrls,
+        // ── FIX: send both so the API can resolve correctly ──
+        category: formData.category || undefined,
+        mainCategory: formData.mainCategory || undefined,
+        company: formData.company,
+        stock: Number(formData.stock),
+        sku: formData.sku,
+        // ── FIX: normalize handles both comma and newline separated input ──
+        ingredients: normalizeTextarea(formData.ingredients),
+        benefits:    normalizeTextarea(formData.benefits),
+        suitableFor: normalizeTextarea(formData.suitableFor),
+        usage: formData.usage,
+        isActive: formData.isActive,
+        results,
+        sizes: sizes.map((s) => ({
+          ...s,
+          quantity: Number(s.quantity),
+          price: Number(s.price),
+          discountPrice: s.discountPrice ? Number(s.discountPrice) : undefined,
+          stock: Number(s.stock),
+        })),
+      }
 
       const res = await fetch("/api/products", {
         method: "POST",
@@ -269,14 +256,12 @@ export default function AddProductPage() {
       })
 
       const responseData = await res.json()
-      console.log("📥 API Response:", responseData)
 
       if (!res.ok) {
         console.error("❌ API Error:", responseData)
         throw new Error(responseData.error || "Failed to create product")
       }
 
-      // console.log("✅ Product created:", responseData)
       setMessage("Product created successfully!")
       setTimeout(() => router.push("/admin/products"), 1500)
     } catch (error) {
@@ -345,55 +330,58 @@ export default function AddProductPage() {
                   >
                     <option value="">Select Company</option>
                     {companies.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.name}
-                      </option>
+                      <option key={c._id} value={c._id}>{c.name}</option>
                     ))}
                   </select>
                 </div>
                 <div>
+                  {/* ── FIX: required — user must always pick a main category ── */}
                   <label className="block text-sm font-medium text-foreground mb-2">Main Category *</label>
                   <select
                     name="mainCategory"
-                    value={formData.mainCategory || ""}
+                    value={formData.mainCategory}
                     onChange={handleChange}
                     required
-                    className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                    disabled={!formData.company}
+                    className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <option value="">Select Main Category</option>
+                    <option value="">
+                      {formData.company ? "Select Main Category" : "Select company first"}
+                    </option>
                     {categories
-                      .filter(c => !c.parent)
+                      .filter((c) => !c.parent)
                       .map((c) => (
-                        <option key={c._id} value={c._id}>
-                          {c.name}
-                        </option>
+                        <option key={c._id} value={c._id}>{c.name}</option>
                       ))}
                   </select>
                 </div>
-               <div>
-  <label className="block text-sm font-medium text-foreground mb-2">Sub Category</label>
-  <select
-    name="category"
-    value={formData.category}
-    onChange={handleChange}
-    required={!!(categories.find(c => c._id === formData.mainCategory)?.subCategories?.length)}
-    disabled={!categories.find(c => c._id === formData.mainCategory)?.subCategories?.length}
-    className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-  >
-    <option value="">
-      {categories.find(c => c._id === formData.mainCategory)?.subCategories?.length
-        ? "Select Sub Category"
-        : "No sub categories available"}
-    </option>
-    {categories
-      .find(c => c._id === formData.mainCategory)
-      ?.subCategories?.map((sub) => (
-        <option key={sub._id} value={sub._id}>
-          {sub.name}
-        </option>
-      )) || []}
-  </select>
-</div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Sub Category {hasSubCategories ? "*" : ""}
+                  </label>
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    // ── FIX: only required when subcategories actually exist ──
+                    required={hasSubCategories}
+                    disabled={!hasSubCategories}
+                    className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="">
+                      {hasSubCategories ? "Select Sub Category" : "No sub categories"}
+                    </option>
+                    {selectedMainCat?.subCategories?.map((sub) => (
+                      <option key={sub._id} value={sub._id}>{sub.name}</option>
+                    ))}
+                  </select>
+                  {/* ── FIX: show user which category will actually be saved ── */}
+                  {formData.mainCategory && !hasSubCategories && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Product will be saved under: <strong>{selectedMainCat?.name}</strong>
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Description */}
@@ -470,7 +458,6 @@ export default function AddProductPage() {
                         />
                       </label>
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">Add Image URL</label>
                       <div className="flex gap-2">
@@ -501,17 +488,14 @@ export default function AddProductPage() {
 
                   {imageUrls.length > 0 && (
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Added Images ({imageUrls.length})</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Added Images ({imageUrls.length})
+                      </label>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                         {imageUrls.map((url, index) => (
                           <div key={index} className="relative group">
                             <div className="relative h-24 bg-muted rounded-lg overflow-hidden">
-                              <Image
-                                src={url}
-                                alt={`Product ${index + 1}`}
-                                fill
-                                className="object-cover"
-                              />
+                              <Image src={url} alt={`Product ${index + 1}`} fill className="object-cover" />
                               {index === 0 && (
                                 <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-xs px-2 py-1 rounded">
                                   Main
@@ -548,9 +532,10 @@ export default function AddProductPage() {
 
               {/* Product Sizes */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-4">Product Sizes (Optional - Add size variants)</label>
+                <label className="block text-sm font-medium text-foreground mb-4">
+                  Product Sizes (Optional — add size variants)
+                </label>
                 <div className="space-y-4 border border-border rounded-lg p-4 bg-muted/50">
-                  {/* Add Size Form */}
                   <div className="space-y-3 pb-4 border-b border-border">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -567,7 +552,9 @@ export default function AddProductPage() {
                         <label className="block text-sm font-medium text-foreground mb-2">Unit *</label>
                         <select
                           value={sizeInput.unit}
-                          onChange={(e) => setSizeInput({ ...sizeInput, unit: e.target.value as "ml" | "l" | "g" | "kg" })}
+                          onChange={(e) =>
+                            setSizeInput({ ...sizeInput, unit: e.target.value as "ml" | "l" | "g" | "kg" })
+                          }
                           className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
                         >
                           <option value="ml">Milliliters (ml)</option>
@@ -577,7 +564,6 @@ export default function AddProductPage() {
                         </select>
                       </div>
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-foreground mb-2">Quantity *</label>
@@ -600,7 +586,6 @@ export default function AddProductPage() {
                         />
                       </div>
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-foreground mb-2">Discount Price (₹)</label>
@@ -608,7 +593,9 @@ export default function AddProductPage() {
                           type="number"
                           placeholder="0"
                           value={sizeInput.discountPrice || ""}
-                          onChange={(e) => setSizeInput({ ...sizeInput, discountPrice: Number(e.target.value) || 0 })}
+                          onChange={(e) =>
+                            setSizeInput({ ...sizeInput, discountPrice: Number(e.target.value) || 0 })
+                          }
                           className="bg-background border-border"
                         />
                       </div>
@@ -623,7 +610,6 @@ export default function AddProductPage() {
                         />
                       </div>
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">Size SKU (Optional)</label>
                       <Input
@@ -634,33 +620,28 @@ export default function AddProductPage() {
                         className="bg-background border-border"
                       />
                     </div>
-
-                    <Button
-                      type="button"
-                      onClick={handleAddSize}
-                      variant="outline"
-                      className="w-full"
-                    >
+                    <Button type="button" onClick={handleAddSize} variant="outline" className="w-full">
                       Add Size
                     </Button>
                   </div>
 
-                  {/* Display Added Sizes */}
                   {sizes.length > 0 && (
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Added Sizes ({sizes.length})</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Added Sizes ({sizes.length})
+                      </label>
                       <div className="space-y-2">
                         {sizes.map((size, index) => (
-                          <div key={index} className="relative group border border-border rounded-lg p-3 bg-background flex justify-between items-center">
+                          <div
+                            key={index}
+                            className="relative group border border-border rounded-lg p-3 bg-background flex justify-between items-center"
+                          >
                             <div className="flex-1">
-                              <p className="font-medium text-sm text-foreground">
-  {size.size}
-</p>
-<p className="text-xs text-muted-foreground">
-  Qty: {size.quantity} {size.unit} | Price: ₹{size.price}
-  {size.discountPrice ? ` → ₹${size.discountPrice}` : ""}
-  {" "} | Stock: {size.stock}
-</p>
+                              <p className="font-medium text-sm text-foreground">{size.size}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Qty: {size.quantity} {size.unit} | Price: ₹{size.price}
+                                {size.discountPrice ? ` → ₹${size.discountPrice}` : ""} | Stock: {size.stock}
+                              </p>
                             </div>
                             <button
                               type="button"
@@ -678,28 +659,31 @@ export default function AddProductPage() {
               </div>
 
               {/* Ingredients & Benefits */}
+              {/* ── FIX: placeholder updated to clarify both comma and newline work ── */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Ingredients (comma-separated)
+                    Ingredients (comma or newline separated)
                   </label>
                   <textarea
                     name="ingredients"
                     value={formData.ingredients}
                     onChange={handleChange}
-                    placeholder="Ingredient 1, Ingredient 2, Ingredient 3"
-                    rows={3}
+                    placeholder={"Aloe Vera\nShea Butter\nKojic Acid\n— or comma separated"}
+                    rows={4}
                     className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Benefits (comma-separated)</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Benefits (comma or newline separated)
+                  </label>
                   <textarea
                     name="benefits"
                     value={formData.benefits}
                     onChange={handleChange}
-                    placeholder="Benefit 1, Benefit 2, Benefit 3"
-                    rows={3}
+                    placeholder={"Moisturizes skin\nReduces dark spots\n— or comma separated"}
+                    rows={4}
                     className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
                   />
                 </div>
@@ -720,12 +704,14 @@ export default function AddProductPage() {
 
               {/* Suitable For */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Suitable For (comma-separated)</label>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Suitable For (comma or newline separated)
+                </label>
                 <textarea
                   name="suitableFor"
                   value={formData.suitableFor}
                   onChange={handleChange}
-                  placeholder="Suitable for 1, Suitable for 2, Suitable for 3"
+                  placeholder={"All skin types\nDry skin\n— or comma separated"}
                   rows={3}
                   className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
                 />
@@ -735,7 +721,6 @@ export default function AddProductPage() {
               <div>
                 <label className="block text-sm font-medium text-foreground mb-4">Product Results</label>
                 <div className="space-y-4 border border-border rounded-lg p-4 bg-muted/50">
-                  {/* Add Result Form */}
                   <div className="space-y-3 pb-4 border-b border-border">
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">Result Title</label>
@@ -747,7 +732,6 @@ export default function AddProductPage() {
                         className="bg-background border-border"
                       />
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">Result Description</label>
                       <textarea
@@ -758,7 +742,6 @@ export default function AddProductPage() {
                         className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
                       />
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">Result Image</label>
                       <div className="space-y-2">
@@ -772,12 +755,15 @@ export default function AddProductPage() {
                           />
                           <Button
                             type="button"
-                             onClick={() => {
+                            onClick={() => {
                               if (!resultInput.title.trim()) {
                                 setMessage("Please enter a result title.")
                                 return
                               }
-                              setResults([...results, { image: resultImageUrl.trim(), title: resultInput.title, text: resultInput.text }])
+                              setResults([
+                                ...results,
+                                { image: resultImageUrl.trim(), title: resultInput.title, text: resultInput.text },
+                              ])
                               setResultInput({ image: "", title: "", text: "" })
                               setResultImageUrl("")
                               setMessage("")
@@ -787,7 +773,7 @@ export default function AddProductPage() {
                             Add Result
                           </Button>
                         </div>
-                         {resultImageUrl && (
+                        {resultImageUrl && (
                           <div className="relative h-20 w-32 rounded overflow-hidden mb-2">
                             <Image src={resultImageUrl} alt="Result preview" fill className="object-cover" />
                           </div>
@@ -812,21 +798,17 @@ export default function AddProductPage() {
                     </div>
                   </div>
 
-                  {/* Display Added Results */}
                   {results.length > 0 && (
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Added Results ({results.length})</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Added Results ({results.length})
+                      </label>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {results.map((result, index) => (
                           <div key={index} className="relative group border border-border rounded-lg p-3 bg-background">
                             {result.image && (
                               <div className="relative h-24 bg-muted rounded mb-2 overflow-hidden">
-                                <Image
-                                  src={result.image}
-                                  alt={result.title}
-                                  fill
-                                  className="object-cover"
-                                />
+                                <Image src={result.image} alt={result.title} fill className="object-cover" />
                               </div>
                             )}
                             <h4 className="font-medium text-sm text-foreground">{result.title}</h4>
@@ -858,17 +840,16 @@ export default function AddProductPage() {
                 <label className="text-sm font-medium text-foreground">Active</label>
               </div>
 
-              {/* Message */}
               {message && (
                 <div
-                  className={`p-3 rounded text-sm ${message.includes("successfully") ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                    }`}
+                  className={`p-3 rounded text-sm ${
+                    message.includes("successfully") ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                  }`}
                 >
                   {message}
                 </div>
               )}
 
-              {/* Submit Button */}
               <Button type="submit" disabled={loading} className="w-full">
                 {loading ? "Creating..." : "Create Product"}
               </Button>

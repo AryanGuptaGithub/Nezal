@@ -1,4 +1,4 @@
-// C:\Users\DELL\Downloads\Aryan\Nezal\Nezal\app\api\products\[id]\route.ts
+// app/api/products/[id]/route.ts
 import { connectDB } from "@/lib/db";
 import { Product } from "@/lib/models/product";
 import { type NextRequest, NextResponse } from "next/server";
@@ -7,17 +7,32 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export const dynamic = "force-dynamic";
 
+// ── FIX: normalize any value (string with commas/newlines, or array) → string[] ──
+function normalizeStringArray(val: any): string[] {
+  if (!val) return [];
+  if (Array.isArray(val)) {
+    return val
+      .flatMap((v) =>
+        typeof v === "string"
+          ? v.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean)
+          : []
+      );
+  }
+  if (typeof val === "string") {
+    return val.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
 // ---------------- GET PRODUCT ----------------
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params; //  await params
+    const { id } = await context.params;
 
     await connectDB();
-
-    // console.log(" GET /api/products/:id - Fetching product:", id);
 
     const product = await Product.findById(id)
       .populate("company", "name slug")
@@ -32,13 +47,10 @@ export async function GET(
     const populatedProduct = {
       ...productObj,
       company: product.company || { name: "Unknown", slug: "unknown" },
-      category: product.category || {
-        name: "Uncategorized",
-        slug: "uncategorized",
-      },
+      // ── FIX: don't override a real populated category with a fake fallback object;
+      //    return null so the UI shows "Product" heading instead of a fake slug ──
+      category: product.category || null,
     };
-
-    // console.log(" Final response:", JSON.stringify(populatedProduct, null, 2));
 
     return NextResponse.json(populatedProduct);
   } catch (error) {
@@ -47,15 +59,13 @@ export async function GET(
   }
 }
 
-
-
 // ---------------- UPDATE PRODUCT ----------------
 export async function PUT(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params; //  await params
+    const { id } = await context.params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user || session.user.role !== "admin") {
@@ -69,8 +79,6 @@ export async function PUT(
 
     const body = await request.json();
 
-    // console.log(" PUT /api/products/:id - Received:", JSON.stringify(body, null, 2));
-
     const {
       name,
       slug,
@@ -79,7 +87,8 @@ export async function PUT(
       discountPrice,
       image,
       images,
-      category,
+      category,      // subcategory ID (preferred)
+      mainCategory,  // fallback when no subcategory is selected
       company,
       stock,
       sku,
@@ -92,7 +101,15 @@ export async function PUT(
       isActive,
     } = body;
 
-    const updateData = {
+    // ── FIX: resolve category — prefer subcategory, fall back to mainCategory ──
+    const resolvedCategory =
+      category && category !== ""
+        ? category
+        : mainCategory && mainCategory !== ""
+        ? mainCategory
+        : undefined;
+
+    const updateData: any = {
       name,
       slug,
       description,
@@ -100,20 +117,31 @@ export async function PUT(
       discountPrice,
       image: image || (images && images.length > 0 ? images[0] : undefined),
       images: images || (image ? [image] : []),
-      category,
       company,
       stock,
       sku,
-      ingredients,
-      benefits,
+      ingredients: normalizeStringArray(ingredients),  // ← fixed: handles \n and ,
+      benefits:    normalizeStringArray(benefits),
+      suitableFor: normalizeStringArray(suitableFor),
       usage,
-      suitableFor,
       results,
       sizes,
       isActive,
     };
 
-    const product = await Product.findByIdAndUpdate(id, { $set: updateData }, { new: true, runValidators: true });
+    // Only set category if we resolved one — avoids wiping an existing category
+    // if the edit form loaded without categories (e.g. network error)
+    if (resolvedCategory !== undefined) {
+      updateData.category = resolvedCategory;
+    }
+
+    const product = await Product.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    )
+      .populate("company", "name slug")
+      .populate("category", "name slug");
 
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
@@ -121,14 +149,8 @@ export async function PUT(
 
     const updatedProduct = product.toObject ? product.toObject() : product;
 
-    const responseData = {
-      ...updatedProduct,
-      company: product.company || { name: "Unknown", slug: "unknown" },
-      category: product.category || { name: "Uncategorized", slug: "uncategorized" },
-    };
-
-    console.log(" Product updated successfully:", id);
-    return NextResponse.json(responseData);
+    console.log("✅ Product updated successfully:", id);
+    return NextResponse.json(updatedProduct);
   } catch (error) {
     console.error("Error updating product:", error);
     return NextResponse.json({ error: "Failed to update product" }, { status: 500 });
@@ -141,7 +163,7 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params; //  await params
+    const { id } = await context.params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user || session.user.role !== "admin") {
@@ -153,8 +175,6 @@ export async function DELETE(
 
     await connectDB();
 
-    // console.log(" DELETE /api/products/:id - Deleting:", id);
-
     const product = await Product.findByIdAndDelete(id);
 
     if (!product) {
@@ -162,7 +182,6 @@ export async function DELETE(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    // console.log(" Product deleted:", product._id);
     return NextResponse.json({ message: "Product deleted successfully" });
   } catch (error) {
     console.error("Error deleting product:", error);

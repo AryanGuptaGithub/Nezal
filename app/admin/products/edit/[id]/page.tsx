@@ -1,3 +1,4 @@
+// app/admin/products/edit/[id]/page.tsx
 "use client"
 
 import type React from "react"
@@ -7,7 +8,7 @@ import { useSession } from "next-auth/react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ArrowLeft, X, Upload, Loader2, Pencil } from "lucide-react"
+import { ArrowLeft, X, Upload, Pencil } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -41,6 +42,23 @@ interface Size {
   sku?: string
 }
 
+// ── FIX: normalize any value (string with commas/newlines, or array) → string[] ──
+function normalizeStringArray(val: any): string[] {
+  if (!val) return []
+  if (Array.isArray(val)) {
+    return val
+      .flatMap((v) =>
+        typeof v === "string"
+          ? v.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean)
+          : []
+      )
+  }
+  if (typeof val === "string") {
+    return val.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean)
+  }
+  return []
+}
+
 const createEmptySize = (): Size => ({
   size: "",
   unit: "ml",
@@ -51,7 +69,7 @@ const createEmptySize = (): Size => ({
   sku: "",
 })
 
-interface Product {
+interface FormData {
   _id: string
   name: string
   slug: string
@@ -59,17 +77,20 @@ interface Product {
   price: number
   discountPrice?: number
   image: string
-  images?: string[]
+  images: string[]
+  // category holds the subcategory ID (or main if no sub)
   category: string
+  // mainCategory is UI-only — used to drive the sub-category dropdown
+  mainCategory: string
   company: string
   stock: number
   sku: string
+  // stored as arrays; joined to string for textarea display, parsed back on submit
   ingredients: string[]
   benefits: string[]
   usage: string
-  suitableFor?: string[]
-  results?: Result[]
-  sizes?: Size[]
+  suitableFor: string[]
+  results: Result[]
   isActive: boolean
 }
 
@@ -78,6 +99,7 @@ export default function EditProductPage() {
   const params = useParams()
   const { data: session } = useSession()
   const productId = params.id as string
+
   const [companies, setCompanies] = useState<Company[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -87,7 +109,7 @@ export default function EditProductPage() {
   const [message, setMessage] = useState("")
   const [imageUrls, setImageUrls] = useState<string[]>([])
   const [imageUrlInput, setImageUrlInput] = useState("")
-  const [formData, setFormData] = useState<Product & { mainCategory?: string }>({
+  const [formData, setFormData] = useState<FormData>({
     _id: "",
     name: "",
     slug: "",
@@ -108,7 +130,7 @@ export default function EditProductPage() {
     results: [],
     isActive: true,
   })
-  const [results, setResults] = useState<Array<{ image: string; title: string; text: string }>>([])
+  const [results, setResults] = useState<Result[]>([])
   const [resultInput, setResultInput] = useState({ image: "", title: "", text: "" })
   const [resultImageUrl, setResultImageUrl] = useState("")
   const [sizes, setSizes] = useState<Size[]>([])
@@ -120,7 +142,6 @@ export default function EditProductPage() {
       router.push("/auth/login")
       return
     }
-
     fetchData()
   }, [session, router])
 
@@ -134,51 +155,65 @@ export default function EditProductPage() {
       const productData = await productRes.json()
       const companiesData = await companiesRes.json()
 
-      // Extract company and category IDs if they are objects
-      const companyId = typeof productData.company === 'object' ? productData.company._id : productData.company
-      const categoryId = typeof productData.category === 'object' ? productData.category._id : productData.category
+      const companyId =
+        typeof productData.company === "object" ? productData.company._id : productData.company
+      const categoryId =
+        typeof productData.category === "object" ? productData.category?._id : productData.category
 
-      // Fetch categories for the product's company
       const categoriesRes = await fetch(`/api/categories?company=${companyId}`)
       const categoriesData = await categoriesRes.json()
 
-      // Prepare form data with extracted IDs
-      const formDataWithIds = {
-        ...productData,
-        company: companyId,
-        category: categoryId,
-      }
-
-      setFormData(formDataWithIds)
-      setImageUrls(productData.images || (productData.image ? [productData.image] : []))
-      setResults(productData.results || [])
-      setSizes(productData.sizes || [])
       setCompanies(companiesData)
       setCategories(categoriesData)
+      setImageUrls(productData.images?.length ? productData.images : productData.image ? [productData.image] : [])
+      setResults(productData.results || [])
+      setSizes(productData.sizes || [])
 
-      // Set mainCategory and category based on product's category
-      // Search through all categories including nested subCategories
-      let foundCategory: Category | null = null
-      let mainCategoryId = ''
+      // ── FIX: resolve mainCategory and category from the saved categoryId ──
+      let resolvedMainCategory = ""
+      let resolvedCategory = ""
 
-      // First check main categories
-      const mainCat = categoriesData.find((c: Category) => c._id === categoryId)
-      if (mainCat) {
-        foundCategory = mainCat
-        mainCategoryId = mainCat._id
-        setFormData(prev => ({ ...prev, mainCategory: mainCategoryId, category: '' }))
-      } else {
-        // Check subCategories within main categories
-        for (const main of categoriesData) {
-          const subCat = main.subCategories?.find((sub: Category) => sub._id === categoryId)
-          if (subCat) {
-            foundCategory = subCat
-            mainCategoryId = main._id
-            setFormData(prev => ({ ...prev, mainCategory: mainCategoryId, category: subCat._id }))
-            break
+      if (categoryId) {
+        // Check if categoryId matches a top-level category
+        const topLevel = categoriesData.find((c: Category) => c._id === categoryId)
+        if (topLevel) {
+          resolvedMainCategory = topLevel._id
+          resolvedCategory = ""  // it IS the main category, no sub
+        } else {
+          // Check subcategories
+          for (const main of categoriesData) {
+            const sub = main.subCategories?.find((s: Category) => s._id === categoryId)
+            if (sub) {
+              resolvedMainCategory = main._id
+              resolvedCategory = sub._id
+              break
+            }
           }
         }
       }
+
+      setFormData({
+        _id: productData._id,
+        name: productData.name || "",
+        slug: productData.slug || "",
+        description: productData.description || "",
+        price: productData.price || 0,
+        discountPrice: productData.discountPrice || 0,
+        image: productData.image || "",
+        images: productData.images || [],
+        category: resolvedCategory,
+        mainCategory: resolvedMainCategory,
+        company: companyId || "",
+        stock: productData.stock || 0,
+        sku: productData.sku || "",
+        // ── FIX: normalize ingredients/benefits on load so they're always clean arrays ──
+        ingredients: normalizeStringArray(productData.ingredients),
+        benefits: normalizeStringArray(productData.benefits),
+        usage: productData.usage || "",
+        suitableFor: normalizeStringArray(productData.suitableFor),
+        results: productData.results || [],
+        isActive: productData.isActive ?? true,
+      })
     } catch (error) {
       console.error("Error fetching data:", error)
       setMessage("Error loading product data")
@@ -189,30 +224,28 @@ export default function EditProductPage() {
 
   const fetchCategoriesForCompany = async (companyId: string) => {
     try {
-      // Fetch categories for the selected company
-      const categoriesRes = await fetch(`/api/categories?company=${companyId}`)
-      const categoriesData = categoriesRes.ok ? await categoriesRes.json() : []
-      setCategories(categoriesData)
-      // Reset category selections when company changes
-      setFormData((prev) => ({
-        ...prev,
-        mainCategory: "",
-        category: "",
-      }))
+      const res = await fetch(`/api/categories?company=${companyId}`)
+      const data = res.ok ? await res.json() : []
+      setCategories(data)
+      setFormData((prev) => ({ ...prev, mainCategory: "", category: "" }))
     } catch (error) {
       console.error("Error fetching categories:", error)
       setCategories([])
     }
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value, type } = e.target
-    
-    // Fetch categories when company changes
     if (name === "company" && value) {
       fetchCategoriesForCompany(value)
     }
-    
+    // ── FIX: reset subcategory when main category changes ──
+    if (name === "mainCategory") {
+      setFormData((prev) => ({ ...prev, mainCategory: value, category: "" }))
+      return
+    }
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
@@ -222,36 +255,19 @@ export default function EditProductPage() {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
-
     setUploading(true)
     try {
-      const formDataToSend = new FormData()
-      Array.from(files).forEach((file) => {
-        formDataToSend.append("files", file)
-      })
-
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formDataToSend,
-      })
-
+      const fd = new FormData()
+      Array.from(files).forEach((file) => fd.append("files", file))
+      const res = await fetch("/api/upload", { method: "POST", body: fd })
       if (!res.ok) throw new Error("Upload failed")
-
       const data = await res.json()
       setImageUrls((prev) => [...prev, ...data.urls])
-    } catch (error) {
+    } catch {
       setMessage("Error uploading images. Please try again.")
-      console.error("Error:", error)
     } finally {
       setUploading(false)
       e.target.value = ""
-    }
-  }
-
-  const handleAddImageUrl = () => {
-    if (imageUrlInput.trim()) {
-      setImageUrls((prev) => [...prev, imageUrlInput.trim()])
-      setImageUrlInput("")
     }
   }
 
@@ -264,14 +280,12 @@ export default function EditProductPage() {
       setMessage("Please fill in all size fields with valid values")
       return
     }
-
     setSizes((prev) => {
       if (editingSizeIndex !== null) {
-        return prev.map((size, index) => (index === editingSizeIndex ? { ...sizeInput } : size))
+        return prev.map((s, i) => (i === editingSizeIndex ? { ...sizeInput } : s))
       }
       return [...prev, { ...sizeInput }]
     })
-
     setSizeInput(createEmptySize())
     setEditingSizeIndex(null)
     setMessage("")
@@ -286,8 +300,7 @@ export default function EditProductPage() {
   }
 
   const handleEditSize = (index: number) => {
-    const sizeToEdit = sizes[index]
-    setSizeInput({ ...sizeToEdit })
+    setSizeInput({ ...sizes[index] })
     setEditingSizeIndex(index)
   }
 
@@ -299,62 +312,64 @@ export default function EditProductPage() {
   const handleResultFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
-
     setUploadingResult(true)
     try {
-      const formDataToSend = new FormData()
-      Array.from(files).forEach((file) => {
-        formDataToSend.append("files", file)
-      })
-
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formDataToSend,
-      })
-
+      const fd = new FormData()
+      Array.from(files).forEach((file) => fd.append("files", file))
+      const res = await fetch("/api/upload", { method: "POST", body: fd })
       if (!res.ok) throw new Error("Upload failed")
-
       const data = await res.json()
-      if (data.urls && data.urls[0]) {
-        setResultImageUrl(data.urls[0])
-      }
-    } catch (error) {
+      if (data.urls?.[0]) setResultImageUrl(data.urls[0])
+    } catch {
       setMessage("Error uploading result image. Please try again.")
-      console.error("Error:", error)
     } finally {
       setUploadingResult(false)
       e.target.value = ""
     }
   }
 
- const handleSubmit = async (e: React.FormEvent) => {
+  const selectedMainCat = categories.find((c) => c._id === formData.mainCategory)
+  const hasSubCategories = (selectedMainCat?.subCategories?.length ?? 0) > 0
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (imageUrls.length === 0) {
       setMessage("Please add at least one image.")
+      return
+    }
+
+    if (!formData.mainCategory && !formData.category) {
+      setMessage("Please select a category.")
       return
     }
 
     setSubmitting(true)
     setMessage("")
 
-    const toArray = (val: string | string[]): string[] =>
-      Array.isArray(val)
-        ? val.flatMap(v => v.split(",").map(s => s.trim())).filter(Boolean)
-        : val.split(",").map(s => s.trim()).filter(Boolean)
-
     try {
       const bodyData = {
-        ...formData,
-        category: formData.category || undefined,
-        image: imageUrls[0],
-        images: imageUrls,
+        name: formData.name,
+        slug: formData.slug,
+        description: formData.description,
         price: Number(formData.price),
         discountPrice: formData.discountPrice ? Number(formData.discountPrice) : undefined,
+        image: imageUrls[0],
+        images: imageUrls,
+        // ── FIX: send both so the API resolves correctly ──
+        category: formData.category || undefined,
+        mainCategory: formData.mainCategory || undefined,
+        company: formData.company,
         stock: Number(formData.stock),
-        ingredients: toArray(formData.ingredients),
-        benefits: toArray(formData.benefits),
-        suitableFor: toArray(formData.suitableFor),
+        sku: formData.sku,
+        // ── FIX: ingredients/benefits are arrays in state; normalizeStringArray
+        //    handles the case where the user edits them in the textarea (they
+        //    become strings after onChange) ──
+        ingredients: normalizeStringArray(formData.ingredients),
+        benefits:    normalizeStringArray(formData.benefits),
+        suitableFor: normalizeStringArray(formData.suitableFor),
+        usage: formData.usage,
+        isActive: formData.isActive,
         results,
         sizes: sizes.map((s) => ({
           ...s,
@@ -454,9 +469,7 @@ export default function EditProductPage() {
                   >
                     <option value="">Select Company</option>
                     {companies.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.name}
-                      </option>
+                      <option key={c._id} value={c._id}>{c.name}</option>
                     ))}
                   </select>
                 </div>
@@ -464,45 +477,44 @@ export default function EditProductPage() {
                   <label className="block text-sm font-medium text-foreground mb-2">Main Category *</label>
                   <select
                     name="mainCategory"
-                    value={formData.mainCategory || ""}
+                    value={formData.mainCategory}
                     onChange={handleChange}
                     required
                     className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
                   >
                     <option value="">Select Main Category</option>
                     {categories
-                      .filter(c => !c.parent)
+                      .filter((c) => !c.parent)
                       .map((c) => (
-                        <option key={c._id} value={c._id}>
-                          {c.name}
-                        </option>
+                        <option key={c._id} value={c._id}>{c.name}</option>
                       ))}
                   </select>
                 </div>
                 <div>
-  <label className="block text-sm font-medium text-foreground mb-2">Sub Category</label>
-  <select
-    name="category"
-    value={formData.category}
-    onChange={handleChange}
-    required={!!(categories.find(c => c._id === formData.mainCategory)?.subCategories?.length)}
-    disabled={!categories.find(c => c._id === formData.mainCategory)?.subCategories?.length}
-    className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-  >
-    <option value="">
-      {categories.find(c => c._id === formData.mainCategory)?.subCategories?.length
-        ? "Select Sub Category"
-        : "No sub categories available"}
-    </option>
-    {categories
-      .find(c => c._id === formData.mainCategory)
-      ?.subCategories?.map((sub) => (
-        <option key={sub._id} value={sub._id}>
-          {sub.name}
-        </option>
-      )) || []}
-  </select>
-</div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Sub Category {hasSubCategories ? "*" : ""}
+                  </label>
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    required={hasSubCategories}
+                    disabled={!hasSubCategories}
+                    className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="">
+                      {hasSubCategories ? "Select Sub Category" : "No sub categories"}
+                    </option>
+                    {selectedMainCat?.subCategories?.map((sub) => (
+                      <option key={sub._id} value={sub._id}>{sub.name}</option>
+                    ))}
+                  </select>
+                  {formData.mainCategory && !hasSubCategories && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Saving under: <strong>{selectedMainCat?.name}</strong>
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Description */}
@@ -579,7 +591,6 @@ export default function EditProductPage() {
                         />
                       </label>
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">Add Image URL</label>
                       <div className="flex gap-2">
@@ -610,17 +621,14 @@ export default function EditProductPage() {
 
                   {imageUrls.length > 0 && (
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Added Images ({imageUrls.length})</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Added Images ({imageUrls.length})
+                      </label>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                         {imageUrls.map((url, index) => (
                           <div key={index} className="relative group">
                             <div className="relative h-24 bg-muted rounded-lg overflow-hidden">
-                              <Image
-                                src={url}
-                                alt={`Product ${index + 1}`}
-                                fill
-                                className="object-cover"
-                              />
+                              <Image src={url} alt={`Product ${index + 1}`} fill className="object-cover" />
                               {index === 0 && (
                                 <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-xs px-2 py-1 rounded">
                                   Main
@@ -630,7 +638,7 @@ export default function EditProductPage() {
                             <button
                               type="button"
                               onClick={() => removeImage(index)}
-                              className="absolute top-1 right-1  text-destructive-foreground p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
+                              className="absolute top-1 right-1 text-destructive-foreground p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
                             >
                               <X className="w-4 h-4" />
                             </button>
@@ -657,9 +665,10 @@ export default function EditProductPage() {
 
               {/* Product Sizes */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-4">Product Sizes (Optional - Add size variants)</label>
+                <label className="block text-sm font-medium text-foreground mb-4">
+                  Product Sizes (Optional — add size variants)
+                </label>
                 <div className="space-y-4 border border-border rounded-lg p-4 bg-muted/50">
-                  {/* Add Size Form */}
                   <div className="space-y-3 pb-4 border-b border-border">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -676,7 +685,9 @@ export default function EditProductPage() {
                         <label className="block text-sm font-medium text-foreground mb-2">Unit *</label>
                         <select
                           value={sizeInput.unit}
-                          onChange={(e) => setSizeInput({ ...sizeInput, unit: e.target.value as "ml" | "l" | "g" | "kg" })}
+                          onChange={(e) =>
+                            setSizeInput({ ...sizeInput, unit: e.target.value as "ml" | "l" | "g" | "kg" })
+                          }
                           className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
                         >
                           <option value="ml">Milliliters (ml)</option>
@@ -686,7 +697,6 @@ export default function EditProductPage() {
                         </select>
                       </div>
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-foreground mb-2">Quantity *</label>
@@ -709,7 +719,6 @@ export default function EditProductPage() {
                         />
                       </div>
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-foreground mb-2">Discount Price (₹)</label>
@@ -717,7 +726,9 @@ export default function EditProductPage() {
                           type="number"
                           placeholder="0"
                           value={sizeInput.discountPrice || ""}
-                          onChange={(e) => setSizeInput({ ...sizeInput, discountPrice: Number(e.target.value) || 0 })}
+                          onChange={(e) =>
+                            setSizeInput({ ...sizeInput, discountPrice: Number(e.target.value) || 0 })
+                          }
                           className="bg-background border-border"
                         />
                       </div>
@@ -732,7 +743,6 @@ export default function EditProductPage() {
                         />
                       </div>
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">Size SKU (Optional)</label>
                       <Input
@@ -744,31 +754,22 @@ export default function EditProductPage() {
                       />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Button
-                        type="button"
-                        onClick={handleAddSize}
-                        variant="outline"
-                        className="w-full"
-                      >
+                      <Button type="button" onClick={handleAddSize} variant="outline" className="w-full">
                         {editingSizeIndex !== null ? "Update Size" : "Add Size"}
                       </Button>
                       {editingSizeIndex !== null && (
-                        <Button
-                          type="button"
-                          onClick={handleCancelEditSize}
-                          variant="secondary"
-                          className="w-full"
-                        >
+                        <Button type="button" onClick={handleCancelEditSize} variant="secondary" className="w-full">
                           Cancel
                         </Button>
                       )}
                     </div>
                   </div>
 
-                  {/* Display Added Sizes */}
                   {sizes.length > 0 && (
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Added Sizes ({sizes.length})</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Added Sizes ({sizes.length})
+                      </label>
                       <div className="space-y-2">
                         {sizes.map((size, index) => (
                           <div
@@ -776,14 +777,11 @@ export default function EditProductPage() {
                             className="relative group border border-border rounded-lg p-3 bg-background flex flex-col md:flex-row md:items-center md:justify-between gap-3"
                           >
                             <div className="flex-1">
-                             <p className="font-medium text-sm text-foreground">
-  {size.size}
-</p>
-<p className="text-xs text-muted-foreground">
-  Qty: {size.quantity} {size.unit} | Price: ₹{size.price}
-  {size.discountPrice ? ` → ₹${size.discountPrice}` : ""}
-  {" "} | Stock: {size.stock}
-</p>
+                              <p className="font-medium text-sm text-foreground">{size.size}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Qty: {size.quantity} {size.unit} | Price: ₹{size.price}
+                                {size.discountPrice ? ` → ₹${size.discountPrice}` : ""} | Stock: {size.stock}
+                              </p>
                             </div>
                             <div className="flex gap-2 w-full md:w-auto">
                               <Button
@@ -812,28 +810,39 @@ export default function EditProductPage() {
               </div>
 
               {/* Ingredients & Benefits */}
+              {/* ── FIX: display as joined string; parsed back to array on submit ── */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Ingredients (comma-separated)
+                    Ingredients (comma or newline separated)
                   </label>
                   <textarea
                     name="ingredients"
-                    value={Array.isArray(formData.ingredients) ? formData.ingredients.join(", ") : formData.ingredients}
+                    value={
+                      Array.isArray(formData.ingredients)
+                        ? formData.ingredients.join("\n")
+                        : formData.ingredients
+                    }
                     onChange={handleChange}
-                    placeholder="Ingredient 1, Ingredient 2, Ingredient 3"
-                    rows={3}
+                    placeholder={"Aloe Vera\nShea Butter\nKojic Acid"}
+                    rows={4}
                     className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Benefits (comma-separated)</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Benefits (comma or newline separated)
+                  </label>
                   <textarea
                     name="benefits"
-                    value={Array.isArray(formData.benefits) ? formData.benefits.join(", ") : formData.benefits}
+                    value={
+                      Array.isArray(formData.benefits)
+                        ? formData.benefits.join("\n")
+                        : formData.benefits
+                    }
                     onChange={handleChange}
-                    placeholder="Benefit 1, Benefit 2, Benefit 3"
-                    rows={3}
+                    placeholder={"Moisturizes skin\nReduces dark spots"}
+                    rows={4}
                     className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
                   />
                 </div>
@@ -854,12 +863,18 @@ export default function EditProductPage() {
 
               {/* Suitable For */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Suitable For (comma-separated)</label>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Suitable For (comma or newline separated)
+                </label>
                 <textarea
                   name="suitableFor"
-                  value={Array.isArray(formData.suitableFor) ? formData.suitableFor.join(", ") : formData.suitableFor}
+                  value={
+                    Array.isArray(formData.suitableFor)
+                      ? formData.suitableFor.join("\n")
+                      : formData.suitableFor
+                  }
                   onChange={handleChange}
-                  placeholder="Suitable for 1, Suitable for 2, Suitable for 3"
+                  placeholder={"All skin types\nDry skin"}
                   rows={3}
                   className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
                 />
@@ -869,7 +884,6 @@ export default function EditProductPage() {
               <div>
                 <label className="block text-sm font-medium text-foreground mb-4">Product Results</label>
                 <div className="space-y-4 border border-border rounded-lg p-4 bg-muted/50">
-                  {/* Add Result Form */}
                   <div className="space-y-3 pb-4 border-b border-border">
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">Result Title</label>
@@ -881,7 +895,6 @@ export default function EditProductPage() {
                         className="bg-background border-border"
                       />
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">Result Description</label>
                       <textarea
@@ -892,7 +905,6 @@ export default function EditProductPage() {
                         className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
                       />
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">Result Image</label>
                       <div className="space-y-2">
@@ -908,7 +920,10 @@ export default function EditProductPage() {
                             type="button"
                             onClick={() => {
                               if (resultImageUrl.trim() && resultInput.title.trim()) {
-                                setResults([...results, { image: resultImageUrl.trim(), title: resultInput.title, text: resultInput.text }])
+                                setResults([
+                                  ...results,
+                                  { image: resultImageUrl.trim(), title: resultInput.title, text: resultInput.text },
+                                ])
                                 setResultInput({ image: "", title: "", text: "" })
                                 setResultImageUrl("")
                               }
@@ -938,21 +953,17 @@ export default function EditProductPage() {
                     </div>
                   </div>
 
-                  {/* Display Added Results */}
                   {results.length > 0 && (
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Added Results ({results.length})</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Added Results ({results.length})
+                      </label>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {results.map((result, index) => (
                           <div key={index} className="relative group border border-border rounded-lg p-3 bg-background">
                             {result.image && (
                               <div className="relative h-24 bg-muted rounded mb-2 overflow-hidden">
-                                <Image
-                                  src={result.image}
-                                  alt={result.title}
-                                  fill
-                                  className="object-cover"
-                                />
+                                <Image src={result.image} alt={result.title} fill className="object-cover" />
                               </div>
                             )}
                             <h4 className="font-medium text-sm text-foreground">{result.title}</h4>
@@ -984,17 +995,16 @@ export default function EditProductPage() {
                 <label className="text-sm font-medium text-foreground">Active</label>
               </div>
 
-              {/* Message */}
               {message && (
                 <div
-                  className={`p-3 rounded text-sm ${message.includes("successfully") ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                    }`}
+                  className={`p-3 rounded text-sm ${
+                    message.includes("successfully") ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                  }`}
                 >
                   {message}
                 </div>
               )}
 
-              {/* Submit Button */}
               <Button type="submit" disabled={submitting} className="w-full">
                 {submitting ? "Updating..." : "Update Product"}
               </Button>

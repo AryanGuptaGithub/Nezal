@@ -1,4 +1,4 @@
-// /api/products/route.ts
+// app/api/products/route.ts
 import mongoose from "mongoose";
 import { connectDB } from "@/lib/db";
 import { Product } from "@/lib/models/product";
@@ -10,7 +10,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 // Simple in-memory cache for API responses
 const apiCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = process.env.NODE_ENV === "development" ? 0 : 1000 * 60 * 2; // 2 minutes for API responses
+const CACHE_TTL = process.env.NODE_ENV === "development" ? 0 : 1000 * 60 * 2; // 2 minutes
 
 function getCacheKey(params: Record<string, string>) {
   return JSON.stringify(params);
@@ -26,6 +26,23 @@ function getCachedResponse(key: string) {
 
 function setCachedResponse(key: string, data: any) {
   apiCache.set(key, { data, timestamp: Date.now() });
+}
+
+// ── FIX: normalize any value (string with commas/newlines, or array) → string[] ──
+function normalizeStringArray(val: any): string[] {
+  if (!val) return [];
+  if (Array.isArray(val)) {
+    return val
+      .flatMap((v) =>
+        typeof v === "string"
+          ? v.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean)
+          : []
+      );
+  }
+  if (typeof val === "string") {
+    return val.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean);
+  }
+  return [];
 }
 
 export async function GET(request: NextRequest) {
@@ -61,10 +78,7 @@ export async function GET(request: NextRequest) {
     const limit = Number.parseInt(searchParams.get("limit") || "12");
     const exclude = searchParams.get("exclude");
 
-    // Create cache key from query parameters
     const cacheKey = getCacheKey({ company, category, page, limit, exclude });
-
-    // Check cache first
     const cachedResponse = getCachedResponse(cacheKey);
     if (cachedResponse) {
       return NextResponse.json(cachedResponse);
@@ -72,7 +86,6 @@ export async function GET(request: NextRequest) {
 
     const query: any = { isActive: true };
 
-    // Optimize company and category lookups with parallel queries
     const [companyDoc, categoryDoc] = await Promise.all([
       company ? Company.findOne({ slug: company, isActive: true }).select("_id") : null,
       category ? Category.findOne({ slug: category, isActive: true }).select("_id parent") : null,
@@ -83,7 +96,6 @@ export async function GET(request: NextRequest) {
     }
 
     if (categoryDoc) {
-      // If it's a main category (no parent), include itself and sub-categories
       if (!categoryDoc.parent) {
         const subCategories = await Category.find({
           parent: categoryDoc._id,
@@ -95,7 +107,6 @@ export async function GET(request: NextRequest) {
         ];
         query.category = { $in: categoryIds };
       } else {
-        // It's a sub-category, just include itself
         query.category = categoryDoc._id;
       }
     }
@@ -106,7 +117,6 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit;
 
-    // Execute count and products query in parallel for better performance
     const [products, total] = await Promise.all([
       Product.find(query)
         .populate("company", "name slug")
@@ -129,7 +139,6 @@ export async function GET(request: NextRequest) {
       },
     };
 
-    // Cache the response
     setCachedResponse(cacheKey, responseData);
 
     return NextResponse.json(responseData);
@@ -146,17 +155,16 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
 
-    //  SECURITY CHECK: Only admins can create products
     if (!session?.user || session.user.role !== "admin") {
-      return NextResponse.json({ error: "Access denied. Admin privileges required." }, { status: 403 });
+      return NextResponse.json(
+        { error: "Access denied. Admin privileges required." },
+        { status: 403 }
+      );
     }
 
     await connectDB();
 
     const body = await request.json();
-
-    console.log("🔍 Full request body keys:", Object.keys(body));
-    console.log("🔍 Raw body.sizes:", body.sizes);
 
     const {
       name,
@@ -166,7 +174,8 @@ export async function POST(request: Request) {
       discountPrice,
       image,
       images,
-      category,
+      category,      // subcategory ID (set when a subcategory is selected)
+      mainCategory,  // fallback when the main category has no subcategories
       company,
       stock,
       sku,
@@ -179,6 +188,14 @@ export async function POST(request: Request) {
       isActive,
     } = body;
 
+    // ── FIX: resolve category — prefer subcategory, fall back to mainCategory ──
+    const resolvedCategory =
+      category && category !== ""
+        ? category
+        : mainCategory && mainCategory !== ""
+        ? mainCategory
+        : undefined;
+
     const product = new Product({
       name,
       slug: slug || name.toLowerCase().replace(/\s+/g, "-"),
@@ -187,14 +204,14 @@ export async function POST(request: Request) {
       discountPrice,
       image: image || (images && images.length > 0 ? images[0] : undefined),
       images: images || (image ? [image] : []),
-      category,
+      category: resolvedCategory,               // ← fixed: never empty when mainCategory is set
       company,
       stock,
       sku,
-      ingredients,
-      benefits,
+      ingredients: normalizeStringArray(ingredients),  // ← fixed: handles \n and ,
+      benefits:    normalizeStringArray(benefits),
+      suitableFor: normalizeStringArray(suitableFor),
       usage,
-      suitableFor,
       results,
       sizes,
       isActive: isActive ?? true,
