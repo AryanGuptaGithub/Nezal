@@ -117,37 +117,37 @@ const TICKER_ITEMS = [
 
 const PROMO_BANNERS = [
   {
-    image: "/products/neem-tulsi-facewash.jpg",
+    image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779278431/nezal/uploads/rwzzisquhzzalhdngf9z.jpg",
     label: "Face Wash",
     sub: "From ₹199",
     href: "/collections/foaming-face-wash",
   },
   {
-    image: "/products/bhringraj-hair-serum.jpg",
+    image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779342398/nezal/uploads/wiutayfpcujdko7zdyt4.jpg",
     label: "Hair Serum",
     sub: "Reduce Hair Fall",
     href: "/collections/hair-serum",
   },
   {
-    image: "/products/aloe-vera-body-lotion.jpg",
+    image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779342041/nezal/uploads/vhoi1owzq0cun9zyxq70.jpg",
     label: "Body Lotion",
     sub: "All-Day Hydration",
     href: "/collections/body-lotion",
   },
   {
-    image: "/products/body-massage-oil-cedarwood.jpg",
+    image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779278227/nezal/uploads/db5xjbpwpnmb6uf6yep6.jpg",
     label: "Massage Oil",
     sub: "Relax & Restore",
     href: "/collections/body-massage-oil",
   },
   {
-    image: "/products/almond-nourishing-cream.jpg",
+    image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779341640/nezal/uploads/klcvgxsephlxhm6n4xib.jpg",
     label: "Face Cream",
     sub: "Deep Nourishment",
     href: "/collections/face-serum",
   },
   {
-    image: "/products/rose-bathing-salt.jpg",
+    image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779341557/nezal/uploads/vz9jkgrr5tdccprgfl5a.jpg",
     label: "Bath Salts",
     sub: "Turn Bath Into Ritual",
     href: "/collections/bath-salt",
@@ -172,36 +172,40 @@ function PromoBannerGrid() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
           {PROMO_BANNERS.map((banner) => (
             <a
-              key={banner.href}
-              href={banner.href}
-              className="group flex flex-col items-center gap-3"
-            >
-              {/* Image circle container — matches reference style */}
-              <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-white border border-[var(--color-border)] shadow-sm group-hover:shadow-md transition-shadow duration-300">
-                {/* Soft pink blob background like the reference */}
-                <div
-                  className="absolute inset-0 flex items-center justify-center"
-                  style={{
-                    background: "radial-gradient(ellipse at center, rgba(var(--color-brand-primary-rgb, 42,122,91), 0.07) 0%, transparent 70%)",
-                  }}
-                />
-                <img
-                  src={banner.image}
-                  alt={banner.label}
-                  className="relative z-10 w-full h-full object-contain p-6 transition-transform duration-500 group-hover:scale-105"
-                />
-              </div>
- 
-              {/* Label */}
-              <div className="text-center">
-                <p className="font-bold text-[var(--color-text-heading)] text-sm md:text-base">
-                  {banner.label}
-                </p>
-                <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-                  {banner.sub}
-                </p>
-              </div>
-            </a>
+  key={banner.href}
+  href={banner.href}
+  className="group flex flex-col items-center gap-3"
+>
+  {/* IMAGE CARD */}
+  <div className="relative w-full aspect-square overflow-hidden rounded-2xl bg-white border border-[var(--color-border)] shadow-sm transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1">
+
+    {/* soft glow background */}
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(42,122,91,0.10),transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+    {/* subtle shine sweep */}
+    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+
+    {/* image */}
+    <img
+      src={banner.image}
+      alt={banner.label}
+      className="absolute inset-0 h-full w-full object-cover scale-105 transition-transform duration-700 group-hover:scale-110 group-hover:rotate-[1.5deg]"
+    />
+
+    {/* dark-to-light edge polish */}
+    <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+  </div>
+
+  {/* TEXT */}
+  <div className="text-center transition-all duration-300 group-hover:-translate-y-1">
+    <p className="font-bold text-[var(--color-text-heading)] text-sm md:text-base">
+      {banner.label}
+    </p>
+    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+      {banner.sub}
+    </p>
+  </div>
+</a>
           ))}
         </div>
  
@@ -546,40 +550,91 @@ export default function Home() {
   </div>
 </section>
 
-      {/* Our Aim section */}
-      <section className="py-12 md:py-16 bg-muted">
-        <div className="container-nezal">
-          <div className="text-center mb-8">
-            <h2 className="text-[28px] md:text-[32px] font-bold text-primary">
-              Our Aim
-            </h2>
+
+
+{/* Our Aim section - Redesigned */}
+<section className="py-16 md:py-24 bg-gradient-to-br from-muted/30 to-background relative overflow-hidden">
+  {/* Decorative background elements */}
+  <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+  <div className="absolute bottom-0 left-0 w-80 h-80 bg-primary/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3" />
+  
+  <div className="container-nezal relative z-10">
+    {/* Enhanced heading with badge and accent line */}
+    <div className="text-center mb-12 md:mb-16">
+      <span className="inline-block px-3 py-1 text-xs font-semibold tracking-wide bg-primary/10 text-primary rounded-full mb-4">
+        Our Philosophy
+      </span>
+      <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-primary">
+        Our Aim
+      </h2>
+      <div className="w-20 h-1 bg-primary/30 mx-auto mt-4 rounded-full" />
+    </div>
+
+    {/* Main content - asymmetric grid for modern layout */}
+    <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+      {/* Text content */}
+      <div className="space-y-6 order-2 lg:order-1">
+        <div className="prose prose-lg max-w-none">
+          <p className="text-lg leading-relaxed text-foreground/80">
+            Introducing <span className="font-semibold text-primary">Nezal</span>, the luxurious brand that deals with a range of natural skincare
+            products. If you're looking to take your beauty routine to the next level, then
+            look no further than Nezal.
+          </p>
+          <p className="text-muted-foreground">
+            Our products are made with only the finest ingredients and are designed to nourish and revitalize your skin. 
+            Trust us, your skin will thank you for using Nezal!
+          </p>
+          <p className="text-muted-foreground">
+            Nezal is a range of natural products for enhancing and preserving your original beauty. 
+            Nezal's products are made with natural ingredients and are free from harsh chemicals. 
+            They are gentle on the skin and help to keep your skin looking young and radiant.
+          </p>
+        </div>
+        
+        {/* Feature highlights - adds credibility and visual interest */}
+        <div className="flex flex-wrap gap-4 pt-4">
+          <div className="flex items-center gap-2 text-sm">
+            <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span>100% Natural Ingredients</span>
           </div>
-          <div className="flex flex-col lg:flex-row gap-8 items-center rounded-2xl overflow-hidden border border-border p-6 lg:p-10 bg-card">
-            <div className="flex-1 space-y-4">
-              <p className="text-[15px] leading-relaxed text-muted-foreground">
-                Introducing Nezal, the luxurious brand that deals with a range of natural skincare
-                products. If you&apos;re looking to take your beauty routine to the next level, then
-                look no further than Nezal. Our products are made with only the finest ingredients
-                and are designed to nourish and revitalize your skin. Trust us, your skin will thank
-                you for using Nezal!
-              </p>
-              <p className="text-[15px] leading-relaxed text-muted-foreground">
-                Nezal is a range of natural products for enhancing and preserving your original
-                beauty. Nezal&apos;s products are made with natural ingredients and are free from harsh
-                chemicals. They are gentle on the skin and help to keep your skin looking young and
-                radiant.
-              </p>
-            </div>
-            <div className="w-full lg:w-80 shrink-0">
-              <img
-                src="/companylogo.png"
-                alt="Nezal products"
-                className="w-full h-56 lg:h-64 object-contain rounded-xl"
-              />
-            </div>
+          <div className="flex items-center gap-2 text-sm">
+            <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span>No Harsh Chemicals</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span>Gentle on Skin</span>
           </div>
         </div>
-      </section>
+      </div>
+      
+        <div className="order-1 lg:order-2 group/image">
+        <div className="relative transition-all duration-500 hover:scale-105">
+          {/* Background accent shape that also animates on hover */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-primary/5 rounded-3xl rotate-3 scale-105 transition-all duration-500 group-hover/image:rotate-6 group-hover/image:scale-110 group-hover/image:bg-primary/30" />
+          <img
+            src="/companylogo.png"
+            alt="Nezal natural skincare products"
+            className="relative w-full h-auto max-h-80 lg:max-h-96 object-contain rounded-2xl shadow-2xl bg-white/50 backdrop-blur-sm p-4 transition-all duration-500 group-hover/image:shadow-3xl group-hover/image:bg-white/70"
+          />
+          {/* Optional: subtle overlay effect */}
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-primary/10 to-transparent opacity-0 transition-opacity duration-500 group-hover/image:opacity-100" />
+        </div>
+      </div>
+    
+  
+
+
+    </div>
+  </div>
+</section>
+
 
       {/* Why Choose Us */}
       <section className="py-12 md:py-16">
