@@ -116,24 +116,26 @@ const CategoryIcon = ({ title }: { title: string }) => {
 // ── Get category image based on title ─────────────────
 const getCategoryImage = (title: string): string => {
   const t = title.toLowerCase();
-  if (t.includes("face")) {
-    return "https://gotoskincare.com/cdn/shop/articles/0221_GT_Website_BlogImagery_8.jpg?v=1613451516&width=1024";
-  }
-  if (t.includes("body")) {
-    return "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=400&h=400&fit=crop";
-  }
-  if (t.includes("bath") || t.includes("shower")) {
-    return "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=400&h=400&fit=crop";
-  }
-  if (t.includes("massage") || t.includes("oil")) {
-    return "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=400&h=400&fit=crop";
-  }
-  if (t.includes("hair")) {
-    return "https://images.unsplash.com/photo-1522338140262-f46f5913618a?w=400&h=400&fit=crop";
-  }
-  if (t.includes("gift")) {
-    return "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=400&h=400&fit=crop";
-  }
+
+  if (t.includes("face"))
+    return "https://img.magnific.com/free-photo/woman-using-face-roller-skincare_23-2151983502.jpg?semt=ais_hybrid&w=740&q=80";
+
+  if (t.includes("body"))
+    return "https://img.magnific.com/free-photo/close-beauty-portrait-topless-woman-with-perfect-skin-holding-bottle-shampoo-lotion-apply-shoulders-body-white-background_343596-8008.jpg?semt=ais_hybrid&w=740&q=80";
+
+  if (t.includes("bath") || t.includes("shower"))
+    return "https://media.istockphoto.com/id/1141213118/photo/smiling-female-rubbing-body-with-foam.jpg?s=612x612&w=0&k=20&c=XtCgHPKv78vuDvrpad11ifsbRHT-4_XMq6qhdbeChJk=";
+
+  if (t.includes("massage") || t.includes("oil"))
+    return "https://media.istockphoto.com/id/994810170/photo/therapist-pouring-massage-oil-at-spa.jpg?s=612x612&w=0&k=20&c=T2QnfdS3LEVqUV4mOjSRFxxrvHgkHaMjHcfshDIyNL8=";
+
+  if (t.includes("hair"))
+    return "https://cdn.prod.website-files.com/667a8e3de4fbbd05a23d72ec/6914604de6ce2410681c4ec6_Natural%20Hair%20Mask%20Formulations%20for%20Restoring%20Damaged%20Hair.webp";
+
+  if (t.includes("gift"))
+    return "https://png.pngtree.com/png-vector/20241224/ourmid/pngtree-pink-cosmetic-products-arranged-neatly-symbolizing-beauty-and-self-care-png-image_14846374.png";
+
+  // fallback
   return "https://images.unsplash.com/photo-1612817288484-6f916006741a?w=400&h=400&fit=crop";
 };
 
@@ -299,12 +301,7 @@ export function ShopByCategory({ companyId, companySlug }: ShopByCategoryProps) 
               // ✅ THE FIX — links to /collections?category=face-care etc.
               const href = getCategoryHref(item.title);
 
-              const imageUrl =
-                item.image?.startsWith("http") || (typeof item.product === "object" && item.product?.image?.startsWith("http"))
-                  ? (item.image || (typeof item.product === "object" ? item.product?.image : ""))
-                  : item.image || (typeof item.product === "object" ? item.product?.image : "")
-                  ? `/${item.image || (typeof item.product === "object" ? item.product?.image : "")}`
-                  : getCategoryImage(item.title);
+              const imageUrl = getCategoryImage(item.title);
 
               return (
                 <motion.div
