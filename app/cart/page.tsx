@@ -79,7 +79,7 @@ export default function CartPage() {
                     {/* Details */}
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-foreground truncate">{item.name}</h3>
-                      <p className="text-sm text-muted-foreground">{item.company.name}</p>
+                      <p className="text-sm text-muted-foreground">{item.company?.name ?? ""}</p>
 
                       {item.selectedSize && (
                         <p className="text-sm text-foreground/80 mt-1">

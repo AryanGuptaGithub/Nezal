@@ -1,3 +1,4 @@
+// components/admin/image-upload-field.tsx
 "use client"
 
 import { useState, useRef } from "react"

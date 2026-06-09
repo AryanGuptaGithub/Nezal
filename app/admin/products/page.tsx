@@ -9,7 +9,14 @@ import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Trash2, Edit2, Search, Eye } from "lucide-react"
+import { Trash2, Edit2, Search, Eye, AlertTriangle } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface Product {
   _id: string
@@ -29,7 +36,13 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 12 // rows per page
+  const itemsPerPage = 12
+
+  // ── Delete confirmation state ──────────────────────────
+  // Step 1: first confirm dialog  |  Step 2: second confirm dialog
+  const [deleteStep, setDeleteStep] = useState<1 | 2 | null>(null)
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (status === "loading") return
@@ -55,18 +68,41 @@ export default function ProductsPage() {
     }
   }
 
-  const deleteProduct = async (productId: string) => {
-    if (!confirm("Are you sure you want to delete this product?")) return
+  // ── Open first dialog ──────────────────────────────────
+  const promptDelete = (product: Product) => {
+    setProductToDelete(product)
+    setDeleteStep(1)
+  }
+
+  // ── User confirmed step 1 → show step 2 ───────────────
+  const handleFirstConfirm = () => {
+    setDeleteStep(2)
+  }
+
+  // ── User confirmed step 2 → actually delete ────────────
+  const handleFinalConfirm = async () => {
+    if (!productToDelete) return
+    setDeleting(true)
     try {
-      const res = await fetch(`/api/products/${productId}`, { method: "DELETE" })
+      const res = await fetch(`/api/products/${productToDelete._id}`, { method: "DELETE" })
       if (!res.ok) throw new Error("Failed to delete product")
       await fetchProducts()
     } catch (error) {
       console.error("Error deleting product:", error)
+    } finally {
+      setDeleting(false)
+      setDeleteStep(null)
+      setProductToDelete(null)
     }
   }
 
-  // Filtered products
+  // ── Cancel / close either dialog ──────────────────────
+  const handleCancelDelete = () => {
+    setDeleteStep(null)
+    setProductToDelete(null)
+  }
+
+  // ── Filtered + paginated products ─────────────────────
   const filteredProducts = useMemo(() => {
     const query = searchQuery.toLowerCase()
     return products.filter(
@@ -77,13 +113,11 @@ export default function ProductsPage() {
     )
   }, [products, searchQuery])
 
-  // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / itemsPerPage))
   const startIdx = (currentPage - 1) * itemsPerPage
   const paginatedProducts = filteredProducts.slice(startIdx, startIdx + itemsPerPage)
 
   useEffect(() => {
-    // reset page if filtered results change
     setCurrentPage(1)
   }, [searchQuery])
 
@@ -124,7 +158,6 @@ export default function ProductsPage() {
               className="pl-9"
             />
           </div>
-
           <div className="text-sm text-muted-foreground">
             Showing {filteredProducts.length} result{filteredProducts.length !== 1 ? "s" : ""}
           </div>
@@ -182,7 +215,6 @@ export default function ProductsPage() {
                         </td>
 
                         <td className="py-3 px-2 hidden md:table-cell align-top">{product.company?.name}</td>
-
                         <td className="py-3 px-2 hidden lg:table-cell align-top">{product.category?.name}</td>
 
                         <td className="py-3 px-2 align-top">
@@ -197,73 +229,131 @@ export default function ProductsPage() {
                         <td className="py-3 px-2 align-top">
                           <div className="flex gap-2 flex-wrap">
                             <Link
-                              href={`/shop/${product.company?.name?.toLowerCase().replace(/\\s+/g, '-')}/product/${product._id}`}
+                              href={`/shop/${product.company?.name?.toLowerCase().replace(/\s+/g, "-")}/product/${product._id}`}
                               className="flex-1"
                             >
-                              <Button size="sm" variant="ghost" className="w-full justify-start bg-[#dcd8d8] ">
+                              <Button size="sm" variant="ghost" className="w-full justify-start bg-[#dcd8d8]">
                                 <Eye className="w-4 h-4 mr-2" />
                                 View
                               </Button>
                             </Link>
 
-                          <Link href={`/admin/products/edit/${product._id}`} className="flex-1">
-                            <Button size="sm" variant="outline" className="w-full justify-start">
-                              <Edit2 className="w-4 h-4 mr-2" />
-                              Edit
+                            <Link href={`/admin/products/edit/${product._id}`} className="flex-1">
+                              <Button size="sm" variant="outline" className="w-full justify-start">
+                                <Edit2 className="w-4 h-4 mr-2" />
+                                Edit
+                              </Button>
+                            </Link>
+
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="w-full border-red-500 border hover:bg-[#eb2c2c] hover:text-white text-red-500"
+                              onClick={() => promptDelete(product)}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
                             </Button>
-                          </Link>
-
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="w-full"
-                            onClick={() => deleteProduct(product._id)}
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
-                          </Button>
-                        </div>
-                      </td>
+                          </div>
+                        </td>
                       </tr>
-                ))
+                    ))
                   )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination controls */}
-          {filteredProducts.length > 0 && (
-            <div className="flex items-center justify-between gap-4 mt-6">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentPage === 1}
-                  onClick={() => handlePageChange(currentPage - 1)}
-                >
-                  Previous
-                </Button>
-
-                <span className="text-sm text-muted-foreground">
-                  Page {currentPage} of {totalPages}
-                </span>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentPage === totalPages}
-                  onClick={() => handlePageChange(currentPage + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-
-              <div className="text-sm text-muted-foreground">Showing {startIdx + 1} - {Math.min(startIdx + itemsPerPage, filteredProducts.length)} of {filteredProducts.length}</div>
+                </tbody>
+              </table>
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-    </main >
+
+            {/* Pagination */}
+            {filteredProducts.length > 0 && (
+              <div className="flex items-center justify-between gap-4 mt-6">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === 1}
+                    onClick={() => handlePageChange(currentPage - 1)}
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === totalPages}
+                    onClick={() => handlePageChange(currentPage + 1)}
+                  >
+                    Next
+                  </Button>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Showing {startIdx + 1} – {Math.min(startIdx + itemsPerPage, filteredProducts.length)} of {filteredProducts.length}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── Step 1: First confirmation dialog ────────────── */}
+      <Dialog open={deleteStep === 1} onOpenChange={(open) => { if (!open) handleCancelDelete() }}>
+        <DialogContent className="sm:max-w-[420px] rounded-2xl">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <DialogTitle className="text-lg font-bold text-foreground">Delete Product?</DialogTitle>
+            </div>
+            <DialogDescription className="text-sm text-muted-foreground pt-1">
+              You are about to delete{" "}
+              <span className="font-semibold text-foreground">{productToDelete?.name}</span>.
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2 justify-end mt-4">
+            <Button variant="outline" onClick={handleCancelDelete}>
+              Cancel
+            </Button>
+            <Button variant="destructive" className="bg-[#e61d1d] hover:bg-[#450909]"  onClick={handleFirstConfirm}>
+              Yes, delete it
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Step 2: Final confirmation dialog ────────────── */}
+      <Dialog open={deleteStep === 2} onOpenChange={(open) => { if (!open) handleCancelDelete() }}>
+        <DialogContent className="sm:max-w-[420px] rounded-2xl">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <DialogTitle className="text-lg font-bold text-red-600">Are you absolutely sure?</DialogTitle>
+            </div>
+            <DialogDescription className="text-sm text-muted-foreground pt-1">
+              This will <span className="font-semibold text-red-500">permanently delete</span>{" "}
+              <span className="font-semibold text-foreground">{productToDelete?.name}</span> from the database.
+              There is no way to recover it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2 justify-end mt-4">
+            <Button variant="outline" onClick={handleCancelDelete} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleFinalConfirm}
+              disabled={deleting}
+              className="min-w-[120px] bg-[#e61d1d] hover:bg-[#450909]"
+            >
+              {deleting ? "Deleting..." : "Delete Forever"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </main>
   )
 }

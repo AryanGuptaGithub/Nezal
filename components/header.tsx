@@ -20,6 +20,7 @@ import { getCachedSync, fetchWithCache, initCache } from "@/lib/cacheClient";
 import { BRAND } from "@/lib/config";
 import { MobileNav } from "@/components/layout/MobileNav"
 import { Button } from "./ui/button";
+import { useCartStore } from "@/lib/store/cart-store"
 
 /* ─── Types ─────────────────────────────────────────────── */
 
@@ -303,6 +304,8 @@ export function Header() {
   const shopMenuRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
+  const clearCart = useCartStore((state) => state.clearCart)
+
   useEffect(() => {
     initCache();
     const cached = getCachedSync<Company[]>(COMPANIES_KEY, MAX_AGE) ?? [];
@@ -453,7 +456,7 @@ export function Header() {
                   </Link>
               
 
-                            <Button className="bg-red-500 text-sm rounded-xl" onClick={() => signOut({ callbackUrl: "/" })}>
+                            <Button className="bg-red-500 text-sm rounded-xl"   onClick={() => { clearCart(); signOut({ callbackUrl: "/" }); }}>
                               Sign out
                             </Button>
                 </>
@@ -532,7 +535,7 @@ export function Header() {
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => signOut({ callbackUrl: "/" })}
+                              onClick={() => { clearCart(); signOut({ callbackUrl: "/" }); }}
                               className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-red-500 mt-1 border-t border-gray-100"
                             >
                               <LogOut className="h-4 w-4" /> Sign Out

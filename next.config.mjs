@@ -1,4 +1,4 @@
-
+// next.config.mjs
 
 
 /** @type {import('next').NextConfig} */

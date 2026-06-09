@@ -19,7 +19,7 @@ export interface CartItem {
   discountPrice?: number
   image: string
   quantity: number
-  company: { name: string; slug: string }
+  company?: { name: string; slug: string }
   selectedSize?: Size
 }
 
