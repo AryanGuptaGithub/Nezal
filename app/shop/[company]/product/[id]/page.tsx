@@ -13,7 +13,7 @@ import { getCachedSync, fetchWithCache } from "@/lib/cacheClient"
 import { trackViewContent, trackAddToCart } from "@/lib/facebook-pixel"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
-
+import ProductDescription from "@/components/ProductDescription"
 
 
 
@@ -632,9 +632,7 @@ const currentImage =
                   Product Description
                 </h3>
               </div>
-              <p className="text-sm leading-relaxed" style={{ color: "#4a5e50" }}>
-                {product.description}
-              </p>
+              <ProductDescription description={product.description} />
             </div>
           </div>
 
@@ -654,9 +652,7 @@ const currentImage =
               <h1 className="text-3xl lg:text-4xl font-bold leading-tight" style={{ color: "#1e3a28" }}>
                 {product.name}
               </h1>
-              <p className="mt-2 text-sm leading-relaxed" style={{ color: "#6b7c70" }}>
-                {product.description}
-              </p>
+              <ProductDescription description={product.description} className="mt-2" />
             </div>
 
             {/* Rating row */}
@@ -914,9 +910,7 @@ const currentImage =
               Product Description
             </h3>
           </div>
-          <p className="text-sm leading-relaxed" style={{ color: "#4a5e50" }}>
-            {product.description}
-          </p>
+          <ProductDescription description={product.description} />
         </div>
 
         {/* ══════════════════════════════════════════════ */}
@@ -955,10 +949,8 @@ const currentImage =
             {/* Tab content */}
             <div className="p-6 lg:p-8">
               {activeTab === "description" && (
-                <p className="text-sm leading-relaxed" style={{ color: "#4a5e50" }}>
-                  {product.description}
-                </p>
-              )}
+  <ProductDescription description={product.description} />
+)}
 
               {activeTab === "ingredients" && (
                 <div className="flex flex-wrap gap-2">
