@@ -30,11 +30,20 @@ function suggestedProductsCacheKey(companySlug: string, productId: string) {
 
 // ── API helpers ───────────────────────────────────────────
 async function fetchProductAPI(id: string): Promise<Product> {
-  const res = await fetch(`/api/products/${id}`, { cache: "no-store" })
-  if (!res.ok) throw new Error(`Failed to fetch product: ${res.status}`)
-  const data = await res.json()
-  if (!data || !data._id) throw new Error("Invalid product data")
-  return data
+  // retry once on failure
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(`/api/products/${id}`, { cache: "no-store" })
+      if (!res.ok) throw new Error(`Failed to fetch product: ${res.status}`)
+      const data = await res.json()
+      if (!data || !data._id) throw new Error("Invalid product data")
+      return data
+    } catch (err) {
+      if (attempt === 1) throw err
+      await new Promise(r => setTimeout(r, 600))  // wait 600ms then retry
+    }
+  }
+  throw new Error("Unreachable")
 }
 
 async function fetchProductReviewsAPI(id: string): Promise<{ reviews: any[]; summary: any }> {
@@ -266,13 +275,21 @@ const initialReviews = null
       if (!id) return
       setLoading(true)
       try {
+
         const data = await fetchWithCache<Product>(
         productCacheKey(id),
         () => fetchProductAPI(id),
-        { ttlMs: TTL, maxAgeMs: MAX_AGE, backgroundRefresh: true, persistToStorage: true }
+        {
+    ttlMs: TTL,
+    maxAgeMs: MAX_AGE,
+    backgroundRefresh: true,
+    persistToStorage: true,
+    validateBeforeUse: (d) => !!d && !!d._id,  // ← eject bad cache entries
+  }
         )
         if (!mounted) return
         setProduct(data)
+
         trackViewContent(data._id, data.name, data.discountPrice || data.price)
         if (data?.company?.slug) loadSuggested(data.company.slug)
       } catch (err) {
@@ -499,15 +516,22 @@ const initialReviews = null
   }
 
   if (!product) {
-    return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <p className="text-2xl font-semibold text-gray-700">Product not found</p>
-          <p className="text-gray-500">The product you're looking for doesn't exist or has been removed.</p>
-        </div>
-      </main>
-    )
-  }
+  return (
+    <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center space-y-4">
+        <p className="text-2xl font-semibold text-gray-700">Product not found</p>
+        <p className="text-gray-500">This product may have moved or is temporarily unavailable.</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white"
+          style={{ backgroundColor: "#1e3a28" }}
+        >
+          Try again
+        </button>
+      </div>
+    </main>
+  )
+}
 
   const allImages = [
   ...(product.images || []),
