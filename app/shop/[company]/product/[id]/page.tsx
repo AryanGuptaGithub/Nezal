@@ -14,12 +14,13 @@ import { trackViewContent, trackAddToCart } from "@/lib/facebook-pixel"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import ProductDescription from "@/components/ProductDescription"
+import ProductSections from "@/components/ProductSections"
 
 
 
 // ── Cache config ──────────────────────────────────────────
-const TTL = 1000 * 60 * 5
-const MAX_AGE = 1000 * 60 * 60 * 24
+const TTL = 1000 * 60 * 2          // 2 min in-memory TTL
+const MAX_AGE = 1000 * 60 * 10     // 10 min max localStorage age (was 24h)
 
 function productCacheKey(id: string) { return `product:${id}` }
 function productReviewsCacheKey(id: string) { return `product:reviews:${id}` }
@@ -90,6 +91,14 @@ interface Product {
   company?: { name: string; slug: string }
   category?: { name: string }
   sizes?: Size[]
+  updatedAt?: string                                       // ← new (for image cache-busting)
+  // ── Structured sections ──────────────────────────────
+  whyYoullLoveIt?: string[]                               // ← new
+  fragranceExp?: string[]                                 // ← new
+  whoIsItFor?: string                                     // ← new
+  skinHairConcern?: string                                // ← new
+  expectedResults?: string                               // ← new
+  keyIngredients?: { name: string; benefit: string }[]   // ← new
 }
 
 interface SuggestedProduct {
@@ -225,26 +234,19 @@ const ProductDetailPage = memo(function ProductDetailPage() {
   const getTotalItems = useCartStore((state) => state.getTotalItems)
   const router = useRouter()  
 
-  const initialProduct = useMemo(() => getCachedSync<Product>(productCacheKey(id), MAX_AGE), [id])
-  const initialReviews = useMemo(
-    () => getCachedSync<{ reviews: any[]; summary: any }>(productReviewsCacheKey(id), MAX_AGE),
-    [id]
-  )
+ const initialProduct = null
+const initialReviews = null
 
   // ── State ──────────────────────────────────────────────
-  const [product, setProduct] = useState<Product | null>(initialProduct ?? null)
+  const [product, setProduct] = useState<Product | null>(null)
   const [suggestedProducts, setSuggestedProducts] = useState<SuggestedProduct[]>([])
-  const [loading, setLoading] = useState(!initialProduct)
+  const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
   const [selectedImage, setSelectedImage] = useState(0)
   const [selectedSize, setSelectedSize] = useState<Size | null>(null)
-  const [reviews, setReviews] = useState<ProductReview[]>(
-    initialReviews ? (initialReviews.reviews || []).map(parseProductReview) : []
-  )
-  const [reviewSummary, setReviewSummary] = useState<ReviewSummary>(
-    initialReviews ? parseReviewSummary(initialReviews.summary) : defaultReviewSummary
-  )
-  const [reviewsLoading, setReviewsLoading] = useState(!initialReviews)
+  const [reviews, setReviews] = useState<ProductReview[]>([])
+  const [reviewSummary, setReviewSummary] = useState<ReviewSummary>(defaultReviewSummary)
+  const [reviewsLoading, setReviewsLoading] = useState(true)
   const [submittingReview, setSubmittingReview] = useState(false)
   const [ratingInput, setRatingInput] = useState<RatingKey | 0>(0)
   const [hoverRating, setHoverRating] = useState<RatingKey | 0>(0)
@@ -265,9 +267,9 @@ const ProductDetailPage = memo(function ProductDetailPage() {
       setLoading(true)
       try {
         const data = await fetchWithCache<Product>(
-          productCacheKey(id),
-          () => fetchProductAPI(id),
-          { ttlMs: TTL, maxAgeMs: MAX_AGE, backgroundRefresh: true, persistToStorage: true }
+        productCacheKey(id),
+        () => fetchProductAPI(id),
+        { ttlMs: TTL, maxAgeMs: MAX_AGE, backgroundRefresh: false, persistToStorage: true }
         )
         if (!mounted) return
         setProduct(data)
@@ -326,8 +328,8 @@ const ProductDetailPage = memo(function ProductDetailPage() {
   }, [session])
 
   useEffect(() => {
-    if (!initialReviews) loadReviews()
-  }, [initialReviews, loadReviews])
+  loadReviews()
+}, [loadReviews]);
 
   useEffect(() => {
     if (product?.sizes && product.sizes.length > 0 && !selectedSize) {
@@ -561,11 +563,11 @@ const currentImage =
 
            {currentImage ? (
   <Image
-    src={currentImage}
-    alt={product.name}
-    fill
-    className="object-contain p-8 transition-transform duration-300 hover:scale-105"
-    priority
+     src={`${currentImage}?v=${product._id.slice(-6)}`}
+     alt={product.name}
+     fill
+     className="object-contain p-8 transition-transform duration-300 hover:scale-105"
+     priority
   />
 ) : (
   <div className="flex h-full items-center justify-center text-gray-400">
@@ -632,7 +634,17 @@ const currentImage =
                   Product Description
                 </h3>
               </div>
-              <ProductDescription description={product.description} />
+             <ProductSections
+                data={{
+                  whyYoullLoveIt:  product.whyYoullLoveIt,
+                  suitableFor:     product.suitableFor,
+                  fragranceExp:    product.fragranceExp,
+                  whoIsItFor:      product.whoIsItFor,
+                  skinHairConcern: product.skinHairConcern,
+                  expectedResults: product.expectedResults,
+                  keyIngredients:  product.keyIngredients,
+                }}
+              />
             </div>
           </div>
 
@@ -910,90 +922,24 @@ const currentImage =
               Product Description
             </h3>
           </div>
-          <ProductDescription description={product.description} />
+         <ProductSections
+                data={{
+                  whyYoullLoveIt:  product.whyYoullLoveIt,
+                  suitableFor:     product.suitableFor,
+                  fragranceExp:    product.fragranceExp,
+                  whoIsItFor:      product.whoIsItFor,
+                  skinHairConcern: product.skinHairConcern,
+                  expectedResults: product.expectedResults,
+                  keyIngredients:  product.keyIngredients,
+                }}
+              />
         </div>
+
 
         {/* ══════════════════════════════════════════════ */}
         {/* TABS SECTION                                  */}
         {/* ══════════════════════════════════════════════ */}
-        {(product.ingredients?.length || product.benefits?.length || product.usage) && (
-          <div
-            className="mt-10 rounded-2xl border overflow-hidden"
-            style={{ backgroundColor: "#ffffff", borderColor: "#dde8de" }}
-          >
-            {/* Tab nav */}
-            <div className="flex overflow-x-auto border-b" style={{ borderColor: "#dde8de" }}>
-              {(
-                [
-                  { key: "description", label: "Description" },
-                  { key: "ingredients", label: "Ingredients" },
-                  { key: "benefits", label: "Benefits" },
-                  { key: "usage", label: "How to Use" },
-                ] as const
-              ).map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className="flex-shrink-0 px-6 py-4 text-sm font-semibold border-b-2 transition-all"
-                  style={{
-                    borderBottomColor: activeTab === tab.key ? "#1e3a28" : "transparent",
-                    color: activeTab === tab.key ? "#1e3a28" : "#6b7c70",
-                    backgroundColor: activeTab === tab.key ? "#f7faf7" : "transparent",
-                  }}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Tab content */}
-            <div className="p-6 lg:p-8">
-              {activeTab === "description" && (
-  <ProductDescription description={product.description} />
-)}
-
-              {activeTab === "ingredients" && (
-                <div className="flex flex-wrap gap-2">
-                  {(product.ingredients || []).map((ing, i) => (
-                    <span
-                      key={i}
-                      className="px-4 py-2 rounded-full text-sm font-medium border"
-                      style={{
-                        backgroundColor: "#f0f7f0",
-                        borderColor: "#c8dac9",
-                        color: "#1e3a28",
-                      }}
-                    >
-                      {ing}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {activeTab === "benefits" && (
-                <ul className="space-y-3">
-                  {(product.benefits || []).map((ben, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm" style={{ color: "#4a5e50" }}>
-                      <span
-                        className="mt-0.5 w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold"
-                        style={{ backgroundColor: "#1e3a28", color: "#ffffff" }}
-                      >
-                        ✓
-                      </span>
-                      {ben}
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              {activeTab === "usage" && (
-                <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: "#4a5e50" }}>
-                  {product.usage}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
+       
 
         {/* ══════════════════════════════════════════════ */}
         {/* REVIEWS SECTION                               */}

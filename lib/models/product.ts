@@ -74,6 +74,33 @@ const productSchema = new mongoose.Schema(
       index: true,
     },
 
+      // ─── Structured product detail sections ────────────────────────────────
+    whyYoullLoveIt: {
+      type: [String],
+      default: [],
+    },
+ 
+    fragranceExp: {
+      type: [String], // e.g. ["Cool", "Fresh", "Revitalizing"]
+      default: [],
+    },
+ 
+    whoIsItFor: {
+      type: String,
+      default: "",
+    },
+ 
+    skinHairConcern: {
+      type: String,
+      default: "",
+    },
+ 
+    expectedResults: {
+      type: String,
+      default: "",
+    },
+
+
     // Structured ingredients with per-ingredient benefit copy
     // Richer than flat ingredients[] — used on collection pages
     keyIngredients: [

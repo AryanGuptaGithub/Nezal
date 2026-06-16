@@ -477,3 +477,30 @@ export async function batchFetch<T>(
 if (typeof window !== 'undefined') {
   initCache()
 }
+
+
+/**
+ * Call this after any admin product update to immediately evict
+ * the product from localStorage so the next page visit fetches fresh data.
+ */
+export function clearProductCache(productId: string) {
+  if (typeof window === "undefined") return
+  const keys = [
+    `product:${productId}`,
+    `product:reviews:${productId}`,
+  ]
+  keys.forEach((k) => {
+    try {
+      localStorage.removeItem(k)
+    } catch {}
+  })
+  // Also clear any suggested product caches (they reference this product)
+  try {
+    const allKeys = Object.keys(localStorage)
+    allKeys.forEach((k) => {
+      if (k.startsWith("suggested:products:") && k.includes(productId)) {
+        localStorage.removeItem(k)
+      }
+    })
+  } catch {}
+}

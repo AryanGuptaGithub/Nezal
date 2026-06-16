@@ -150,7 +150,11 @@ export async function PUT(
     const updatedProduct = product.toObject ? product.toObject() : product;
 
     console.log("✅ Product updated successfully:", id);
-    return NextResponse.json(updatedProduct);
+    return NextResponse.json(updatedProduct, {
+  headers: {
+    "Cache-Control": "no-store, must-revalidate",
+  },
+})
   } catch (error) {
     console.error("Error updating product:", error);
     return NextResponse.json({ error: "Failed to update product" }, { status: 500 });
