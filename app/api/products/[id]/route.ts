@@ -40,7 +40,7 @@ export async function GET(
 
     if (!product) {
       console.warn("⚠️ Product not found:", id);
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+     return NextResponse.json({ error: "Product not found" }, { status: 404, headers: { "Cache-Control": "no-store" } });
     }
 
     const productObj = product.toObject();
@@ -75,7 +75,10 @@ export async function PUT(
       );
     }
 
-    await connectDB();
+    for (let i = 0; i < 3; i++) {
+      try { await connectDB(); break }
+      catch (err) { if (i === 2) throw err; await new Promise(r => setTimeout(r, 300)) }
+    }
 
     const body = await request.json();
 

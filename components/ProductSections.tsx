@@ -34,7 +34,7 @@ interface Props {
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h4 className="text-sm font-semibold mb-2" style={{ color: "#1e3a28" }}>
+    <h4  className="text-sm font-semibold mb-2 underline underline-offset-4"style={{ color: "#1e3a28" }}>
       {children}
     </h4>
   )
@@ -140,10 +140,10 @@ export default function ProductSections({ data }: Props) {
     sections.push(
       <div key="ingredients">
         <SectionHeading>How Key Ingredients Help</SectionHeading>
-        <ul className="space-y-1.5">
+        <ul className="space-y-2">
           {data.keyIngredients.map((ing, i) => (
-            <li key={i} className="text-sm" style={{ color: "#4a5e50" }}>
-              <span className="font-semibold" style={{ color: "#1e3a28" }}>{ing.name}</span>
+            <li key={i} className="text-sm " style={{ color: "#4a5e50" }}>
+              <span className="font-semibold border px-2 rounded-lg" style={{ color: "#1e3a28" }}>{ing.name}</span>
               {" — "}
               {ing.benefit}
             </li>
