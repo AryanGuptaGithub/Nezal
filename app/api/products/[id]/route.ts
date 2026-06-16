@@ -99,6 +99,12 @@ export async function PUT(
       results,
       sizes,
       isActive,
+      whyYoullLoveIt,
+  fragranceExp,
+  whoIsItFor,
+  skinHairConcern,
+  expectedResults,
+  keyIngredients,
     } = body;
 
     // ── FIX: resolve category — prefer subcategory, fall back to mainCategory ──
@@ -127,6 +133,12 @@ export async function PUT(
       results,
       sizes,
       isActive,
+        whyYoullLoveIt:  normalizeStringArray(whyYoullLoveIt),
+  fragranceExp:    normalizeStringArray(fragranceExp),
+  whoIsItFor:      whoIsItFor      ?? "",
+  skinHairConcern: skinHairConcern ?? "",
+  expectedResults: expectedResults ?? "",
+  keyIngredients:  Array.isArray(keyIngredients) ? keyIngredients : [],
     };
 
     // Only set category if we resolved one — avoids wiping an existing category

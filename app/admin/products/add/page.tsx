@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { ArrowLeft, X, Upload, Plus } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import { invalidateCache } from "@/lib/cacheClient"
 
 interface Company { _id: string; name: string }
 interface Category {
@@ -168,8 +169,9 @@ export default function AddProductPage() {
       const res = await fetch("/api/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(bodyData) })
       const responseData = await res.json()
       if (!res.ok) throw new Error(responseData.error || "Failed to create product")
-      setMessage("Product created successfully!")
-      setTimeout(() => router.push("/admin/products"), 1500)
+      invalidateCache("suggested:products:")  // new product should appear in suggestions
+setMessage("Product created successfully!")
+setTimeout(() => router.push("/admin/products"), 1500)
     } catch (error) {
       setMessage("Error creating product. Please try again.")
       console.error("Error:", error)

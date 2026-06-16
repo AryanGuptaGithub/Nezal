@@ -269,7 +269,7 @@ const initialReviews = null
         const data = await fetchWithCache<Product>(
         productCacheKey(id),
         () => fetchProductAPI(id),
-        { ttlMs: TTL, maxAgeMs: MAX_AGE, backgroundRefresh: false, persistToStorage: true }
+        { ttlMs: TTL, maxAgeMs: MAX_AGE, backgroundRefresh: true, persistToStorage: true }
         )
         if (!mounted) return
         setProduct(data)

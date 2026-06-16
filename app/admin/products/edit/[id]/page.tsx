@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { ArrowLeft, X, Upload, Pencil, Plus } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import { invalidateCache } from "@/lib/cacheClient"
 
 interface Company { _id: string; name: string }
 interface Category {
@@ -275,8 +276,9 @@ export default function EditProductPage() {
       })
       const responseData = await res.json()
       if (!res.ok) throw new Error(responseData.error || "Failed to update product")
-      setMessage("Product updated successfully!")
-      setTimeout(() => router.push("/admin/products"), 1500)
+      invalidateCache("suggested:products:")   // prefix match clears all of them
+setMessage("Product updated successfully!")
+setTimeout(() => router.push("/admin/products"), 1500)
     } catch (error) {
       setMessage("Error updating product. Please try again.")
       console.error("Error:", error)
