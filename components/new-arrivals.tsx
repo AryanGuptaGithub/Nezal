@@ -141,14 +141,14 @@ export function NewArrivals({ companyId, companySlug, companyName }: NewArrivals
         </div>
 
         {/* Grid of cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
           {products.map((product) => (
             <div
               key={product._id}
               className="flex flex-col bg-white rounded-2xl overflow-hidden border border-[--color-border] hover:shadow-lg transition-all duration-300 group"
             >
               {/* Image */}
-              <div className="w-full h-[260px] overflow-hidden bg-[--color-bg-cream]">
+              <div className="w-full h-[160px] sm:h-[260px] overflow-hidden bg-[--color-bg-cream]">
                 <img
                   src={product.image || "/companylogo.png"}
                   alt={product.title}
@@ -157,15 +157,15 @@ export function NewArrivals({ companyId, companySlug, companyName }: NewArrivals
               </div>
 
               {/* Content */}
-              <div className="flex flex-col items-center p-5 bg-[--color-bg-cream] gap-3">
-                <h3 className="text-base font-semibold text-[--color-text-heading] leading-snug text-center">
+              <div className="flex flex-col items-center p-3 sm:p-5 bg-[--color-bg-cream] gap-2 sm:gap-3">
+                <h3 className="text-xs sm:text-base font-semibold text-[--color-text-heading] leading-snug text-center line-clamp-2">
                   {product.title}
                 </h3>
                 <Button
                   onClick={() =>
                     router.push(`/shop/${product.company.slug}/product/${product.productId._id}`)
                   }
-                  className="bg-[--color-brand-primary] hover:bg-[--color-brand-primary-dark] text-white text-sm px-6 py-2 rounded-full font-semibold transition-all duration-200 hover:scale-105"
+                 className="bg-[--color-brand-primary] hover:bg-[--color-brand-primary-dark] text-white text-xs sm:text-sm px-3 sm:px-6 py-1.5 sm:py-2 rounded-full font-semibold transition-all duration-200 hover:scale-105 w-full"
                 >
                   Shop now
                 </Button>

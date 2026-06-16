@@ -203,7 +203,7 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
             <Link
               href="/shop"
               onClick={onClose}
-              className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold text-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary)]/5 transition-colors"
+              className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold bg-[#0fa334] text-[#fff] hover:bg-[#084f09] transition-colors"
             >
               Shop All Products
               <ChevronRight size={15} />

@@ -7,9 +7,14 @@ import { ShopByCategory } from "@/components/shop-by-category"
 import WhyChoose from "@/components/why-choose"
 import Testimonials from "@/components/testimonials"
 import { AnimatedTestimonials } from "@/components/AnimatedTestimonials"
+import { useRouter } from "next/navigation"
+
 
 import { getCachedSync, fetchWithCache, invalidateCache } from "@/lib/cacheClient"
 import { BRAND } from "@/lib/config"
+
+
+
 
 // ─── Types ───────────────────────────────────────────
 interface Product {
@@ -226,6 +231,10 @@ function PromoBannerGrid() {
 
 // ─── Home component ──────────────────────────────────
 export default function Home() {
+
+  
+const router = useRouter()
+
   // Initial cache reads
   const initialCompanies = useMemo(
     () => (typeof window === "undefined" ? [] : getCachedSync<Company[]>(COMPANIES_KEY, MAX_AGE) ?? []),
@@ -531,15 +540,14 @@ export default function Home() {
     {!loading && allProducts.length > 8 && (
       <div className="mt-10 flex flex-col items-center gap-3">
         <button
-          onClick={() => setShowAllProducts((v) => !v)}
-          className="group inline-flex items-center gap-2 px-8 py-3 rounded-full border-2 border-[var(--color-brand-primary)] text-[var(--color-brand-primary)] font-semibold text-sm hover:bg-[var(--color-brand-primary)] hover:text-white transition-all duration-200"
-        >
-          {showAllProducts ? (
-            <>Show Less <span className="transition-transform group-hover:-translate-y-0.5">↑</span></>
-          ) : (
-            <>View All {allProducts.length} Products <span className="transition-transform group-hover:translate-y-0.5">↓</span></>
-          )}
-        </button>
+  onClick={() => router.push("/shop")}
+  className="group inline-flex items-center gap-2 px-8 py-3 rounded-full border-2 border-[var(--color-brand-primary)] text-[var(--color-brand-primary)] font-semibold text-sm hover:bg-[var(--color-brand-primary)] hover:text-white transition-all duration-200"
+>
+  View All {allProducts.length} Products
+  <span className="transition-transform group-hover:translate-y-0.5">
+    →
+  </span>
+</button>
         {!showAllProducts && (
           <p className="text-xs text-muted-foreground">
             Showing 8 of {allProducts.length} products

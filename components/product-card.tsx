@@ -147,7 +147,7 @@ export default function ProductCard({
       >
 
       {/* IMAGE */}
-<div className="group relative aspect-square overflow-hidden rounded-2xl bg-[var(--color-bg-cream)] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+<div className="group relative overflow-hidden rounded-2xl bg-[var(--color-bg-cream)] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" style={{ aspectRatio: "4/3" }}>
 
   {/* subtle gradient overlay for depth */}
   <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-transparent via-transparent to-black/5" />
@@ -201,8 +201,8 @@ export default function ProductCard({
 </div>
 
         {/* CONTENT */}
-        <div className="flex flex-1 flex-col gap-3 p-4">
-          <h3 className="line-clamp-2 min-h-[48px] text-sm font-medium text-[var(--color-text-heading)] transition-colors group-hover:text-[var(--color-brand-primary)]">
+        <div className="flex flex-1 flex-col gap-2 p-3 sm:gap-3 sm:p-4">
+          <h3 className="line-clamp-2 min-h-[36px] sm:min-h-[48px] text-xs sm:text-sm font-medium text-[var(--color-text-heading)] transition-colors group-hover:text-[var(--color-brand-primary)]">
             {name}
           </h3>
 
@@ -254,7 +254,7 @@ export default function ProductCard({
             <button
               type="button"
               onClick={handleShopNow}
-              className="h-10 rounded-xl bg-[var(--color-brand-primary)] text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              className="h-8 sm:h-10 rounded-xl bg-[var(--color-brand-primary)] text-xs sm:text-sm font-semibold text-white transition-opacity hover:opacity-90"
             >
               Shop Now
             </button>
@@ -266,7 +266,7 @@ export default function ProductCard({
                 isOutOfStock ||
                 (hasMultipleSizes && sizes.length > 0 && !selectedSize)
               }
-              className="h-10 rounded-xl bg-black text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-8 sm:h-10 rounded-xl bg-black text-xs sm:text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isOutOfStock ? "Out of Stock" : "Add to Cart"}
             </button>

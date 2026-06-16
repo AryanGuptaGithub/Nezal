@@ -1172,7 +1172,7 @@ const currentImage =
     <h2 className="text-2xl font-bold mb-6" style={{ color: "#1e3a28" }}>
       You May Also Like
     </h2>
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
       {suggestedProducts.map((p) => (
         <ProductCard
           key={p._id}
