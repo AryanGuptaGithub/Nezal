@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input"
 import { ArrowLeft, X, Upload, Pencil, Plus } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { invalidateCache } from "@/lib/cacheClient"
+import QuickPasteBox from "@/components/QuickPasteBox"
+import { ParsedProductData } from "@/lib/parseQuickPaste"
 
 interface Company { _id: string; name: string }
 interface Category {
@@ -187,6 +188,32 @@ export default function EditProductPage() {
     }))
   }
 
+  // ── Quick Paste: bulk-fill the form from a pasted structured text block ──
+  const handleQuickPasteApply = (parsed: ParsedProductData) => {
+    setFormData((prev) => ({
+      ...prev,
+      ...(parsed.name !== undefined && { name: parsed.name }),
+      ...(parsed.slug !== undefined && { slug: parsed.slug }),
+      ...(parsed.price !== undefined && { price: Number(parsed.price) }),
+      ...(parsed.discountPrice !== undefined && { discountPrice: Number(parsed.discountPrice) }),
+      ...(parsed.stock !== undefined && { stock: Number(parsed.stock) }),
+      ...(parsed.sku !== undefined && { sku: parsed.sku }),
+      ...(parsed.description !== undefined && { description: parsed.description }),
+      ...(parsed.ingredients !== undefined && { ingredients: normalizeStringArray(parsed.ingredients) }),
+      ...(parsed.benefits !== undefined && { benefits: normalizeStringArray(parsed.benefits) }),
+      ...(parsed.usage !== undefined && { usage: parsed.usage }),
+      ...(parsed.suitableFor !== undefined && { suitableFor: normalizeStringArray(parsed.suitableFor) }),
+      ...(parsed.whyYoullLoveIt !== undefined && { whyYoullLoveIt: normalizeStringArray(parsed.whyYoullLoveIt) }),
+      ...(parsed.fragranceExp !== undefined && { fragranceExp: normalizeStringArray(parsed.fragranceExp) }),
+      ...(parsed.whoIsItFor !== undefined && { whoIsItFor: parsed.whoIsItFor }),
+      ...(parsed.skinHairConcern !== undefined && { skinHairConcern: parsed.skinHairConcern }),
+      ...(parsed.expectedResults !== undefined && { expectedResults: parsed.expectedResults }),
+      ...(parsed.keyIngredients?.length && {
+        keyIngredients: [...prev.keyIngredients, ...parsed.keyIngredients],
+      }),
+    }))
+  }
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files; if (!files) return
     setUploading(true)
@@ -276,9 +303,8 @@ export default function EditProductPage() {
       })
       const responseData = await res.json()
       if (!res.ok) throw new Error(responseData.error || "Failed to update product")
-      invalidateCache("suggested:products:")   // prefix match clears all of them
-setMessage("Product updated successfully!")
-setTimeout(() => router.push("/admin/products"), 1500)
+      setMessage("Product updated successfully!")
+      setTimeout(() => router.push("/admin/products"), 1500)
     } catch (error) {
       setMessage("Error updating product. Please try again.")
       console.error("Error:", error)
@@ -297,7 +323,12 @@ setTimeout(() => router.push("/admin/products"), 1500)
         <Link href="/admin/products">
           <Button variant="ghost" className="mb-6 bg-transparent"><ArrowLeft className="w-4 h-4 mr-2" />Back to Products</Button>
         </Link>
-        <h1 className="text-3xl font-bold text-foreground mb-8">Edit Product</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-6">Edit Product</h1>
+
+        <div className="mb-6">
+          <QuickPasteBox onApply={handleQuickPasteApply} />
+        </div>
+
         <Card>
           <CardHeader><CardTitle>Product Information</CardTitle></CardHeader>
           <CardContent>

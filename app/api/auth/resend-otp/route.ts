@@ -1,3 +1,4 @@
+//  resend-otp/route.ts
 import { connectDB } from "@/lib/db";
 import { User } from "@/lib/models/user";
 import { Otp } from "@/lib/models/otp";

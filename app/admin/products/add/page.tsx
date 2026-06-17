@@ -13,6 +13,9 @@ import Link from "next/link"
 import Image from "next/image"
 import { invalidateCache } from "@/lib/cacheClient"
 
+import QuickPasteBox from "@/components/QuickPasteBox"
+import { ParsedProductData } from "@/lib/parseQuickPaste"
+
 interface Company { _id: string; name: string }
 interface Category {
   _id: string; name: string; slug: string
@@ -91,6 +94,46 @@ export default function AddProductPage() {
     if (name === "mainCategory") { setFormData((prev) => ({ ...prev, mainCategory: value, category: "" })); return }
     setFormData((prev) => ({ ...prev, [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value }))
   }
+
+
+  const handleQuickPasteApply = (parsed: ParsedProductData) => {
+  setFormData((prev) => ({
+    ...prev,
+    ...(parsed.name !== undefined && { name: parsed.name }),
+    ...(parsed.slug !== undefined && { slug: parsed.slug }),
+    ...(parsed.price !== undefined && { price: parsed.price }),
+    ...(parsed.discountPrice !== undefined && { discountPrice: parsed.discountPrice }),
+    ...(parsed.stock !== undefined && { stock: parsed.stock }),
+    ...(parsed.sku !== undefined && { sku: parsed.sku }),
+    ...(parsed.description !== undefined && { description: parsed.description }),
+    ...(parsed.ingredients !== undefined && { ingredients: parsed.ingredients }),
+    ...(parsed.benefits !== undefined && { benefits: parsed.benefits }),
+    ...(parsed.usage !== undefined && { usage: parsed.usage }),
+    ...(parsed.suitableFor !== undefined && { suitableFor: parsed.suitableFor }),
+    ...(parsed.whyYoullLoveIt !== undefined && { whyYoullLoveIt: parsed.whyYoullLoveIt }),
+    ...(parsed.fragranceExp !== undefined && { fragranceExp: parsed.fragranceExp }),
+    ...(parsed.whoIsItFor !== undefined && { whoIsItFor: parsed.whoIsItFor }),
+    ...(parsed.skinHairConcern !== undefined && { skinHairConcern: parsed.skinHairConcern }),
+    ...(parsed.expectedResults !== undefined && { expectedResults: parsed.expectedResults }),
+  }))
+
+  // keyIngredients is a separate array of objects, not part of formData in the add page,
+  // and is formData.keyIngredients (array) in the edit page — handle accordingly:
+
+  // ── ADD PAGE: keyIngredients lives in its own `keyIngredients` state ──
+  if (parsed.keyIngredients?.length) {
+    setKeyIngredients((prev) => [...prev, ...parsed.keyIngredients!])
+  }
+
+  // ── EDIT PAGE (use this version instead, since keyIngredients is inside formData): ──
+  // if (parsed.keyIngredients?.length) {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     keyIngredients: [...prev.keyIngredients, ...parsed.keyIngredients!],
+  //   }))
+  // }
+}
+
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files; if (!files) return
@@ -185,7 +228,11 @@ setTimeout(() => router.push("/admin/products"), 1500)
           <Button variant="ghost" className="mb-6 bg-transparent"><ArrowLeft className="w-4 h-4 mr-2" />Back to Products</Button>
         </Link>
         <h1 className="text-3xl font-bold text-foreground mb-8">Add New Product</h1>
+        <div className="mb-6">
+  <QuickPasteBox onApply={handleQuickPasteApply} />
+</div>
         <Card>
+          
           <CardHeader><CardTitle>Product Information</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
