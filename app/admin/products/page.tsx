@@ -36,6 +36,7 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
+  const [selectedCategory, setSelectedCategory] = useState("all")
   const itemsPerPage = 12
 
   // ── Delete confirmation state ──────────────────────────
@@ -104,14 +105,32 @@ export default function ProductsPage() {
 
   // ── Filtered + paginated products ─────────────────────
   const filteredProducts = useMemo(() => {
-    const query = searchQuery.toLowerCase()
-    return products.filter(
-      (product) =>
-        product.name.toLowerCase().includes(query) ||
-        product.company?.name?.toLowerCase().includes(query) ||
-        product.category?.name?.toLowerCase().includes(query)
-    )
-  }, [products, searchQuery])
+  const query = searchQuery.toLowerCase()
+  return products.filter((product) => {
+    const matchesSearch =
+      product.name.toLowerCase().includes(query) ||
+      product.company?.name?.toLowerCase().includes(query) ||
+      product.category?.name?.toLowerCase().includes(query)
+
+    const matchesCategory =
+      selectedCategory === "all" || product.category?.name === selectedCategory
+
+    return matchesSearch && matchesCategory
+  })
+}, [products, searchQuery, selectedCategory])
+
+useEffect(() => {
+  setCurrentPage(1)
+}, [searchQuery, selectedCategory])
+
+  const categories = useMemo(() => {
+  const set = new Set<string>()
+  products.forEach((p) => {
+    if (p.category?.name) set.add(p.category.name)
+  })
+  return Array.from(set).sort()
+}, [products])
+
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / itemsPerPage))
   const startIdx = (currentPage - 1) * itemsPerPage
@@ -147,25 +166,44 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        {/* Search */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
-          <div className="relative w-full sm:w-80">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search products by name, company, or category..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <div className="text-sm text-muted-foreground">
-            Showing {filteredProducts.length} result{filteredProducts.length !== 1 ? "s" : ""}
-          </div>
-        </div>
+   
+     
+
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex justify-between items-center ">
             <CardTitle>All Products</CardTitle>
+                      {/* Search + Category filter */}
+<div className="flex flex-col sm:flex-row items-center justify-between gap-4 ">
+  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+    <div className="relative w-full sm:w-80">
+      <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+      <Input
+        placeholder="Search products by name, company, or category..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="pl-9"
+      />
+    </div>
+
+    <select
+      value={selectedCategory}
+      onChange={(e) => setSelectedCategory(e.target.value)}
+      className="h-10 w-full sm:w-56 rounded-md border-2 border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+    >
+      <option value="all">All Categories</option>
+      {categories.map((c) => (
+        <option key={c} value={c}>
+          {c}
+        </option>
+      ))}
+    </select>
+  </div>
+
+  <div className="text-sm text-muted-foreground">
+    Showing {filteredProducts.length} result{filteredProducts.length !== 1 ? "s" : ""}
+  </div>
+</div>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
