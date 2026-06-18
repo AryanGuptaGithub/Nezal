@@ -25,6 +25,7 @@ export interface ProductSectionsData {
   whoIsItFor?: string
   skinHairConcern?: string
   expectedResults?: string
+  ingredients?: string[]
   keyIngredients?: { name: string; benefit: string }[]
 }
 
@@ -34,7 +35,7 @@ interface Props {
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h4  className="text-sm font-semibold mb-2 underline underline-offset-4"style={{ color: "#1e3a28" }}>
+    <h4 className="text-sm font-semibold mb-2 underline underline-offset-4" style={{ color: "#1e3a28" }}>
       {children}
     </h4>
   )
@@ -47,8 +48,8 @@ function PillList({ items }: { items: string[] }) {
       {items.map((item, i) => (
         <span
           key={i}
-          className="px-3 py-1 rounded-full text-xs font-medium border"
-          style={{ borderColor: "#c8dac9", color: "#2a5c3a", backgroundColor: "#f0f7f0" }}
+          className="px-3 py-1 rounded-full text-xs font-medium "
+          style={{ borderColor: "#c8dac9", color: "#f0f7f0", backgroundColor: "#22783d" }}
         >
           {item}
         </span>
@@ -136,14 +137,23 @@ export default function ProductSections({ data }: Props) {
     )
   }
 
+  if (data.ingredients?.length) {
+    sections.push(
+      <div key="ingredients-list">
+        <SectionHeading>Ingredients</SectionHeading>
+        <PillList items={data.ingredients} />
+      </div>
+    )
+  }
+
   if (data.keyIngredients?.length) {
     sections.push(
-      <div key="ingredients">
+      <div key="key-ingredients">
         <SectionHeading>How Key Ingredients Help</SectionHeading>
-        <ul className="space-y-2">
+        <ul className="space-y-1.5">
           {data.keyIngredients.map((ing, i) => (
-            <li key={i} className="text-sm " style={{ color: "#4a5e50" }}>
-              <span className="font-semibold border px-2 rounded-lg" style={{ color: "#1e3a28" }}>{ing.name}</span>
+            <li key={i} className="text-sm" style={{ color: "#4a5e50" }}>
+              <span className="font-semibold border rounded-lg px-2 " style={{ color: "#1e3a28" }}>{ing.name}</span>
               {" — "}
               {ing.benefit}
             </li>

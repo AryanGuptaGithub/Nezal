@@ -158,8 +158,21 @@ export function parseQuickPaste(raw: string): ParsedProductData {
       // single-line fields use only the inline value captured at match time
       // (buffer unused for these — handled inline below)
     } else if (currentDef.type === "paragraph") {
-      const text = buffer.join(" ").replace(/\s+/g, " ").trim()
-      if (text) (result as any)[currentDef.key] = text
+      if (currentDef.key === "description") {
+        // ── Special case: preserve the tagline (first line) as its own
+        // line, joined to the rest of the paragraph with a single \n.
+        // This lets ProductDescription render the tagline distinctly.
+        const nonEmpty = buffer.filter((l) => l.trim().length > 0)
+        if (nonEmpty.length) {
+          const [taglineLine, ...rest] = nonEmpty
+          const restJoined = rest.join(" ").replace(/\s+/g, " ").trim()
+          const text = restJoined ? `${taglineLine.trim()}\n${restJoined}` : taglineLine.trim()
+          result.description = text
+        }
+      } else {
+        const text = buffer.join(" ").replace(/\s+/g, " ").trim()
+        if (text) (result as any)[currentDef.key] = text
+      }
     } else if (currentDef.type === "list") {
       const items = buffer
         .map((l) => stripBulletPrefix(l))

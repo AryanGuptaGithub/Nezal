@@ -32,6 +32,9 @@ interface KeyIngredient { name: string; benefit: string }
 function normalizeTextarea(val: string): string[] {
   return val.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean)
 }
+function normalizeByNewlineOnly(val: string): string[] {
+  return val.split("\n").map((s) => s.trim()).filter(Boolean)
+}
 
 export default function AddProductPage() {
   const router = useRouter()
@@ -198,12 +201,12 @@ export default function AddProductPage() {
         company: formData.company, stock: Number(formData.stock), sku: formData.sku,
         ingredients: normalizeTextarea(formData.ingredients),
         benefits: normalizeTextarea(formData.benefits),
-        suitableFor: normalizeTextarea(formData.suitableFor),
+        suitableFor: normalizeByNewlineOnly(formData.suitableFor),
         usage: formData.usage, isActive: formData.isActive, results,
         sizes: sizes.map((s) => ({ ...s, quantity: Number(s.quantity), price: Number(s.price), discountPrice: s.discountPrice ? Number(s.discountPrice) : undefined, stock: Number(s.stock) })),
         // ── New structured fields ──
-        whyYoullLoveIt: normalizeTextarea(formData.whyYoullLoveIt),
-        fragranceExp: normalizeTextarea(formData.fragranceExp),
+       hyYoullLoveIt: normalizeByNewlineOnly(formData.whyYoullLoveIt),
+fragranceExp: normalizeByNewlineOnly(formData.fragranceExp),
         whoIsItFor: formData.whoIsItFor,
         skinHairConcern: formData.skinHairConcern,
         expectedResults: formData.expectedResults,

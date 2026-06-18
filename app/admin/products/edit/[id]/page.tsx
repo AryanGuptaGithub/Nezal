@@ -38,6 +38,14 @@ function normalizeStringArray(val: any): string[] {
   if (typeof val === "string") return val.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean)
   return []
 }
+function normalizeByNewlineOnly(val: any): string[] {
+  if (!val) return []
+  if (Array.isArray(val)) {
+    return val.flatMap((v) => (typeof v === "string" ? v.split("\n") : [])).map((s) => s.trim()).filter(Boolean)
+  }
+  if (typeof val === "string") return val.split("\n").map((s) => s.trim()).filter(Boolean)
+  return []
+}
 
 const createEmptySize = (): Size => ({ size: "", unit: "ml", quantity: 0, price: 0, discountPrice: 0, stock: 0, sku: "" })
 
@@ -202,15 +210,15 @@ export default function EditProductPage() {
       ...(parsed.ingredients !== undefined && { ingredients: normalizeStringArray(parsed.ingredients) }),
       ...(parsed.benefits !== undefined && { benefits: normalizeStringArray(parsed.benefits) }),
       ...(parsed.usage !== undefined && { usage: parsed.usage }),
-      ...(parsed.suitableFor !== undefined && { suitableFor: normalizeStringArray(parsed.suitableFor) }),
-      ...(parsed.whyYoullLoveIt !== undefined && { whyYoullLoveIt: normalizeStringArray(parsed.whyYoullLoveIt) }),
-      ...(parsed.fragranceExp !== undefined && { fragranceExp: normalizeStringArray(parsed.fragranceExp) }),
+     ...(parsed.suitableFor !== undefined && { suitableFor: normalizeByNewlineOnly(parsed.suitableFor) }),
+...(parsed.whyYoullLoveIt !== undefined && { whyYoullLoveIt: normalizeByNewlineOnly(parsed.whyYoullLoveIt) }),
+...(parsed.fragranceExp !== undefined && { fragranceExp: normalizeByNewlineOnly(parsed.fragranceExp) }),
       ...(parsed.whoIsItFor !== undefined && { whoIsItFor: parsed.whoIsItFor }),
       ...(parsed.skinHairConcern !== undefined && { skinHairConcern: parsed.skinHairConcern }),
       ...(parsed.expectedResults !== undefined && { expectedResults: parsed.expectedResults }),
       ...(parsed.keyIngredients?.length && {
-        keyIngredients: [...prev.keyIngredients, ...parsed.keyIngredients],
-      }),
+  keyIngredients: parsed.keyIngredients,
+}),
     }))
   }
 
@@ -287,12 +295,12 @@ export default function EditProductPage() {
         company: formData.company, stock: Number(formData.stock), sku: formData.sku,
         ingredients: normalizeStringArray(formData.ingredients),
         benefits: normalizeStringArray(formData.benefits),
-        suitableFor: normalizeStringArray(formData.suitableFor),
+        suitableFor: normalizeByNewlineOnly(formData.suitableFor),
         usage: formData.usage, isActive: formData.isActive, results,
         sizes: sizes.map((s) => ({ ...s, quantity: Number(s.quantity), price: Number(s.price), discountPrice: s.discountPrice ? Number(s.discountPrice) : undefined, stock: Number(s.stock) })),
         // ── New structured fields ──
-        whyYoullLoveIt: normalizeStringArray(formData.whyYoullLoveIt),
-        fragranceExp: normalizeStringArray(formData.fragranceExp),
+        whyYoullLoveIt: normalizeByNewlineOnly(formData.whyYoullLoveIt),
+fragranceExp: normalizeByNewlineOnly(formData.fragranceExp),
         whoIsItFor: formData.whoIsItFor,
         skinHairConcern: formData.skinHairConcern,
         expectedResults: formData.expectedResults,

@@ -659,16 +659,17 @@ const currentImage =
                 </h3>
               </div>
              <ProductSections
-                data={{
-                  whyYoullLoveIt:  product.whyYoullLoveIt,
-                  suitableFor:     product.suitableFor,
-                  fragranceExp:    product.fragranceExp,
-                  whoIsItFor:      product.whoIsItFor,
-                  skinHairConcern: product.skinHairConcern,
-                  expectedResults: product.expectedResults,
-                  keyIngredients:  product.keyIngredients,
-                }}
-              />
+  data={{
+    whyYoullLoveIt:  product.whyYoullLoveIt,
+    suitableFor:     product.suitableFor,
+    fragranceExp:    product.fragranceExp,
+    whoIsItFor:      product.whoIsItFor,
+    skinHairConcern: product.skinHairConcern,
+    expectedResults: product.expectedResults,
+    ingredients:     product.ingredients,
+    keyIngredients:  product.keyIngredients,
+  }}
+/>
             </div>
           </div>
 
@@ -677,14 +678,14 @@ const currentImage =
 
             {/* Brand + Name */}
             <div>
-              {product.company?.name && (
+              {/* {product.company?.name && (
                 <p
                   className="text-xs font-bold tracking-widest uppercase mb-2"
                   style={{ color: "#2a5c3a" }}
                 >
                   {product.company.name}
                 </p>
-              )}
+              )} */}
               <h1 className="text-3xl lg:text-4xl font-bold leading-tight" style={{ color: "#1e3a28" }}>
                 {product.name}
               </h1>
@@ -742,14 +743,11 @@ const currentImage =
             {/* Size selector */}
             {hasSizes && (
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-semibold" style={{ color: "#1e3a28" }}>
-                    Select Size
-                  </p>
-                  <button className="text-xs underline" style={{ color: "#2a5c3a" }}>
-                    Size guide
-                  </button>
-                </div>
+                <div className="mb-3">
+  <p className="text-sm font-semibold" style={{ color: "#1e3a28" }}>
+    Select Size
+  </p>
+</div>
                 <div className="flex flex-wrap gap-2.5">
                   {product.sizes?.map((size, idx) => {
                     const isSel = selectedSize?.size === size.size && selectedSize?.unit === size.unit
@@ -769,8 +767,8 @@ const currentImage =
                           cursor: oos ? "not-allowed" : "pointer",
                         }}
                       >
-                        {size.size}{size.unit}
-                        {size.discountPrice ? ` – ₹${size.discountPrice}` : ` – ₹${size.price}`}
+                       {size.size.replace(/[a-zA-Z]+$/, "").trim()}{size.unit}
+{size.discountPrice ? ` – ₹${size.discountPrice}` : ` – ₹${size.price}`}
                       </button>
                     )
                   })}
@@ -947,16 +945,17 @@ const currentImage =
             </h3>
           </div>
          <ProductSections
-                data={{
-                  whyYoullLoveIt:  product.whyYoullLoveIt,
-                  suitableFor:     product.suitableFor,
-                  fragranceExp:    product.fragranceExp,
-                  whoIsItFor:      product.whoIsItFor,
-                  skinHairConcern: product.skinHairConcern,
-                  expectedResults: product.expectedResults,
-                  keyIngredients:  product.keyIngredients,
-                }}
-              />
+  data={{
+    whyYoullLoveIt:  product.whyYoullLoveIt,
+    suitableFor:     product.suitableFor,
+    fragranceExp:    product.fragranceExp,
+    whoIsItFor:      product.whoIsItFor,
+    skinHairConcern: product.skinHairConcern,
+    expectedResults: product.expectedResults,
+    ingredients:     product.ingredients,
+    keyIngredients:  product.keyIngredients,
+  }}
+/>
         </div>
 
 
