@@ -171,8 +171,8 @@ export default function ContactUs() {
           </motion.div>
 
           {/* Right column: Map + CTA */}
-          <div className="space-y-8 lg:sticky lg:top-24">
-            {/* Map card */}
+          {/* <div className="space-y-8 lg:sticky lg:top-24">
+          
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -183,7 +183,7 @@ export default function ContactUs() {
               <div className="bg-gradient-to-r from-[#1e3a28] to-[#2a5c3a] px-6 py-5">
                 <h3 className="text-xl font-semibold text-white">Find Us Here</h3>
                 <p className="mt-1 text-sm text-emerald-200">
-                  Visit our clinic for a personal skin consultation
+                  Visit our office for a personal skin consultation
                 </p>
               </div>
               <div className="aspect-video w-full md:aspect-auto md:h-[420px]">
@@ -198,7 +198,7 @@ export default function ContactUs() {
               </div>
             </motion.div>
 
-            {/* Call to action card */}
+          
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -218,8 +218,9 @@ export default function ContactUs() {
                 Call Now <ArrowRight className="h-5 w-5" />
               </a>
             </motion.div>
-          </div>
+          </div> */}
         </div>
+
       </div>
 
       {/* Brand promise – full-width with leaf icon */}
