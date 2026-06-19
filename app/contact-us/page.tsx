@@ -161,9 +161,9 @@ export default function ContactUs() {
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold text-white">Business Hours</h3>
-                  <div className="mt-3 space-y-1 text-emerald-100">
-                    <p>Monday – Saturday: 10:00 AM – 7:00 PM</p>
-                    <p>Sunday: Closed</p>
+                  <div className="mt-3 space-y-1 ">
+                    <p className="text-white">Monday – Saturday: 10:00 AM – 7:00 PM</p>
+                    <p className="text-white">Sunday: Closed</p>
                   </div>
                 </div>
               </div>

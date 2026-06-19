@@ -21,6 +21,7 @@ import { BRAND } from "@/lib/config";
 import { MobileNav } from "@/components/layout/MobileNav"
 import { Button } from "./ui/button";
 import { useCartStore } from "@/lib/store/cart-store"
+import { SearchBar } from "@/components/SearchBar"
 
 /* ─── Types ─────────────────────────────────────────────── */
 
@@ -371,17 +372,17 @@ export function Header() {
 
   const navLinks = [
     { label: "Home",     href: "/" },
-    { label: "About Us", href: "/about-us" },
+    { label: "About", href: "/about-us" },
     { label: "Blogs",    href: "/blog" },
     { label: "Contact",  href: "/contact-us" },
   ];
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full bg-white shadow-sm">
-        <div className="border-b" style={{ borderColor: "var(--color-border)" }}>
-          <div className="container-nezal">
-            <div className="flex h-16 items-center gap-6">
+      <header className="sticky top-0 z-50 w-full bg-white shadow-sm ">
+        <div className="" style={{ borderColor: "var(--color-border)" }}>
+          <div className="container-nezal w-full">
+            <div className="flex h-16 items-center gap-6  ">
 
               {/* LOGO */}
               <Link href="/" className="flex shrink-0 items-center gap-2" aria-label={`${BRAND.name} home`}>
@@ -391,12 +392,12 @@ export function Header() {
               </Link>
 
               {/* DESKTOP NAV */}
-              <nav className="hidden flex-1 items-center gap-1 lg:flex">
+              <nav className="hidden flex-1 items-center gap-1 lg:flex w-full">
 
                 {/* Home — first link */}
                 <Link
                   href="/"
-                  className={`rounded-md px-3 py-2 text-[15px] font-medium transition-colors ${
+                  className={`rounded-md px-3 py-2 text-[13px] font-medium transition-colors ${
                     isActive("/")
                       ? "text-[var(--color-brand-primary)]"
                       : "text-[var(--color-text-heading)] hover:text-[var(--color-brand-primary)]"
@@ -410,7 +411,7 @@ export function Header() {
                   <button
                     type="button"
                     onClick={() => setShopMenuOpen((v) => !v)}
-                    className={`flex items-center gap-1 rounded-md px-3 py-2 text-[15px] font-medium transition-colors ${
+                    className={`flex items-center gap-1 rounded-md px-3 py-2 text-[13px] font-medium transition-colors ${
                       pathname?.startsWith("/shop") || pathname?.startsWith("/collections")
                         ? "text-[var(--color-brand-primary)]"
                         : "text-[var(--color-text-heading)] hover:text-[var(--color-brand-primary)]"
@@ -430,7 +431,7 @@ export function Header() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`rounded-md px-3 py-2 text-[15px] font-medium transition-colors ${
+                    className={`rounded-md px-3 py-2 text-[13px] font-medium transition-colors ${
                       isActive(link.href)
                         ? "text-[var(--color-brand-primary)]"
                         : "text-[var(--color-text-heading)] hover:text-[var(--color-brand-primary)]"
@@ -440,6 +441,8 @@ export function Header() {
                   </Link>
                 ))}
               </nav>
+
+              <SearchBar />
 
               {/* RIGHT SIDE */}
               <div className="ml-auto flex items-center gap-2">
@@ -463,22 +466,9 @@ export function Header() {
                 ) : (
                   /* REGULAR USER — Search, Wishlist, Cart, Account */
                   <>
-                    {/* SEARCH */}
-                    <form
-                      onSubmit={handleSearch}
-                      className="hidden items-center gap-2 rounded-full border px-3 py-1.5 md:flex"
-                      style={{ borderColor: "var(--color-border)", background: "#F5F5F5" }}
-                    >
-                      <Search className="h-4 w-4" style={{ color: "var(--color-text-muted)" }} />
-                      <input
-                        ref={searchRef}
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search"
-                        className="w-full bg-transparent text-sm outline-none"
-                      />
-                    </form>
+
+                    
+
 
                     {/* WISHLIST */}
                     <Link
