@@ -8,7 +8,7 @@ import WhyChoose from "@/components/why-choose"
 import Testimonials from "@/components/testimonials"
 import { AnimatedTestimonials } from "@/components/AnimatedTestimonials"
 import { useRouter } from "next/navigation"
-
+import { ShopByConcern } from "@/components/ShopByConcern"
 
 import { getCachedSync, fetchWithCache, invalidateCache } from "@/lib/cacheClient"
 import { BRAND } from "@/lib/config"
@@ -109,12 +109,9 @@ export function invalidateHomeCaches() {
 
 // ─── Ticker items ────────────────────────────────────
 const TICKER_ITEMS = [
-  "Cruelty Free",
-  "Dermatologist Tested",
-  "100% Natural Extracts",
-  "Made with love in India",
-  "Ayurveda Wisdom",
-  "Zero Toxins",
+  "Own Manufacturing",
+  "Crafted With Care",
+  "Quality Tested Formulations",
   "Paraben Free",
   "Sulphate Free",
 ]
@@ -428,7 +425,7 @@ const router = useRouter()
               <span className="text-[13px] font-medium uppercase tracking-[0.05em] whitespace-nowrap text-white">
                 {text}
               </span>
-              <span className="text-base text-[#F5C842]">✦</span>
+              <span className="text-base text-[#F5C842] px-3">✦</span>
             </span>
           ))}
         </div>
@@ -441,6 +438,9 @@ const router = useRouter()
     companySlug={selectedConcernCompany.slug}
   />
 )}
+
+  {/* Shop By Concern */}
+      <ShopByConcern />
 
       {/* Secondary carousel (company carousel) */}
       <section className="py-12 md:py-16 bg-muted">

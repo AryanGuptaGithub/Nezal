@@ -78,7 +78,7 @@ export default function ContactUs() {
                   <MapPin className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-[#1e3a28]">Visit Our Clinic</h3>
+                  <h3 className="text-xl font-semibold text-[#1e3a28]">Visit Our Office</h3>
                   <address className="not-italic mt-2 text-[#4a5e50] leading-relaxed">
                     Healthcare Medical Center, S-55,<br />
                     Whispering Palms Shopping Center,<br />
@@ -100,7 +100,7 @@ export default function ContactUs() {
                   <Phone className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-[#1e3a28]">Call Us</h3>
+                  <h3 className="text-xl font-semibold text-[#1e3a28]">Our Contact</h3>
                   <div className="mt-3 space-y-2">
                     <div>
                       <p className="text-sm text-[#6b7c70]">Mobile</p>

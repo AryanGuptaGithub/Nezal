@@ -1,9 +1,9 @@
 export const BRAND = {
   name: 'Nezal',
   domain: 'https://nezal.com',
-  supportEmail: 'support@nezal.com',
+  supportEmail: 'info@nezal.com',
   whatsapp: {
-    primary: '1234567890',   // e.g. '919321179079'
+    primary: '2229659955',   // e.g. '919321179079'
     secondary: 'REPLACE_WITH_SECONDARY_NUMBER'
   },
   social: {
