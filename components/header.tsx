@@ -382,11 +382,11 @@ export function Header() {
       <header className="sticky top-0 z-50 w-full bg-white shadow-sm ">
         <div className="" style={{ borderColor: "var(--color-border)" }}>
           <div className="container-nezal w-full">
-            <div className="flex h-20 items-center gap-6  ">
+            <div className="flex h-25 items-center gap-6  ">
 
               {/* LOGO */}
               <Link href="/" className="flex shrink-0 items-center gap-2 " aria-label={`${BRAND.name} home`}>
-                <div className="relative h-20 w-20">
+                <div className="relative h-25 w-25">
                   <Image src="/companylogo.png" alt={BRAND.name} fill className="object-contain" priority />
                 </div>
               </Link>
