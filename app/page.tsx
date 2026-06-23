@@ -9,9 +9,11 @@ import Testimonials from "@/components/testimonials"
 import { AnimatedTestimonials } from "@/components/AnimatedTestimonials"
 import { useRouter } from "next/navigation"
 import { ShopByConcern } from "@/components/ShopByConcern"
+import { DiscoverRituals } from "@/components/DiscoverRituals"
 
 import { getCachedSync, fetchWithCache, invalidateCache } from "@/lib/cacheClient"
 import { BRAND } from "@/lib/config"
+
 
 
 
@@ -438,6 +440,10 @@ const router = useRouter()
     companySlug={selectedConcernCompany.slug}
   />
 )}
+
+   {/* Discover Your Perfect Ritual */}
+      <DiscoverRituals />
+
 
   {/* Shop By Concern */}
       <ShopByConcern />

@@ -1,3 +1,4 @@
+// app/admin/layout.tsx
 "use client"
 
 import type React from "react"
@@ -22,6 +23,7 @@ import {
   SearchX,
   Image,
   ImageIcon,
+  Sparkles,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -38,6 +40,7 @@ const navItems: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
   { href: "/admin/orders", label: "Orders", icon: <ShoppingCart className="w-5 h-5" /> },
   { href: "/admin/products", label: "Products", icon: <Package className="w-5 h-5" /> },
+   { href: "/admin/rituals", label: "Rituals", icon: <Sparkles className="w-5 h-5" /> },
   { href: "/admin/categories", label: "Categories", icon: <Layers className="w-5 h-5" /> },
   { href: "/admin/companies", label: "Companies", icon: <Building2 className="w-5 h-5" /> },
   { href: "/admin/users", label: "Users", icon: <Users className="w-5 h-5" /> },
