@@ -73,13 +73,14 @@ export default function Footer() {
               className="text-[14px] font-semibold mb-4"
               style={{ color: "var(--color-text-footer-heading)" }}
             >
-              More-Details
+              Site
             </h4>
             <ul className="space-y-2.5">
               {[
-                { label: "About-us", href: "/about-us" },
+                { label: "About Us", href: "/about-us" },
                 { label: "Blog", href: "/blog" },
                 { label: "Review", href: "/reviews" },
+                
               ].map((item) => (
                 <li key={item.label}>
                   <Link
@@ -105,10 +106,11 @@ export default function Footer() {
            {/* Policies */}
 <ul className="space-y-2 mt-5">
   {[
+     { label: "Terms of Service", href: "/termsofservice" },
     { label: "Privacy Policy", href: "/privacy-policy" },
     { label: "Refund Policy", href: "/refund-policy" },
-    { label: "Terms of Service", href: "/termsofservice" },
-    { label: "Orders & Returns", href: "/orders-returns" },  // ← add this
+    { label: "Orders & Returns Policy", href: "/orders-returns" }, 
+      { label: "Shipping Policy", href: "/shipping-poilicy" }, 
   ].map((item) => (
     <li key={item.label}>
       <Link
@@ -147,18 +149,10 @@ export default function Footer() {
                   className="text-[13px] transition-colors hover:text-white"
                   style={{ color: "var(--color-text-footer)" }}
                 >
-                  Tel:+912229659955
+                  Mobile: +91-7710076400
                 </a>
               </li>
-              <li>
-                <a
-                  href={`tel:+${BRAND.whatsapp.primary}`}
-                  className="text-[13px] transition-colors hover:text-white"
-                  style={{ color: "var(--color-text-footer)" }}
-                >
-                  Mobile:+91{BRAND.whatsapp.primary}
-                </a>
-              </li>
+              
             </ul>
 
             {/* Social icons */}
@@ -214,11 +208,11 @@ export default function Footer() {
               className="not-italic text-[13px] leading-relaxed"
               style={{ color: "var(--color-text-footer)" }}
             >
-              Healthcare Medical Center<br />
-              S-55, whispering plans,<br />
-              shopping Center,<br />
-              lokhandwala, akurli road.<br />
-              kandiwali (E), Mumbai<br />
+              Nezal Herbocare Pvt. Ltd.<br />
+              S-28, Whispering Plams<br />
+              Shopping Complex,<br />
+              Lokhandwala Township, Akurli Road.<br />
+              Kandivali (E), Mumbai<br />
               Maharashtra India, 400101
             </address>
 

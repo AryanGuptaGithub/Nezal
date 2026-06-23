@@ -80,10 +80,10 @@ export default function ContactUs() {
                 <div>
                   <h3 className="text-xl font-semibold text-[#1e3a28]">Visit Our Office</h3>
                   <address className="not-italic mt-2 text-[#4a5e50] leading-relaxed">
-                    Healthcare Medical Center, S-55,<br />
-                    Whispering Palms Shopping Center,<br />
-                    Akurli road, Lokhandwala Township,<br />
-                    Kandivali (E), Mumbai – 400101
+                    Nezal Herobcare Pvt. Ltd., S-28,<br />
+                    Whispering Palms Shopping Complex,<br />
+                    Lokhandwala Township, Akurli road, <br />
+                    Kandivali (E), Mumbai – 400101, Maharastra, India.
                   </address>
                 </div>
               </div>
@@ -102,15 +102,7 @@ export default function ContactUs() {
                 <div>
                   <h3 className="text-xl font-semibold text-[#1e3a28]">Our Contact</h3>
                   <div className="mt-3 space-y-2">
-                    <div>
-                      <p className="text-sm text-[#6b7c70]">Mobile</p>
-                      <a
-                        href={`tel:${BRAND.whatsapp.secondary}`}
-                        className="text-lg font-medium text-[#1e3a28] transition-colors hover:text-emerald-600"
-                      >
-                        +91 {BRAND.whatsapp.secondary}
-                      </a>
-                    </div>
+                   
                     <div>
                       <p className="text-sm text-[#6b7c70]">Office</p>
                       <a

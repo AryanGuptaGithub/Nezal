@@ -372,7 +372,8 @@ export function Header() {
 
   const navLinks = [
     { label: "Home",     href: "/" },
-    { label: "About", href: "/about-us" },
+    { label: "About Us", href: "/about-us" },
+     { label: "Reviews",    href: "/reviews" },
     { label: "Blogs",    href: "/blog" },
     { label: "Contact",  href: "/contact-us" },
   ];
@@ -387,7 +388,7 @@ export function Header() {
               {/* LOGO */}
               <Link href="/" className="flex shrink-0 items-center gap-2 " aria-label={`${BRAND.name} home`}>
                 <div className="relative h-25 w-25">
-                  <Image src="/companylogo.png" alt={BRAND.name} fill className="object-contain" priority />
+                  <Image src="/nezallogo.jpg" alt={BRAND.name} fill className="object-contain" priority />
                 </div>
               </Link>
 

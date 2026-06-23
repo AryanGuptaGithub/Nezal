@@ -296,10 +296,10 @@ export function ShopByCategory({ companyId, companySlug }: ShopByCategoryProps) 
       <section className="py-16 md:py-20">
         <div className="container-nezal">
           <div className="mb-12 text-center">
-            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
+            {/* <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
               <Flower2 className="h-4 w-4" />
               Explore by Category
-            </div>
+            </div> */}
             <h2 className="mt-4 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
               Shop by <span className="text-primary">Category</span>
             </h2>

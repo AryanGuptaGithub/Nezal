@@ -127,87 +127,12 @@ export default function AboutUs() {
   return (
     <main className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "#f4f9f4", color: "#1a3a2a" }}>
 
-      {/* ── Hero ── */}
-      <section
-        className="relative overflow-hidden pt-28 pb-24 md:pt-36 md:pb-32"
-        style={{ backgroundColor: "#1a3a2a" }}
-      >
-        {/* Subtle organic texture overlay */}
-        <div
-          className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage: `radial-gradient(ellipse 80% 60% at 20% 40%, #4a7c59 0%, transparent 60%),
-                              radial-gradient(ellipse 60% 80% at 80% 70%, #8fad6a 0%, transparent 60%)`,
-          }}
-        />
+    
 
-        <div className="container mx-auto max-w-6xl px-6 relative z-10">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={stagger}
-            className="max-w-3xl"
-          >
-            <motion.div variants={fadeUp} className="flex items-center gap-2 mb-6">
-              <Leaf className="h-4 w-4" style={{ color: "#7abf6a" }} />
-              <span className="text-sm tracking-widest uppercase" style={{ color: "#7abf6a", letterSpacing: "0.15em" }}>
-                Crafted by Nature. Refined by Science. Inspired by Ritual.
-              </span>
-            </motion.div>
-
-            <motion.h1
-              variants={fadeUp}
-              className="text-5xl md:text-7xl font-bold leading-tight mb-6"
-              style={{ color: "#f4f9f4", fontWeight: 700 }}
-            >
-              About{" "}
-              <span style={{ color: "#86d4a0" }}>{BRAND.name}</span>
-            </motion.h1>
-
-            <motion.p
-              variants={fadeUp}
-              className="text-lg md:text-xl leading-relaxed"
-              style={{ color: "#a8c9a0", maxWidth: "560px" }}
-            >
-              At {BRAND.name}, skincare is more than a daily routine — it is a ritual of care,
-              confidence, and well-being. Born from a passion for thoughtfully crafted personal care,
-              {BRAND.name} was founded on one simple belief: exceptional skincare begins with exceptional
-              ingredients. In a world crowded with harsh formulations and fleeting trends, we chose a
-              different path — rooted in botanical wisdom and real formulation expertise.
-            </motion.p>
-          </motion.div>
-        </div>
-
-        {/* Bottom fade */}
-        <div
-          className="absolute bottom-0 left-0 right-0 h-16"
-          style={{ background: "linear-gradient(to bottom, transparent, #f4f9f4)" }}
-        />
-      </section>
-
-      {/* ── Botanical ingredient pills ── */}
-      <div className="py-10 border-b" style={{ borderColor: "#d4e8d0" }}>
-        <div className="container mx-auto max-w-6xl px-6">
-          <p className="text-xs tracking-widest uppercase mb-5 text-center" style={{ color: "#4a6e54", letterSpacing: "0.15em" }}>
-            Key Botanicals &amp; Actives
-          </p>
-          <div className="flex flex-wrap justify-center gap-3">
-            {botanicals.map((b) => (
-              <span
-                key={b}
-                className="px-4 py-1.5 rounded-full text-sm font-medium border"
-                style={{ backgroundColor: "#e8f2e4", borderColor: "#b8d4b0", color: "#2a4a35" }}
-              >
-                {b}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
+    
       {/* ── Our Story ── */}
-      <section className="py-24 md:py-32">
-        <div className="container mx-auto max-w-6xl px-6">
+      <section className="py-10 md:py-32 ">
+        <div className="container mx-auto max-w-6xl px-6 ">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
 
             {/* Text */}
@@ -217,9 +142,7 @@ export default function AboutUs() {
               viewport={{ once: true }}
               variants={stagger}
             >
-              <motion.p variants={fadeUp} className="text-xs tracking-widest uppercase mb-4" style={{ color: "#4a6e54", letterSpacing: "0.15em" }}>
-                Our Story
-              </motion.p>
+             
               <motion.h2 variants={fadeUp} className="text-4xl md:text-5xl font-bold mb-8" style={{ color: "#1a3a2a", lineHeight: 1.15 }}>
                 The {BRAND.name} Story
               </motion.h2>
@@ -248,8 +171,8 @@ export default function AboutUs() {
                   premium hotels seeking guest amenities that reflect comfort, care, and refinement.
                 </motion.p>
                 <motion.div variants={fadeUp} className="flex items-start gap-3 pt-2">
-                  <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0" style={{ color: "#5a8a4a" }} />
-                  <p className="font-medium" style={{ color: "#1a3a2a" }}>
+
+                  <p className="font-medium text-xl" style={{ color: "#1a3a2a" }}>
                     This is {BRAND.name}: thoughtfully crafted skincare inspired by nature, refined by science,
                     and designed for modern living.
                   </p>
@@ -291,27 +214,7 @@ export default function AboutUs() {
         </div>
       </section>
 
-      {/* ── Stats ── */}
-      <div className="py-16 border-y" style={{ backgroundColor: "#e8f2e4", borderColor: "#d4e8d0" }}>
-        <div className="container mx-auto max-w-6xl px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            {stats.map((stat, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1, duration: 0.5 }}
-              >
-                <div className="text-4xl md:text-5xl font-bold mb-1" style={{ color: "#1a3a2a" }}>
-                  {stat.value}
-                </div>
-                <div className="text-sm" style={{ color: "#4a6e54" }}>{stat.label}</div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </div>
+  
 
       {/* ── Philosophy ── */}
       <section className="py-24 md:py-32">
@@ -323,11 +226,9 @@ export default function AboutUs() {
             variants={stagger}
             className="mb-16"
           >
-            <motion.p variants={fadeUp} className="text-xs tracking-widest uppercase mb-4" style={{ color: "#4a6e54", letterSpacing: "0.15em" }}>
-              The Philosophy
-            </motion.p>
+           
             <motion.h2 variants={fadeUp} className="text-4xl md:text-5xl font-bold mb-5" style={{ color: "#1a3a2a" }}>
-              The {BRAND.name} Philosophy
+              Our Philosophy
             </motion.h2>
             <motion.p variants={fadeUp} className="text-lg max-w-2xl leading-relaxed" style={{ color: "#3d5c45" }}>
               We believe true beauty begins with care. Inspired by nature, guided by expertise, and crafted
@@ -372,10 +273,10 @@ export default function AboutUs() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.4 }}
-            className="mt-10 text-center text-base italic font-medium"
-            style={{ color: "#2e6645" }}
+            className="mt-10 text-center text-xl text-base italic font-medium"
+            style={{ color: "#0a4121" }}
           >
-            "Luxury-inspired in experience, thoughtfully crafted in substance, and designed for everyday rituals of care and well-being."
+            "Luxury-inspired in experience, thoughtfully crafted in substance, <br/>and designed for everyday rituals of care and well-being."
           </motion.p>
         </div>
       </section>
@@ -390,11 +291,9 @@ export default function AboutUs() {
             variants={stagger}
             className="mb-16"
           >
-            <motion.p variants={fadeUp} className="text-xs tracking-widest uppercase mb-4" style={{ color: "#86d4a0", letterSpacing: "0.15em" }}>
-              Our Commitments
-            </motion.p>
+            
             <motion.h2 variants={fadeUp} className="text-4xl md:text-5xl font-bold mb-5" style={{ color: "#f4f9f4" }}>
-              A promise, every<br />single order.
+              Our Commitment
             </motion.h2>
             <motion.p variants={fadeUp} className="text-lg max-w-2xl leading-relaxed" style={{ color: "#a8c9a0" }}>
               A philosophy is what we believe. A commitment is what we promise to do about it — whether
@@ -438,13 +337,35 @@ export default function AboutUs() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.4 }}
-            className="mt-12 text-center text-base font-medium"
-            style={{ color: "#4a7c59" }}
+            className="mt-12 font-bold  text-xl text-center text-base font-medium"
+            style={{ color: "#f8d404" }}
           >
-            Because trust isn't a tagline. It's earned in every box that leaves our facility — and kept by what happens after it arrives.
+            Because trust isn't a tagline. <br/> It's earned in every box that leaves our facility — and kept by what happens after it arrives.
           </motion.p>
         </div>
       </section>
+
+          {/* ── Stats ── */}
+      <div className="py-16 border-y" style={{ backgroundColor: "#e8f2e4", borderColor: "#d4e8d0" }}>
+        <div className="container mx-auto max-w-6xl px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            {stats.map((stat, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1, duration: 0.5 }}
+              >
+                <div className="text-4xl md:text-5xl font-bold mb-1" style={{ color: "#1a3a2a" }}>
+                  {stat.value}
+                </div>
+                <div className="text-sm" style={{ color: "#4a6e54" }}>{stat.label}</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {/* ── Why Customers Trust Nezal ── */}
       <section className="py-24 md:py-32">
@@ -456,15 +377,14 @@ export default function AboutUs() {
             variants={stagger}
             className="mb-16"
           >
-            <motion.p variants={fadeUp} className="text-xs tracking-widest uppercase mb-4" style={{ color: "#4a6e54", letterSpacing: "0.15em" }}>
-              Why Customers Trust {BRAND.name}
-            </motion.p>
+         
             <motion.h2 variants={fadeUp} className="text-4xl md:text-5xl font-bold mb-5" style={{ color: "#1a3a2a" }}>
-              Trust is built,<br />not claimed.
+            Why Customers Trust Nezal
             </motion.h2>
             <motion.p variants={fadeUp} className="text-lg max-w-2xl leading-relaxed" style={{ color: "#3d5c45" }}>
-              Transaction by transaction, ingredient by ingredient.
+            Trust is not something a brand can claim into existence - it is built, transaction by transaction, ingredient by ingredient.
             </motion.p>
+
           </motion.div>
 
           <motion.div
@@ -494,7 +414,18 @@ export default function AboutUs() {
                 </motion.div>
               );
             })}
+            
           </motion.div>
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4 }}
+            className="mt-12 font-bold  text-xl text-center text-base font-medium"
+            style={{ color: "#19840a" }}
+          >
+            This is what trust looks like in practice: trusted by hospitality partners who cannot afford compromise, transparent about what goes into every formulation, manufactured under standards we hold ourselves to, and supported by people who stand behind every product we create.
+          </motion.p>
         </div>
       </section>
 

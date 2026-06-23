@@ -51,7 +51,7 @@ export function DiscoverRituals() {
         {/* Heading */}
         <div className="flex flex-col items-center gap-2 text-center mb-10">
           <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)] text-xs font-bold uppercase tracking-widest">
-            Curated For You
+            Our Signature Rituals, Curated For You
           </span>
           <h2 className="text-3xl md:text-4xl font-extrabold" style={{ color: "#1e3a28" }}>
             Discover Your Perfect Ritual

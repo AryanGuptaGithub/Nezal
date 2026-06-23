@@ -114,8 +114,7 @@ const TICKER_ITEMS = [
   "Own Manufacturing",
   "Crafted With Care",
   "Quality Tested Formulations",
-  "Paraben Free",
-  "Sulphate Free",
+ 
 ]
 
 
@@ -448,12 +447,15 @@ const router = useRouter()
   {/* Shop By Concern */}
       <ShopByConcern />
 
+
+      <PromoBannerGrid />
+
       {/* Secondary carousel (company carousel) */}
       <section className="py-12 md:py-16 bg-muted">
         <div className="container-nezal">
           <div className="text-center mb-8">
             <h2 className="text-[28px] md:text-[32px] font-bold text-foreground mb-2">
-              Nature&apos;s Goodness
+              Discover By Ingredients
             </h2>
             <p className="text-[15px] text-muted-foreground">
               Explore our complete herbal collection
@@ -487,7 +489,7 @@ const router = useRouter()
 
 
 
-<PromoBannerGrid />
+
 
 
 
@@ -567,13 +569,14 @@ const router = useRouter()
 
 
 {/* Our Aim section - Redesigned */}
-<section className="py-16 md:py-24 bg-gradient-to-br from-muted/30 to-background relative overflow-hidden">
-  {/* Decorative background elements */}
+
+{/* <section className="py-16 md:py-24 bg-gradient-to-br from-muted/30 to-background relative overflow-hidden">
+  
   <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
   <div className="absolute bottom-0 left-0 w-80 h-80 bg-primary/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3" />
   
   <div className="container-nezal relative z-10">
-    {/* Enhanced heading with badge and accent line */}
+    
     <div className="text-center mb-12 md:mb-16">
       <span className="inline-block px-3 py-1 text-xs font-semibold tracking-wide bg-primary/10 text-primary rounded-full mb-4">
         Our Philosophy
@@ -584,9 +587,9 @@ const router = useRouter()
       <div className="w-20 h-1 bg-primary/30 mx-auto mt-4 rounded-full" />
     </div>
 
-    {/* Main content - asymmetric grid for modern layout */}
+    
     <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-      {/* Text content */}
+     
       <div className="space-y-6 order-2 lg:order-1">
         <div className="prose prose-lg max-w-none">
           <p className="text-lg leading-relaxed text-foreground/80">
@@ -605,7 +608,7 @@ const router = useRouter()
           </p>
         </div>
         
-        {/* Feature highlights - adds credibility and visual interest */}
+       
         <div className="flex flex-wrap gap-4 pt-4">
           <div className="flex items-center gap-2 text-sm">
             <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -630,14 +633,14 @@ const router = useRouter()
       
         <div className="order-1 lg:order-2 group/image">
         <div className="relative transition-all duration-500 hover:scale-105">
-          {/* Background accent shape that also animates on hover */}
+        
           <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-primary/5 rounded-3xl rotate-3 scale-105 transition-all duration-500 group-hover/image:rotate-6 group-hover/image:scale-110 group-hover/image:bg-primary/30" />
           <img
-            src="/companylogo.png"
+            src="/nezallogo.jpg"
             alt="Nezal natural skincare products"
             className="relative w-full h-auto max-h-80 lg:max-h-96 object-contain rounded-2xl shadow-2xl bg-white/50 backdrop-blur-sm p-4 transition-all duration-500 group-hover/image:shadow-3xl group-hover/image:bg-white/70"
           />
-          {/* Optional: subtle overlay effect */}
+   
           <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-primary/10 to-transparent opacity-0 transition-opacity duration-500 group-hover/image:opacity-100" />
         </div>
       </div>
@@ -647,7 +650,7 @@ const router = useRouter()
 
     </div>
   </div>
-</section>
+</section> */}
 
 
       {/* Why Choose Us */}

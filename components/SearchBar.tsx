@@ -197,7 +197,7 @@ export function SearchBar() {
             }}
             onFocus={() => setOpen(true)}
             onKeyDown={handleKeyDown}
-            placeholder="Search products, concerns, ingredients..."
+            placeholder="Search Products, Concerns, Ingredients..."
             className="w-full bg-transparent text-[15px] outline-none placeholder:text-gray-400"
           />
           {loading && <Loader2 className="h-4 w-4 shrink-0 animate-spin" style={{ color: "#2a5c3a" }} />}
