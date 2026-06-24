@@ -126,6 +126,15 @@ const CONCERNS = [
   { label: "Dryness",       slug: "dryness"        },
 ];
 
+const INGREDIENTS = [
+  { label: "Bhringraj",   slug: "bhringraj"   },
+  { label: "Neem",        slug: "neem"        },
+  { label: "Tulsi",       slug: "tulsi"       },
+  { label: "Aloe Vera",   slug: "aloe-vera"   },
+  { label: "Turmeric",    slug: "turmeric"    },
+  { label: "Rose",        slug: "rose"        },
+];
+
 /* ─── Collection Card (inside mega menu) ────────────────── */
 
 function CollectionCard({
@@ -158,27 +167,36 @@ function CollectionCard({
 
 function MegaMenu({ onClose }: { onClose: () => void }) {
   const [activeCategory, setActiveCategory] = useState(NAV_CATEGORIES[0]);
-
+  const [activeTab, setActiveTab] = useState(0);
   const isBodyCare = "sections" in activeCategory && activeCategory.sections;
+
+  // Reset tab when category changes
+  const handleCategoryChange = (cat: typeof NAV_CATEGORIES[number]) => {
+    setActiveCategory(cat);
+    setActiveTab(0);
+  };
 
   return (
     <div
-      className="absolute left-0 top-full z-50 mt-2  overflow-hidden rounded-2xl border-3 bg-white shadow-2xl"
-      style={{ borderColor: "var(--color-border)", width: isBodyCare ? "920px" : "820px" }}
+      className="absolute top-full z-50 mt-2 rounded-2xl border bg-white shadow-2xl"
+    style={{
+    borderColor: "var(--color-border)",
+    width: isBodyCare ? "1100px" : "960px",
+    left: 0,
+  }}
     >
-
-      <div className={`grid ${isBodyCare ? "grid-cols-[180px_1fr_180px]" : "grid-cols-[180px_1fr_180px]"}`}>
+      <div className="grid grid-cols-[180px_1fr_160px_160px] items-stretch">
 
         {/* Zone 1 — Category list */}
-        <div className="border-r bg-[var(--color-bg-cream)] p-4 flex flex-col gap-1" style={{ borderColor: "var(--color-border)" }}>
+        <div className="border-r bg-[var(--color-bg-cream)] p-4 flex flex-col gap-1 self-stretch" style={{ borderColor: "var(--color-border)" }}>
           <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] px-3 mb-2">
             Categories
           </p>
           {NAV_CATEGORIES.map((cat) => (
             <button
               key={cat.key}
-              onMouseEnter={() => setActiveCategory(cat)}
-              onClick={() => setActiveCategory(cat)}
+              onMouseEnter={() => handleCategoryChange(cat)}
+              onClick={() => handleCategoryChange(cat)}
               className={`flex items-center justify-between w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                 activeCategory.key === cat.key
                   ? "bg-white text-[var(--color-brand-primary)] shadow-sm"
@@ -194,7 +212,7 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
             <Link
               href="/shop"
               onClick={onClose}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold text-[var(--color-brand-primary)] hover:bg-[#127208] hover:text-white transition-colors border "
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold text-[var(--color-brand-primary)] hover:bg-[#127208] hover:text-white transition-colors border"
             >
               Shop All →
             </Link>
@@ -202,28 +220,41 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Zone 2 — Collection cards */}
-        <div className="p-5 overflow-y-auto max-h-[480px]">
+        <div className="p-5">
           {isBodyCare ? (
-            <div className="flex flex-col gap-6">
-              {(activeCategory as any).sections.map((section: { label: string; collections: { label: string; slug: string; tagline: string }[] }) => (
-                <div key={section.label}>
-                  <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">
+            <>
+              {/* Tab switcher */}
+              <div className="flex gap-2 mb-4">
+                {(activeCategory as any).sections.map((section: { label: string; collections: any[] }, idx: number) => (
+                  <button
+                    key={section.label}
+                    onClick={() => setActiveTab(idx)}
+                    className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                      activeTab === idx
+                        ? "bg-[var(--color-brand-primary)] text-white border-[var(--color-brand-primary)]"
+                        : "text-[var(--color-text-muted)] border-[var(--color-border)] hover:border-[var(--color-brand-primary)] hover:text-[var(--color-brand-primary)]"
+                    }`}
+                  >
                     {section.label}
-                  </p>
-                  <div className="grid grid-cols-2 gap-1">
-                    {section.collections.map((col) => (
-                      <CollectionCard
-                        key={col.slug}
-                        label={col.label}
-                        slug={col.slug}
-                        tagline={col.tagline}
-                        onClick={onClose}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Active tab content */}
+              <div className="grid grid-cols-2 gap-1">
+                {(activeCategory as any).sections[activeTab].collections.map(
+                  (col: { label: string; slug: string; tagline: string }) => (
+                    <CollectionCard
+                      key={col.slug}
+                      label={col.label}
+                      slug={col.slug}
+                      tagline={col.tagline}
+                      onClick={onClose}
+                    />
+                  )
+                )}
+              </div>
+            </>
           ) : (
             <>
               <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-3">
@@ -231,13 +262,7 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
               </p>
               <div className="grid grid-cols-2 gap-1">
                 {getFlatCollections(activeCategory).map((col) => (
-                  <CollectionCard
-                    key={col.slug}
-                    label={col.label}
-                    slug={col.slug}
-                    tagline={col.tagline}
-                    onClick={onClose}
-                  />
+                  <CollectionCard key={col.slug} label={col.label} slug={col.slug} tagline={col.tagline} onClick={onClose} />
                 ))}
               </div>
             </>
@@ -247,7 +272,7 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
             <Link
               href={`/collections?category=${activeCategory.key}`}
               onClick={onClose}
-              className="text-xs font-semibold text-[var(--color-brand-primary)] hover:bg-[#09882f] hover:text-white border px-3 py-2 rounded-xl"
+              className="text-xs font-semibold text-[var(--color-brand-primary)] hover:bg-[#09882f] hover:text-white border px-3 py-2 rounded-xl transition-colors"
             >
               View all {activeCategory.heading} →
             </Link>
@@ -255,7 +280,7 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Zone 3 — Shop by Concern */}
-        <div className="border-l p-4 bg-[var(--color-bg-cream)]" style={{ borderColor: "var(--color-border)" }}>
+        <div className="border-l p-4 bg-[var(--color-bg-cream)] self-stretch" style={{ borderColor: "var(--color-border)" }}>
           <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] px-1 mb-3">
             By Concern
           </p>
@@ -271,14 +296,33 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
               </Link>
             ))}
           </div>
+        </div>
 
-          <div className="mt-auto pt-4 border-t mt-4" style={{ borderColor: "var(--color-border)" }}>
+        {/* Zone 4 — By Ingredient */}
+        <div className="border-l p-4 self-stretch" style={{ borderColor: "var(--color-border)" }}>
+          <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] px-1 mb-3">
+            By Ingredient
+          </p>
+          <div className="flex flex-col gap-1">
+            {INGREDIENTS.map((ing) => (
+              <Link
+                key={ing.slug}
+                href={`/ingredients/${ing.slug}`}
+                onClick={onClose}
+                className="px-3 py-2 rounded-xl text-sm text-[var(--color-text-body)] hover:bg-[var(--color-bg-cream)] hover:text-[var(--color-brand-primary)] font-medium transition-colors"
+              >
+                {ing.label}
+              </Link>
+            ))}
+          </div>
+
+          <div className="pt-4 border-t mt-4" style={{ borderColor: "var(--color-border)" }}>
             <a
               href="/New Nezal Brochure.pdf"
               download="Nezal-Product-Brochure.pdf"
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-brand-primary)] hover:bg-[#097407] hover:text-white transition-colors border"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border transition-colors text-[var(--color-text-muted)] hover:text-white hover:bg-[#097407]"
             >
-              ↓ Download Brochure
+              Download Brochure
             </a>
           </div>
         </div>
@@ -287,7 +331,6 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
     </div>
   );
 }
-
 /* ─── Header ────────────────────────────────────────────── */
 
 export function Header() {
@@ -393,7 +436,8 @@ export function Header() {
               </Link>
 
               {/* DESKTOP NAV */}
-              <nav className="hidden flex-1 items-center gap-0 lg:flex">
+              <nav className="hidden flex-1 items-center gap-0 lg:flex relative" ref={shopMenuRef}>
+
 
                 {/* Home — first link */}
                 <Link
@@ -408,7 +452,7 @@ export function Header() {
                 </Link>
 
                 {/* SHOP + MEGA MENU — placed right after Home */}
-                <div className="relative" ref={shopMenuRef}>
+                <div className="relative" >
                   <button
                     type="button"
                     onClick={() => setShopMenuOpen((v) => !v)}
