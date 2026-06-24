@@ -381,15 +381,22 @@ export function Header() {
     return () => { mounted = false; };
   }, [router]);
 
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (shopMenuRef.current && !shopMenuRef.current.contains(e.target as Node)) {
-        setShopMenuOpen(false);
-      }
+ useEffect(() => {
+  function handleClick(e: MouseEvent) {
+    if (shopMenuRef.current && !shopMenuRef.current.contains(e.target as Node)) {
+      setShopMenuOpen(false);
     }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
+  }
+  function handleEscape(e: KeyboardEvent) {
+    if (e.key === "Escape") setShopMenuOpen(false);
+  }
+  document.addEventListener("mousedown", handleClick);
+  document.addEventListener("keydown", handleEscape);
+  return () => {
+    document.removeEventListener("mousedown", handleClick);
+    document.removeEventListener("keydown", handleEscape);
+  };
+}, []);
 
   useEffect(() => {
     setShopMenuOpen(false);
@@ -436,7 +443,7 @@ export function Header() {
               </Link>
 
               {/* DESKTOP NAV */}
-              <nav className="hidden flex-1 items-center gap-0 lg:flex relative" ref={shopMenuRef}>
+              <nav className="hidden flex-1 items-center gap-0 lg:flex relative" >
 
 
                 {/* Home — first link */}
@@ -452,7 +459,7 @@ export function Header() {
                 </Link>
 
                 {/* SHOP + MEGA MENU — placed right after Home */}
-                <div className="relative" >
+                <div className="relative" ref={shopMenuRef}>
                   <button
                     type="button"
                     onClick={() => setShopMenuOpen((v) => !v)}
