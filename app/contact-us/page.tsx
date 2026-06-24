@@ -19,8 +19,10 @@ export default function ContactUs() {
   return (
     <main className="min-h-screen overflow-x-hidden bg-gradient-to-br from-[#fafaf5] to-white">
       {/* Hero Section – immersive gradient + glow */}
-      <section className="relative overflow-hidden bg-gradient-to-r from-[#1e3a28] to-[#2a5c3a] pt-24 pb-20 md:pt-32 md:pb-28">
-        {/* Animated background blobs */}
+
+
+      {/* <section className="relative overflow-hidden bg-gradient-to-r from-[#1e3a28] to-[#2a5c3a] pt-24 pb-20 md:pt-32 md:pb-28">
+  
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-emerald-400/20 blur-3xl animate-pulse" />
           <div className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-teal-400/20 blur-3xl animate-pulse delay-1000" />
@@ -54,18 +56,18 @@ export default function ContactUs() {
             </div>
           </motion.div>
         </div>
-      </section>
+      </section> */}
 
       {/* Main content */}
       <div className="container-nezal py-16 md:py-24">
-        <div className="grid gap-12 lg:grid-cols-2">
+        <div className=" ">
           {/* Contact cards – animated staggered grid */}
           <motion.div
             variants={containerVariants}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-50px" }}
-            className="space-y-6"
+            className="grid grid-cols-1 md:grid-cols-2 gap-6"
           >
             {/* Address card */}
             <motion.div

@@ -24,6 +24,7 @@ import {
   Image,
   ImageIcon,
   Sparkles,
+  Leaf,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -40,6 +41,7 @@ const navItems: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
   { href: "/admin/orders", label: "Orders", icon: <ShoppingCart className="w-5 h-5" /> },
   { href: "/admin/products", label: "Products", icon: <Package className="w-5 h-5" /> },
+  { href: "/admin/concerns", label: "Concerns", icon: <Leaf className="w-5 h-5" /> },
    { href: "/admin/rituals", label: "Rituals", icon: <Sparkles className="w-5 h-5" /> },
   { href: "/admin/categories", label: "Categories", icon: <Layers className="w-5 h-5" /> },
   { href: "/admin/companies", label: "Companies", icon: <Building2 className="w-5 h-5" /> },
@@ -59,6 +61,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isDesktop, setIsDesktop] = useState(false)
   const [hovered, setHovered] = useState(false)
 
+  
   useEffect(() => {
     const handleResize = () => {
       setIsDesktop(window.innerWidth >= 1024)

@@ -3,53 +3,47 @@
 /**
  * ShopByConcern
  *
- * Homepage section that lets visitors jump straight into a concern-based
- * product list (Acne, Pigmentation, Open Pores, Hydration, Hair Fall,
- * Dryness) without going through the header's mega menu first.
- *
- * Uses real images instead of icons — just drop image URLs into the
- * CONCERNS array below (Cloudinary, Unsplash, or any hosted image works).
- *
- * Links to the existing /concerns/[slug] pages — no new routes needed.
+ * Homepage section. Fetches active concerns from /api/concerns and
+ * renders them as image cards linking to /concerns/[slug]. Replaces
+ * the old hardcoded 6-concern version — concerns are now fully
+ * admin-manageable via /admin/concerns.
  */
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 
-const CONCERNS = [
-  {
-    label: "Acne",
-    slug: "acne",
-    image: "https://cdn-prod.medicalnewstoday.com/content/images/articles/107/107146/acne.jpg", // ← paste image URL here
-  },
-  {
-    label: "Pigmentation",
-    slug: "pigmentation",
-    image: "https://www.london-dermatology-centre.co.uk/blog/wp-content/uploads/2025/05/Cover-Pigmentation.webp", // ← paste image URL here
-  },
-  {
-    label: "Open Pores",
-    slug: "open-pores",
-    image: "https://plasticsurgeonmonisha.com/wp-content/uploads/2019/11/How-to-Reduce-open-pores.jpg", // ← paste image URL here
-  },
-  {
-    label: "Hydration",
-    slug: "hydration",
-    image: "https://cdn.shopify.com/s/files/1/0503/2932/1627/files/tips_for_skin_hydration_480x480.jpg?v=1677251780", // ← paste image URL here
-  },
-  {
-    label: "Hair Fall",
-    slug: "hairfall",
-    image: "https://www.drbatras.com/themes/drbatra/images/treatment-images/hair-fall-treatment/Hero-section-image-1.webp", // ← paste image URL here
-  },
-  {
-    label: "Dryness",
-    slug: "dryness",
-    image: "https://images.apollo247.in/pd-cms/cms/2025-09/AdobeStock_416637532.webp?tr=q-80,f-webp,w-400,dpr-2.5,c-at_max%201000w", // ← paste image URL here
-  },
-]
+interface ConcernCard {
+  label: string
+  slug: string
+  heroImage: string
+  color: string
+}
 
 export function ShopByConcern() {
+  const [concerns, setConcerns] = useState<ConcernCard[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+    async function load() {
+      try {
+        const res = await fetch("/api/concerns")
+        if (!res.ok) throw new Error("Failed")
+        const data = await res.json()
+        if (mounted) setConcerns(data.concerns || [])
+      } catch {
+        if (mounted) setConcerns([])
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+    load()
+    return () => { mounted = false }
+  }, [])
+
+  if (!loading && concerns.length === 0) return null
+
   return (
     <section className="py-12 md:py-16" style={{ backgroundColor: "#fdfaf5" }}>
       <div className="container-nezal">
@@ -67,46 +61,46 @@ export function ShopByConcern() {
           </p>
         </div>
 
-        {/* Concern grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-5">
-          {CONCERNS.map((concern) => (
-            <Link
-              key={concern.slug}
-              href={`/concerns/${concern.slug}`}
-              className="group relative flex flex-col items-center gap-3 overflow-hidden rounded-2xl border transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
-              style={{ borderColor: "var(--color-border)", backgroundColor: "#ffffff" }}
-            >
-              {/* Image */}
-              <div className="relative w-full aspect-square overflow-hidden bg-gray-100">
-                {concern.image ? (
-                  <img
-                    src={concern.image}
-                    alt={concern.label}
-                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-xs text-gray-400">
-                    Add image
-                  </div>
-                )}
-                {/* subtle dark gradient at bottom so label below stays readable if you later overlay text on image */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </div>
-
-              {/* Label */}
-              <div className="flex flex-col items-center gap-1 px-3 pb-4">
-                <span className="text-sm font-bold" style={{ color: "#1e3a28" }}>
-                  {concern.label}
-                </span>
-                <span
-                  className="flex items-center gap-1 text-xs font-semibold opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-                  style={{ color: "#2a5c3a" }}
+        {/* Concern grid — 2 cols mobile, 3 tablet, 5 desktop (fits 15 cleanly in 3 rows) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-5">
+          {loading
+            ? [...Array(10)].map((_, i) => (
+                <div key={i} className="aspect-square rounded-2xl bg-gray-100 animate-pulse" />
+              ))
+            : concerns.map((concern) => (
+                <Link
+                  key={concern.slug}
+                  href={`/concerns/${concern.slug}`}
+                  className="group relative flex flex-col overflow-hidden rounded-2xl border transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+                  style={{ borderColor: "var(--color-border)", backgroundColor: concern.color || "#F3F5EF" }}
                 >
-                  Shop now <ArrowRight className="h-3 w-3" />
-                </span>
-              </div>
-            </Link>
-          ))}
+                  <div className="relative w-full aspect-square overflow-hidden bg-gray-100">
+                    {concern.heroImage ? (
+                      <img
+                        src={concern.heroImage}
+                        alt={concern.label}
+                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-xs text-gray-400 px-2 text-center">
+                        Add image
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  </div>
+                  <div className="flex flex-col items-center gap-1 px-2 py-3 text-center">
+                    <span className="text-xs md:text-sm font-bold leading-tight" style={{ color: "#1e3a28" }}>
+                      {concern.label}
+                    </span>
+                    <span
+                      className="flex items-center gap-1 text-xs font-semibold opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                      style={{ color: "#2a5c3a" }}
+                    >
+                      Shop now <ArrowRight className="h-3 w-3" />
+                    </span>
+                  </div>
+                </Link>
+              ))}
         </div>
 
       </div>

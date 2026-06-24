@@ -501,13 +501,13 @@ const router = useRouter()
 <section className="py-12 md:py-16 bg-background">
   <div className="container-nezal">
  
-    {/* Heading */}
+   
     <div className="text-center mb-10">
       <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)] text-xs font-bold uppercase tracking-widest mb-3">
         <span>✦</span> Limited Time
       </div>
       <h2 className="text-[28px] md:text-[32px] font-bold text-foreground">
-        25% Off Site-Wide
+        15% Off Site-Wide
       </h2>
       <p className="mt-2 text-sm text-muted-foreground">
         Use code <span className="font-bold text-[var(--color-brand-primary)]">NEZAL25</span> at checkout

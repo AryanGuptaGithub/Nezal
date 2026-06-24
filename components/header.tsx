@@ -393,12 +393,12 @@ export function Header() {
               </Link>
 
               {/* DESKTOP NAV */}
-              <nav className="hidden flex-1 items-center gap-1 lg:flex w-full">
+              <nav className="hidden flex-1 items-center gap-0 lg:flex">
 
                 {/* Home — first link */}
                 <Link
                   href="/"
-                  className={`rounded-md px-3 py-2 text-[13px] font-medium transition-colors ${
+                  className={`whitespace-nowrap rounded-md px-3 py-2 text-[13px] font-medium transition-colors ${
                     isActive("/")
                       ? "text-[var(--color-brand-primary)]"
                       : "text-[var(--color-text-heading)] hover:text-[var(--color-brand-primary)]"
@@ -432,7 +432,7 @@ export function Header() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`rounded-md px-3 py-2 text-[13px] font-medium transition-colors ${
+                    className={`whitespace-nowrap rounded-md px-3 py-2 text-[13px] font-medium transition-colors ${
                       isActive(link.href)
                         ? "text-[var(--color-brand-primary)]"
                         : "text-[var(--color-text-heading)] hover:text-[var(--color-brand-primary)]"
@@ -443,7 +443,9 @@ export function Header() {
                 ))}
               </nav>
 
-              <SearchBar />
+              <div className="w-full max-w-md">
+               <SearchBar />
+              </div>
 
               {/* RIGHT SIDE */}
               <div className="ml-auto flex items-center gap-2">
