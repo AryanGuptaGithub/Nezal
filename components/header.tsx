@@ -64,41 +64,44 @@ const NAV_CATEGORIES = [
     ],
   },
   {
+    heading: "Soaps",
+    key: "soaps",
+    collections: [
+      { label: "Rock Soap",     slug: "rock-soap",     tagline: "Ancient mineral-rich rocks meet Ayurvedic botanicals" },
+      { label: "Designer Soap", slug: "designer-soap", tagline: "Aesthetic skincare with functional benefits"           },
+      { label: "Round Soap",    slug: "round-soap",    tagline: "Gentle care for everyday skin"                        },
+      { label: "Aissis Soap",   slug: "aissis-soap",   tagline: "Advanced skincare solutions in every bar"             },
+      { label: "Premium Soap",  slug: "premium-soap",  tagline: "Luxury bathing reimagined with active botanicals"     },
+      { label: "Doobie Soap",   slug: "doobie-soap",   tagline: "Pure natural cleansing for everyday skin"             },
+    ],
+  },
+  {
     heading: "Body Care",
     key: "body-care",
-    sections: [
-      {
-        label: "Soaps",
-        collections: [
-          { label: "Rock Soap",     slug: "rock-soap",     tagline: "Ancient mineral-rich rocks meet Ayurvedic botanicals" },
-          { label: "Designer Soap", slug: "designer-soap", tagline: "Aesthetic skincare with functional benefits"           },
-          { label: "Round Soap",    slug: "round-soap",    tagline: "Gentle care for everyday skin"                        },
-          { label: "Aissis Soap",   slug: "aissis-soap",   tagline: "Advanced skincare solutions in every bar"             },
-          { label: "Premium Soap",  slug: "premium-soap",  tagline: "Luxury bathing reimagined with active botanicals"     },
-          { label: "Doobie Soap",   slug: "doobie-soap",   tagline: "Pure natural cleansing for everyday skin"             },
-        ],
-      },
-      {
-        label: "Body Care",
-        collections: [
-          { label: "Body Lotion",      slug: "body-lotion",      tagline: "All-day hydration, nature's way"                },
-          { label: "Aloe Vera Gel",    slug: "aloe-vera-gel",    tagline: "Pure soothing hydration for skin and hair"      },
-          { label: "Body Massage Oil", slug: "body-massage-oil", tagline: "Relaxation and skin nourishment in every drop"  },
-          { label: "Shower Gel",       slug: "shower-gel",       tagline: "Your daily cleanse, elevated"                   },
-          { label: "Bath Salt",        slug: "bath-salt",        tagline: "Turn your bath into a ritual"                   },
-          { label: "Hand Wash",        slug: "hand-wash",        tagline: "Clean, protect and care for your hands"         },
-          { label: "Intimate Wash",    slug: "intimate-wash",    tagline: "Gentle care and daily freshness"                },
-        ],
-      },
+    collections: [
+      { label: "Body Lotion",      slug: "body-lotion",      tagline: "All-day hydration, nature's way"               },
+      { label: "Aloe Vera Gel",    slug: "aloe-vera-gel",    tagline: "Pure soothing hydration for skin and hair"     },
+      { label: "Body Massage Oil", slug: "body-massage-oil", tagline: "Relaxation and skin nourishment in every drop" },
+      { label: "Shower Gel",       slug: "shower-gel",       tagline: "Your daily cleanse, elevated"                  },
+      { label: "Bath Salt",        slug: "bath-salt",        tagline: "Turn your bath into a ritual"                  },
+      { label: "Hand Wash",        slug: "hand-wash",        tagline: "Clean, protect and care for your hands"        },
+      { label: "Intimate Wash",    slug: "intimate-wash",    tagline: "Gentle care and daily freshness"               },
     ],
   },
   {
     heading: "Hair Care",
     key: "hair-care",
     collections: [
-      { label: "Shampoo",     slug: "shampoo",     tagline: "Cleanse your scalp, nourish your roots"    },
-      { label: "Conditioner", slug: "conditioner", tagline: "Frizz-free, silky, nourished hair"         },
-      { label: "Hair Serum",  slug: "hair-serum",  tagline: "From root to tip — strength and growth"    },
+      { label: "Shampoo",     slug: "shampoo",     tagline: "Cleanse your scalp, nourish your roots" },
+      { label: "Conditioner", slug: "conditioner", tagline: "Frizz-free, silky, nourished hair"      },
+      { label: "Hair Serum",  slug: "hair-serum",  tagline: "From root to tip — strength and growth" },
+    ],
+  },
+   {
+    heading: "Rituals",
+    key: "rituals",
+    collections: [
+      { label: "Gift Kits", slug: "gift-kits", tagline: "Curated care for the people you love" },
     ],
   },
   {
@@ -146,18 +149,16 @@ function CollectionCard({
     <Link
       href={`/collections/${slug}`}
       onClick={onClick}
-      className="group flex items-start gap-3 p-3 rounded-xl hover:bg-[var(--color-bg-cream)] transition-colors"
+      className="group flex items-start gap-3 p-3 border-[#efecec] border rounded-xl hover:bg-[var(--color-bg-cream)] transition-colors"
     >
       <div className="w-10 h-10 rounded-lg bg-[var(--color-brand-primary)]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[var(--color-brand-primary)]/20 transition-colors">
         <Leaf size={16} className="text-[var(--color-brand-primary)]" />
       </div>
-      <div className="flex flex-col gap-0.5 min-w-0">
-        <span className="text-sm font-semibold text-[var(--color-text-heading)] group-hover:text-[var(--color-brand-primary)] transition-colors">
+      <div className="flex flex-col items-center gap-0.5 min-w-0 ">
+        <h1 className="text-sm font-semibold text-[var(--color-text-heading)] group-hover:text-[var(--color-brand-primary)] transition-colors">
           {label}
-        </span>
-        <span className="text-xs text-[var(--color-text-muted)] leading-snug line-clamp-2">
-          {tagline}
-        </span>
+        </h1>
+       
       </div>
     </Link>
   );
@@ -167,23 +168,16 @@ function CollectionCard({
 
 function MegaMenu({ onClose }: { onClose: () => void }) {
   const [activeCategory, setActiveCategory] = useState(NAV_CATEGORIES[0]);
-  const [activeTab, setActiveTab] = useState(0);
-  const isBodyCare = "sections" in activeCategory && activeCategory.sections;
-
-  // Reset tab when category changes
-  const handleCategoryChange = (cat: typeof NAV_CATEGORIES[number]) => {
-    setActiveCategory(cat);
-    setActiveTab(0);
-  };
 
   return (
     <div
-      className="absolute top-full z-50 mt-2 rounded-2xl border bg-white shadow-2xl"
-    style={{
-    borderColor: "var(--color-border)",
-    width: isBodyCare ? "1100px" : "960px",
-    left: 0,
-  }}
+      className="absolute top-full z-50 mt-6 rounded-2xl border bg-white shadow-2xl"
+      style={{
+        borderColor: "var(--color-border)",
+        width: "1100px",
+        left: -200,
+        
+      }}
     >
       <div className="grid grid-cols-[180px_1fr_160px_160px] items-stretch">
 
@@ -194,9 +188,10 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
           </p>
           {NAV_CATEGORIES.map((cat) => (
             <button
+
               key={cat.key}
-              onMouseEnter={() => handleCategoryChange(cat)}
-              onClick={() => handleCategoryChange(cat)}
+              onMouseEnter={() => setActiveCategory(cat)}
+              onClick={() => setActiveCategory(cat)}
               className={`flex items-center justify-between w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                 activeCategory.key === cat.key
                   ? "bg-white text-[var(--color-brand-primary)] shadow-sm"
@@ -221,52 +216,14 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
 
         {/* Zone 2 — Collection cards */}
         <div className="p-5">
-          {isBodyCare ? (
-            <>
-              {/* Tab switcher */}
-              <div className="flex gap-2 mb-4">
-                {(activeCategory as any).sections.map((section: { label: string; collections: any[] }, idx: number) => (
-                  <button
-                    key={section.label}
-                    onClick={() => setActiveTab(idx)}
-                    className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                      activeTab === idx
-                        ? "bg-[var(--color-brand-primary)] text-white border-[var(--color-brand-primary)]"
-                        : "text-[var(--color-text-muted)] border-[var(--color-border)] hover:border-[var(--color-brand-primary)] hover:text-[var(--color-brand-primary)]"
-                    }`}
-                  >
-                    {section.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Active tab content */}
-              <div className="grid grid-cols-2 gap-1">
-                {(activeCategory as any).sections[activeTab].collections.map(
-                  (col: { label: string; slug: string; tagline: string }) => (
-                    <CollectionCard
-                      key={col.slug}
-                      label={col.label}
-                      slug={col.slug}
-                      tagline={col.tagline}
-                      onClick={onClose}
-                    />
-                  )
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-3">
-                {activeCategory.heading} Collections
-              </p>
-              <div className="grid grid-cols-2 gap-1">
-                {getFlatCollections(activeCategory).map((col) => (
-                  <CollectionCard key={col.slug} label={col.label} slug={col.slug} tagline={col.tagline} onClick={onClose} />
-                ))}
-              </div>
-            </>
-          )}
+          <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-3">
+            {activeCategory.heading} Collections
+          </p>
+          <div className="grid grid-cols-2 gap-1">
+            {activeCategory.collections.map((col) => (
+              <CollectionCard key={col.slug} label={col.label} slug={col.slug} tagline={col.tagline} onClick={onClose} />
+            ))}
+          </div>
 
           <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--color-border)" }}>
             <Link
@@ -279,7 +236,7 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        {/* Zone 3 — Shop by Concern */}
+        {/* Zone 3 — By Concern */}
         <div className="border-l p-4 bg-[var(--color-bg-cream)] self-stretch" style={{ borderColor: "var(--color-border)" }}>
           <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] px-1 mb-3">
             By Concern

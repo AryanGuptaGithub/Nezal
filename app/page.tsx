@@ -507,7 +507,7 @@ const router = useRouter()
         <span>✦</span> Limited Time
       </div>
       <h2 className="text-[28px] md:text-[32px] font-bold text-foreground">
-        15% Off Site-Wide
+        Flash Deal
       </h2>
       <p className="mt-2 text-sm text-muted-foreground">
         Use code <span className="font-bold text-[var(--color-brand-primary)]">NEZAL25</span> at checkout

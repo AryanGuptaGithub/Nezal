@@ -686,9 +686,9 @@ const currentImage =
                   {product.company.name}
                 </p>
               )} */}
-              <h1 className="text-3xl lg:text-4xl font-bold leading-tight" style={{ color: "#1e3a28" }}>
+              <h2 className="text-xs lg:text-3xl font-bold leading-tight" style={{ color: "#1e3a28" }}>
                 {product.name}
-              </h1>
+              </h2>
               <ProductDescription description={product.description} className="mt-2" />
             </div>
 
@@ -901,7 +901,7 @@ const currentImage =
               {[
                 { icon: <Truck className="w-5 h-5" />, title: "Free Delivery", sub: "Orders ₹449+" },
                 { icon: <RotateCcw className="w-5 h-5" />, title: "Easy Return", sub: "7 Day Policy" },
-                { icon: <Leaf className="w-5 h-5" />, title: "100% Natural", sub: "Dermat Tested" },
+                { icon: <Leaf className="w-5 h-5" />, title: "Rough", sub: "Rough" },
               ].map((b) => (
                 <div
                   key={b.title}

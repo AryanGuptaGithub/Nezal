@@ -142,7 +142,6 @@ const getCategoryImage = (title: string): string => {
 // ── Trust bar ──────────────────────────────────────────
 const trustFeatures = [
   { icon: Leaf,          label: "Made In India",            sub: "Proudly crafted in India with love and care" },
-  { icon: ShieldCheck,   label: "Dermatologically Tested",  sub: "Safe & effective for all skin types" },
   { icon: FlaskConical,  label: "Premium Ingredients",      sub: "Carefully selected natural & active ingredients" },
   { icon: Rabbit,        label: "Cruelty-Free",              sub: "We do not test on animals" },
   { icon: CalendarCheck, label: "Suitable For Daily Use",   sub: "Gentle care for everyday beautiful you" },

@@ -1,54 +1,64 @@
-import mongoose from "mongoose"
+// app/api/products/reviews/all/route.ts
 import { NextResponse, type NextRequest } from "next/server"
 import { connectDB } from "@/lib/db"
 import { Review } from "@/lib/models/review"
-import { Product } from "@/lib/models/product"
-import { Company } from "@/lib/models/company"
 
 export async function GET(request: NextRequest) {
   try {
     await connectDB()
 
-    // Fetch all reviews with product and company details
-    const reviews = await Review.find()
-      .populate({
-        path: "product",
-        select: "name image",
-      })
-      .populate({
-        path: "company",
-        select: "name",
-      })
-      .sort({ createdAt: -1 })
-      .lean()
+    const { searchParams } = request.nextUrl
+    const page     = Math.max(1, parseInt(searchParams.get("page")  || "1"))
+    const limit    = Math.min(50, parseInt(searchParams.get("limit") || "12"))
+    const rating   = searchParams.get("rating")   // "1"|"2"|"3"|"4"|"5" or null
+    const sort     = searchParams.get("sort") || "newest" // "newest"|"highest"|"lowest"
+    const skip     = (page - 1) * limit
 
-    // Map reviews to the expected format
+    const filter: Record<string, any> = {}
+    if (rating) filter.rating = parseInt(rating)
+
+    const sortMap: Record<string, any> = {
+      newest:  { createdAt: -1 },
+      highest: { rating: -1, createdAt: -1 },
+      lowest:  { rating: 1,  createdAt: -1 },
+    }
+
+    const [reviews, total] = await Promise.all([
+      Review.find(filter)
+        .populate({ path: "product", select: "name image" })
+        .populate({ path: "company", select: "name" })
+        .sort(sortMap[sort] ?? sortMap.newest)
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Review.countDocuments(filter),
+    ])
+
     const mappedReviews = reviews.map((review: any) => ({
-      id: review._id.toString(),
-      productId: review.product?._id?.toString() || "",
-      productName: review.product?.name || "Product",
+      id:           review._id.toString(),
+      productId:    review.product?._id?.toString() || "",
+      productName:  review.product?.name  || "Product",
       productImage: review.product?.image || "/placeholder.jpg",
-      companyId: review.company?._id?.toString() || "",
-      company: review.company?.name || review.company || "Nezal",
-      customerName: review.userName || "Anonymous",
-      rating: review.rating || 5,
-      comment: review.comment || "",
-      createdAt: review.createdAt,
+      companyId:    review.company?._id?.toString() || "",
+      company:      review.company?.name  || "Nezal",
+      customerName: review.userName       || "Anonymous",
+      rating:       review.rating         || 5,
+      comment:      review.comment        || "",
+      reply:        review.reply          || null,
+      createdAt:    review.createdAt,
     }))
 
     return NextResponse.json({
       success: true,
       reviews: mappedReviews,
-      count: mappedReviews.length,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
     })
   } catch (error) {
     console.error("Error fetching all reviews:", error)
     return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to fetch reviews",
-        reviews: [],
-      },
+      { success: false, error: "Failed to fetch reviews", reviews: [] },
       { status: 500 }
     )
   }

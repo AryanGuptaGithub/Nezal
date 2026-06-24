@@ -38,8 +38,6 @@ function StarRating({ rating, size = 14 }: { rating: number; size?: number }) {
 }
 
 function ReviewCard({ review }: { review: Review }) {
-  const [expanded, setExpanded] = useState(false)
-
   const initials = review.customerName
     .split(" ")
     .map((n) => n[0])
@@ -47,12 +45,13 @@ function ReviewCard({ review }: { review: Review }) {
     .toUpperCase()
     .slice(0, 2)
 
-  const isLong = review.comment.length > 120
-
   return (
     <div className="bg-white rounded-2xl border border-[var(--color-border)] p-5 flex flex-col gap-4 hover:shadow-md transition-shadow">
       {/* Product info */}
-      <Link href={`/shop/${review.company}`} className="flex items-center gap-3 group">
+      <Link
+        href={`/shop/${review.company}`}
+        className="flex items-center gap-3 group"
+      >
         <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-[var(--color-bg-cream)] flex-shrink-0">
           <Image
             src={review.productImage}
@@ -92,22 +91,10 @@ function ReviewCard({ review }: { review: Review }) {
         <StarRating rating={review.rating} />
       </div>
 
-      {/* Comment with read more */}
-      <div>
-        <p className={`text-sm text-[var(--color-text-body)] leading-relaxed transition-all ${
-          !expanded && isLong ? "line-clamp-3" : ""
-        }`}>
-          {review.comment}
-        </p>
-        {isLong && (
-          <button
-            onClick={() => setExpanded((v) => !v)}
-            className="mt-1.5 text-xs font-semibold text-[var(--color-brand-primary)] hover:underline"
-          >
-            {expanded ? "Show less" : "Read more"}
-          </button>
-        )}
-      </div>
+      {/* Comment */}
+      <p className="text-sm text-[var(--color-text-body)] leading-relaxed">
+        {review.comment}
+      </p>
 
       {/* Admin reply */}
       {review.reply && (
@@ -227,7 +214,9 @@ export default function ReviewsPage() {
           <h1 className="text-3xl md:text-4xl font-bold text-[var(--color-text-heading)] mb-3">
             What Our Customers Say
           </h1>
-         
+          <p className="text-[var(--color-text-muted)] max-w-xl mx-auto text-sm">
+            Real reviews from real customers. We believe in transparency — every review is genuine.
+          </p>
         </div>
       </section>
 
