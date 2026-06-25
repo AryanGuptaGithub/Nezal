@@ -131,7 +131,7 @@ export default function AboutUs() {
 
     
       {/* ── Our Story ── */}
-      <section className="py-10 md:py-32 ">
+      <section className="md:py-10">
         <div className="container mx-auto max-w-6xl px-6 ">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
 
@@ -217,7 +217,7 @@ export default function AboutUs() {
   
 
       {/* ── Philosophy ── */}
-      <section className="py-24 md:py-32">
+      <section className="md:py-10 ">
         <div className="container mx-auto max-w-6xl px-6">
           <motion.div
             initial="hidden"
@@ -282,7 +282,7 @@ export default function AboutUs() {
       </section>
 
       {/* ── Commitments ── */}
-      <section className="py-24 md:py-32" style={{ backgroundColor: "#1a3a2a" }}>
+      <section className="  md:py-20" style={{ backgroundColor: "#1a3a2a" }}>
         <div className="container mx-auto max-w-6xl px-6">
           <motion.div
             initial="hidden"
@@ -368,7 +368,7 @@ export default function AboutUs() {
       </div>
 
       {/* ── Why Customers Trust Nezal ── */}
-      <section className="py-24 md:py-32">
+      <section className="py-10  md:py-32">
         <div className="container mx-auto max-w-6xl px-6">
           <motion.div
             initial="hidden"
@@ -430,7 +430,7 @@ export default function AboutUs() {
       </section>
 
       {/* ── CTA ── */}
-      <section className="py-24 md:py-28" style={{ backgroundColor: "#e8f2e4" }}>
+      <section className="py-10  md:py-28" style={{ backgroundColor: "#e8f2e4" }}>
         <div className="container mx-auto max-w-6xl px-6">
           <div className="max-w-2xl mx-auto text-center">
             <Leaf className="mx-auto h-8 w-8 mb-6" style={{ color: "#5a8a4a" }} />

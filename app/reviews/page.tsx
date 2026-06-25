@@ -38,6 +38,8 @@ function StarRating({ rating, size = 14 }: { rating: number; size?: number }) {
 }
 
 function ReviewCard({ review }: { review: Review }) {
+  const [expanded, setExpanded] = useState(false)
+
   const initials = review.customerName
     .split(" ")
     .map((n) => n[0])
@@ -45,71 +47,89 @@ function ReviewCard({ review }: { review: Review }) {
     .toUpperCase()
     .slice(0, 2)
 
+  const isLong = review.comment.length > 120
+
+  const colors = [
+    { bg: "#f0f7f0", accent: "#2a5c3a" },
+    { bg: "#fff8f0", accent: "#b45309" },
+    { bg: "#f0f4ff", accent: "#3b5bdb" },
+    { bg: "#fff0f6", accent: "#c2255c" },
+    { bg: "#f3fff3", accent: "#1e6636" },
+  ]
+  const color = colors[Math.abs(review.id.charCodeAt(0) + review.id.charCodeAt(1)) % colors.length]
+
   return (
-    <div className="bg-white rounded-2xl border border-[var(--color-border)] p-5 flex flex-col gap-4 hover:shadow-md transition-shadow">
-      {/* Product info */}
-      <Link
-        href={`/shop/${review.company}`}
-        className="flex items-center gap-3 group"
-      >
-        <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-[var(--color-bg-cream)] flex-shrink-0">
-          <Image
-            src={review.productImage}
-            alt={review.productName}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform"
-          />
+    <div
+      className="rounded-2xl p-5 flex flex-col gap-3 break-inside-avoid mb-4 border hover:shadow-md transition-shadow"
+      style={{ backgroundColor: color.bg, borderColor: "#e2ece3" }}
+    >
+      {/* Product pill */}
+      <div className="flex items-center gap-2">
+        <div className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-white border" style={{ borderColor: "#e2ece3" }}>
+          <Image src={review.productImage} alt={review.productName} fill className="object-cover" />
         </div>
         <div className="min-w-0">
-          <p className="text-xs text-[var(--color-text-muted)] font-medium">{review.company}</p>
-          <p className="text-sm font-semibold text-[var(--color-text-heading)] truncate group-hover:text-[var(--color-brand-primary)] transition-colors">
-            {review.productName}
-          </p>
+          <p className="text-xs font-medium truncate" style={{ color: "#6b7c70" }}>{review.company}</p>
+          <p className="text-xs font-semibold truncate" style={{ color: color.accent }}>{review.productName}</p>
         </div>
-      </Link>
+      </div>
 
-      {/* Divider */}
-      <div className="border-t border-[var(--color-border)]" />
-
-      {/* Reviewer + rating */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-[var(--color-brand-primary)]/10 flex items-center justify-center text-xs font-bold text-[var(--color-brand-primary)] flex-shrink-0">
-            {initials}
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-[var(--color-text-heading)]">
-              {review.customerName}
-            </p>
-            <p className="text-xs text-[var(--color-text-muted)]">
-              {new Date(review.createdAt).toLocaleDateString("en-IN", {
-                day: "numeric", month: "short", year: "numeric",
-              })}
-            </p>
-          </div>
-        </div>
-        <StarRating rating={review.rating} />
+      {/* Stars */}
+      <div className="flex gap-0.5">
+        {[1,2,3,4,5].map((s) => (
+          <Star key={s} size={13}
+            className={s <= review.rating ? "fill-amber-400 text-amber-400" : "fill-gray-200 text-gray-200"}
+          />
+        ))}
       </div>
 
       {/* Comment */}
-      <p className="text-sm text-[var(--color-text-body)] leading-relaxed">
-        {review.comment}
-      </p>
+      <div>
+        <p className={`text-sm leading-relaxed ${!expanded && isLong ? "line-clamp-3" : ""}`}
+          style={{ color: "#2d3a30" }}>
+          {review.comment}
+        </p>
+        {isLong && (
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="mt-1 text-xs font-semibold hover:underline"
+            style={{ color: color.accent }}
+          >
+            {expanded ? "Show less" : "Read more"}
+          </button>
+        )}
+      </div>
 
       {/* Admin reply */}
       {review.reply && (
-        <div className="bg-[var(--color-bg-cream)] rounded-xl p-3 flex gap-2">
-          <MessageCircle size={14} className="text-[var(--color-brand-primary)] flex-shrink-0 mt-0.5" />
+        <div className="rounded-xl p-3 flex gap-2 bg-white/60">
+          <MessageCircle size={13} className="flex-shrink-0 mt-0.5" style={{ color: color.accent }} />
           <div>
-            <p className="text-xs font-semibold text-[var(--color-brand-primary)] mb-1">
-              Nezal replied
-            </p>
-            <p className="text-xs text-[var(--color-text-body)] leading-relaxed">
-              {review.reply.message}
-            </p>
+            <p className="text-xs font-semibold mb-0.5" style={{ color: color.accent }}>Nezal replied</p>
+            <p className="text-xs leading-relaxed" style={{ color: "#4a5e50" }}>{review.reply.message}</p>
           </div>
         </div>
       )}
+
+      {/* Footer */}
+      <div className="flex items-center justify-between mt-auto pt-2 border-t" style={{ borderColor: "#d4e6d5" }}>
+        <div className="flex items-center gap-2">
+          <div
+            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+            style={{ backgroundColor: color.accent, color: "#fff" }}
+          >
+            {initials}
+          </div>
+          <span className="text-xs font-semibold" style={{ color: "#1e3a28" }}>
+            {review.customerName}
+          </span>
+        </div>
+        <span className="text-xs" style={{ color: "#9cad9e" }}>
+          {new Date(review.createdAt).toLocaleDateString("en-IN", {
+            day: "numeric", month: "short", year: "numeric",
+          })}
+        </span>
+      </div>
     </div>
   )
 }
@@ -214,9 +234,7 @@ export default function ReviewsPage() {
           <h1 className="text-3xl md:text-4xl font-bold text-[var(--color-text-heading)] mb-3">
             What Our Customers Say
           </h1>
-          <p className="text-[var(--color-text-muted)] max-w-xl mx-auto text-sm">
-            Real reviews from real customers. We believe in transparency — every review is genuine.
-          </p>
+        
         </div>
       </section>
 
@@ -298,32 +316,32 @@ export default function ReviewsPage() {
               </p>
             </div>
 
-            {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="bg-white rounded-2xl border border-[var(--color-border)] p-5 animate-pulse">
-                    <div className="flex gap-3 mb-4">
-                      <div className="w-12 h-12 rounded-xl bg-gray-200" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-3 bg-gray-200 rounded w-1/2" />
-                        <div className="h-3 bg-gray-200 rounded w-3/4" />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-3 bg-gray-200 rounded" />
-                      <div className="h-3 bg-gray-200 rounded w-5/6" />
-                      <div className="h-3 bg-gray-200 rounded w-4/6" />
-                    </div>
-                  </div>
-                ))}
-              </div>
+           {loading ? (
+  <div className="columns-1 md:columns-2 xl:columns-3 gap-4">
+    {Array.from({ length: 6 }).map((_, i) => (
+      <div key={i} className="rounded-2xl bg-white border border-[var(--color-border)] p-5 animate-pulse mb-4 break-inside-avoid">
+        <div className="flex gap-3 mb-4">
+          <div className="w-8 h-8 rounded-lg bg-gray-200" />
+          <div className="flex-1 space-y-2">
+            <div className="h-3 bg-gray-200 rounded w-1/2" />
+            <div className="h-3 bg-gray-200 rounded w-3/4" />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <div className="h-3 bg-gray-200 rounded" />
+          <div className="h-3 bg-gray-200 rounded w-5/6" />
+          <div className="h-3 bg-gray-200 rounded w-4/6" />
+        </div>
+      </div>
+    ))}
+  </div>
             ) : reviews.length === 0 ? (
               <div className="text-center py-20">
                 <Star size={40} className="mx-auto mb-3 text-gray-300" />
                 <p className="text-[var(--color-text-muted)]">No reviews found.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className="columns-1 md:columns-2 xl:columns-3 gap-4">
                 {reviews.map((review) => (
                   <ReviewCard key={review.id} review={review} />
                 ))}

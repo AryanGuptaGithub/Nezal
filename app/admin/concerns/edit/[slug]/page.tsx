@@ -205,11 +205,11 @@ const { data: session, status } = useSession()
                 </div>
               </div>
 
-              <div className="border rounded-xl overflow-hidden">
-                <div className="bg-muted/60 px-4 py-3 border-b">
+              <div className="border rounded-xl overflow-hidden ">
+                <div className="bg-muted/60 px-4 py-3 border-b ">
                   <h2 className="text-sm font-semibold">Recommended Products</h2>
                 </div>
-                <div className="p-4 space-y-3">
+                <div className="p-4 space-y-3 border-2 h-50">
                   <div className="relative">
                     <Input value={productSearch} onChange={(e) => setProductSearch(e.target.value)} placeholder="Search products by name..." />
                     {searchResults.length > 0 && (

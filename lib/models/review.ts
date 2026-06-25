@@ -13,14 +13,19 @@ const replySchema = new mongoose.Schema(
 
 const reviewSchema = new mongoose.Schema(
   {
-    product: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
-    company: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true },
-    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    rating: { type: Number, required: true, min: 1, max: 5 },
-    comment: { type: String, required: true },
-    userName: { type: String, required: true },
+    product:   { type: mongoose.Schema.Types.ObjectId, ref: "Product",  required: true },
+    company:   { type: mongoose.Schema.Types.ObjectId, ref: "Company",  required: true },
+    user:      { type: mongoose.Schema.Types.ObjectId, ref: "User",     required: true },
+    rating:    { type: Number, required: true, min: 1, max: 5 },
+    comment:   { type: String, required: true },
+    userName:  { type: String, required: true },
     userEmail: { type: String, required: true },
-    reply: replySchema,
+    reply:     replySchema,
+    status: {
+      type:    String,
+      enum:    ["pending", "approved", "rejected"],
+      default: "pending",
+    },
   },
   { timestamps: true },
 )

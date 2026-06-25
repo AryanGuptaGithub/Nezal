@@ -1,3 +1,4 @@
+// app/api/products/[id]/reviews/route.ts
 import mongoose from "mongoose"
 import { NextResponse, type NextRequest } from "next/server"
 import { connectDB } from "@/lib/db"
@@ -79,9 +80,10 @@ export async function GET(
 
     await connectDB()
 
-    const reviews = await Review.find({ product: productId }).sort({ createdAt: -1 }).lean()
+    const reviews = await Review.find({ product: productId, status: "approved" }).sort({ createdAt: -1 }).lean()
     const summary = buildSummary(reviews)
 
+    
     return NextResponse.json({
       reviews: reviews.map(mapReview),
       summary,
@@ -157,6 +159,7 @@ export async function POST(
       existingReview.userName = userName
       existingReview.userEmail = userEmail
       existingReview.reply = undefined
+      existingReview.status = "pending"   
       review = await existingReview.save()
     } else {
       review = await Review.create({
@@ -167,20 +170,22 @@ export async function POST(
         comment,
         userName,
         userEmail,
+        status: "pending",
       })
       created = true
     }
 
-    const reviews = await Review.find({ product: productId }).sort({ createdAt: -1 }).lean()
+    const reviews = await Review.find({ product: productId, status: "approved" }).sort({ createdAt: -1 }).lean()
     const summary = buildSummary(reviews)
 
-    return NextResponse.json(
-      {
-        review: mapReview(review.toObject ? review.toObject() : review),
-        summary,
-      },
-      { status: created ? 201 : 200 },
-    )
+   return NextResponse.json(
+  {
+    review:   mapReview(review.toObject ? review.toObject() : review),
+    summary,
+    message:  "Review submitted! It will appear after our team verifies it.",
+  },
+  { status: created ? 201 : 200 },
+)
   } catch (error: any) {
     console.error("Error submitting review:", error)
     if (error?.code === 11000) {

@@ -209,7 +209,7 @@ export default function AddRitualPage() {
                   <h2 className="text-sm font-semibold">Routine Steps</h2>
                   <p className="text-xs text-muted-foreground mt-0.5">Ordered steps shown on the ritual page (e.g. Cleanse → Treat → Moisturize)</p>
                 </div>
-                <div className="p-4 space-y-4">
+                <div className="p-4 space-y-4 h-50">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <Input value={stepInput.title} onChange={(e) => setStepInput((p) => ({ ...p, title: e.target.value }))} placeholder="Step title, e.g. Cleanse" />
                     <Input value={stepInput.description} onChange={(e) => setStepInput((p) => ({ ...p, description: e.target.value }))} placeholder="Short description" />

@@ -241,7 +241,7 @@ export default function EditRitualPage() {
                 <div className="bg-muted/60 px-4 py-3 border-b">
                   <h2 className="text-sm font-semibold">Routine Steps</h2>
                 </div>
-                <div className="p-4 space-y-4">
+                <div className="p-4 space-y-4 ">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <Input value={stepInput.title} onChange={(e) => setStepInput((p) => ({ ...p, title: e.target.value }))} placeholder="Step title, e.g. Cleanse" />
                     <Input value={stepInput.description} onChange={(e) => setStepInput((p) => ({ ...p, description: e.target.value }))} placeholder="Short description" />
@@ -269,7 +269,7 @@ export default function EditRitualPage() {
                 <div className="bg-muted/60 px-4 py-3 border-b">
                   <h2 className="text-sm font-semibold">Curated Products</h2>
                 </div>
-                <div className="p-4 space-y-3">
+                <div className="p-4 space-y-3 h-50">
                   <div className="relative">
                     <Input value={productSearch} onChange={(e) => setProductSearch(e.target.value)} placeholder="Search products by name..." />
                     {searchResults.length > 0 && (

@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
     const sort     = searchParams.get("sort") || "newest" // "newest"|"highest"|"lowest"
     const skip     = (page - 1) * limit
 
-    const filter: Record<string, any> = {}
-    if (rating) filter.rating = parseInt(rating)
+    const filter: Record<string, any> = { status: "approved" }
+      if (rating) filter.rating = parseInt(rating)
 
     const sortMap: Record<string, any> = {
       newest:  { createdAt: -1 },

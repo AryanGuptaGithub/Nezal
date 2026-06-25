@@ -10,6 +10,7 @@ import { AnimatedTestimonials } from "@/components/AnimatedTestimonials"
 import { useRouter } from "next/navigation"
 import { ShopByConcern } from "@/components/ShopByConcern"
 import { DiscoverRituals } from "@/components/DiscoverRituals"
+import { DiscoverIngredients } from "@/components/DiscoverIngredients"
 
 import { getCachedSync, fetchWithCache, invalidateCache } from "@/lib/cacheClient"
 import { BRAND } from "@/lib/config"
@@ -450,46 +451,8 @@ const router = useRouter()
 
       <PromoBannerGrid />
 
-      {/* Secondary carousel (company carousel) */}
-      <section className="py-12 md:py-16 bg-muted">
-        <div className="container-nezal">
-          <div className="text-center mb-8">
-            <h2 className="text-[28px] md:text-[32px] font-bold text-foreground mb-2">
-              Discover By Ingredients
-            </h2>
-            <p className="text-[15px] text-muted-foreground">
-              Explore our complete herbal collection
-            </p>
-          </div>
-
-          {/* Suggested products grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-            {!isClient || suggestedProducts.length === 0
-              ? [...Array(8)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="rounded-2xl animate-pulse bg-muted-foreground/20"
-                    style={{ height: 280 }}
-                  />
-                ))
-              : suggestedProducts.map((product) => (
-                  <ProductCard
-                    key={product._id}
-                    id={product._id}
-                    name={product.name}
-                    price={product.price}
-                    discountPrice={product.discountPrice}
-                    image={product.image}
-                    company={product.company}
-                  />
-                ))}
-          </div>
-        </div>
-      </section>
-
-
-
-
+     
+     <DiscoverIngredients />
 
 
 

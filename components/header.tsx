@@ -130,13 +130,15 @@ const CONCERNS = [
 ];
 
 const INGREDIENTS = [
-  { label: "Bhringraj",   slug: "bhringraj"   },
-  { label: "Neem",        slug: "neem"        },
-  { label: "Tulsi",       slug: "tulsi"       },
-  { label: "Aloe Vera",   slug: "aloe-vera"   },
-  { label: "Turmeric",    slug: "turmeric"    },
-  { label: "Rose",        slug: "rose"        },
-];
+  { label: "Aloe Vera",        slug: "aloe-vera"        },
+  { label: "Neem",             slug: "neem"             },
+  { label: "Tulsi",            slug: "tulsi"            },
+  { label: "Turmeric",         slug: "turmeric"         },
+  { label: "Tea Tree",         slug: "tea-tree"         },
+  { label: "Vitamin C",        slug: "vitamin-c"        },
+  { label: "Hyaluronic Acid",  slug: "hyaluronic-acid"  },
+  { label: "Niacinamide",      slug: "niacinamide"      },
+]
 
 /* ─── Collection Card (inside mega menu) ────────────────── */
 

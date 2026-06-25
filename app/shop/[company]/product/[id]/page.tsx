@@ -455,14 +455,14 @@ const initialReviews = null
         return
       }
       const data = await res.json()
-      if (data.review) {
-        setReviews((prev) => [parseProductReview(data.review), ...prev.filter((r) => r.userId !== (session?.user?.id || ""))])
-      } else if (Array.isArray(data.reviews)) {
-        setReviews(data.reviews.map(parseProductReview))
-      }
-      setReviewSummary(parseReviewSummary(data.summary))
-      setRatingInput(0); setHoverRating(0); setComment("")
-      toast({ title: "Review submitted!", description: "Thank you for your feedback." })
+      setRatingInput(0)
+      setHoverRating(0)
+      setComment("")
+        toast({
+          title: "Review submitted!",
+          description: "Thank you! Your review will appear after our team verifies it.",
+        })
+
     } catch (err) {
       toast({ title: "Review failed", description: "Could not submit review.", variant: "destructive" })
     } finally {
