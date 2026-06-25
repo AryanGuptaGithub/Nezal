@@ -1,5 +1,12 @@
 import mongoose from "mongoose"
 
+// Register all models once — prevents MissingSchemaError across all routes
+import "@/lib/models/product";
+import "@/lib/models/category";
+import "@/lib/models/company";
+// add any other models here
+
+
 const MONGODB_URI = process.env.MONGODB_URI
 if (!MONGODB_URI) {
   throw new Error("Please define the MONGODB_URI environment variable")
