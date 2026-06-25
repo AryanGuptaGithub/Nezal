@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { ChevronRight, Leaf, Home, CheckCircle2, Sparkles, FlaskConical } from "lucide-react"
 import ProductCard from "@/components/product-card"
+import Image from "next/image"
 
 /* ─── Types ──────────────────────────────────────────────── */
 
@@ -288,54 +289,96 @@ export default function IngredientPage() {
   return (
     <main className="min-h-screen bg-[var(--color-bg-page)]">
 
-      {/* ── Hero ── */}
-      <section style={{ backgroundColor: "#F3F5EF" }} className="border-b border-[var(--color-border)]">
-        <div className="max-w-6xl mx-auto px-4 py-10 md:py-14">
-          <nav className="flex items-center gap-2 text-sm text-[var(--color-text-muted)] mb-6">
-            <Link href="/" className="hover:text-[var(--color-brand-primary)] flex items-center gap-1">
-              <Home size={13} /> Home
-            </Link>
-            <ChevronRight size={13} />
-            <span>Ingredient</span>
-            <ChevronRight size={13} />
-            <span className="text-[var(--color-text-heading)] font-medium">{label}</span>
-          </nav>
+     {/* ── Hero ── */}
+<section style={{ backgroundColor: "#F3F5EF" }} className="border-b border-[var(--color-border)]">
+  <div className="max-w-6xl mx-auto px-4 py-10 md:py-14">
+    <nav className="flex items-center gap-2 text-sm text-[var(--color-text-muted)] mb-6">
+      <Link href="/" className="hover:text-[var(--color-brand-primary)] flex items-center gap-1">
+        <Home size={13} /> Home
+      </Link>
+      <ChevronRight size={13} />
+      <span>Ingredient</span>
+      <ChevronRight size={13} />
+      <span className="text-[var(--color-text-heading)] font-medium">{label}</span>
+    </nav>
 
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-            <div className="flex flex-col gap-3 max-w-2xl">
-              <span className="inline-flex items-center gap-2 self-start px-3 py-1 rounded-full bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)] text-sm font-medium">
-                <Leaf size={13} /> {info?.category || "Ingredient"}
-              </span>
-              <h1 className="text-3xl md:text-4xl font-extrabold text-[var(--color-text-heading)] leading-tight">
-                {info?.emoji} {label}
-              </h1>
-              {info?.tagline && (
-                <p className="text-lg font-medium italic text-[var(--color-brand-primary)]">
-                  {info.tagline}
-                </p>
-              )}
-              {info?.description && (
-                <p className="text-sm text-[var(--color-text-muted)] leading-relaxed max-w-xl">
-                  {info.description}
-                </p>
-              )}
+      <div>
+    <div className="flex flex-col md:flex-row md:items-start gap-8">
+
+      {/* Left — text */}
+      <div className="flex flex-col gap-3 flex-1 max-w-2xl">
+        <span className="inline-flex items-center gap-2 self-start px-3 py-1 rounded-full bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)] text-sm font-medium">
+          <Leaf size={13} /> {info?.category || "Ingredient"}
+        </span>
+        <h1 className="text-3xl md:text-4xl font-extrabold text-[var(--color-text-heading)] leading-tight">
+          {label}
+        </h1>
+        {info?.tagline && (
+          <p className="text-lg font-medium italic text-[var(--color-brand-primary)]">
+            {info.tagline}
+          </p>
+        )}
+        {info?.description && (
+          <p className="text-sm text-[var(--color-text-muted)] leading-relaxed">
+            {info.description}
+          </p>
+        )}
+
+        {/* Did You Know — shows below text on mobile */}
+        {info?.didYouKnow && (
+          <div className="md:hidden mt-2 bg-white rounded-2xl border-3 border-[var(--color-border)] p-4 ">
+            <div className="flex items-center gap-2 mb-2 ">
+              <Sparkles size={15} className="text-amber-500" />
+              <p className="text-xs font-bold uppercase tracking-widest text-amber-600">Did you know?</p>
             </div>
-
-            {/* Did You Know */}
-            {info?.didYouKnow && (
-              <div className="md:w-72 flex-shrink-0 bg-white rounded-2xl border border-[var(--color-border)] p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles size={15} className="text-amber-500" />
-                  <p className="text-xs font-bold uppercase tracking-widest text-amber-600">Did you know?</p>
-                </div>
-                <p className="text-sm text-[var(--color-text-body)] leading-relaxed">
-                  {info.didYouKnow}
-                </p>
-              </div>
-            )}
+            <p className="text-sm text-[var(--color-text-body)] leading-relaxed">{info.didYouKnow}</p>
           </div>
+        )}
+      </div>
+
+      {/* Right — image + did you know */}
+      <div className="flex flex-col gap-4 md:w-80 flex-shrink-0 ">
+
+        {/* Ingredient image */}
+        <div className="relative w-full h-56 md:h-64 rounded-2xl overflow-hidden border border-[var(--color-border)] bg-white">
+          <Image
+            src={`/ingredients/${slug === "bhringraj" ? "bringraj" : slug}.${
+              ["turmeric", "vitamin-c", "tulsi", "shea-butter", "rose", "bringraj"].includes(
+                slug === "bhringraj" ? "bringraj" : slug
+              ) ? "webp"
+              : slug === "tea-tree" ? "png"
+              : "jpg"
+            }`}
+            alt={label}
+            fill
+            className="object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "/placeholder.jpg"
+            }}
+          />
+          {/* subtle green tint overlay */}
+          <div className="absolute inset-0 bg-[#1e3a28]/5" />
         </div>
-      </section>
+
+        
+      </div>
+  </div>
+
+      {/* Did You Know — desktop */}
+          {info?.didYouKnow && (
+            <div className="hidden md:block bg-white rounded-2xl border border-[var(--color-border)] p-4 mt-8 ">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles size={15} className="text-amber-500" />
+                <p className="text-xs font-bold uppercase tracking-widest text-amber-600">Did you know?</p>
+              </div>
+              <p className="text-sm text-[var(--color-text-body)] leading-relaxed">{info.didYouKnow}</p>
+            </div>
+          )}
+      
+
+    </div>
+  </div>
+</section>
 
       {/* ── Benefits + Helps Address ── */}
       {info && (

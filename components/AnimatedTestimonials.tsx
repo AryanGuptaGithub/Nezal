@@ -105,28 +105,37 @@ function StackedAvatars({
         const zIndex = 10 - absOffset
 
         return (
-          <button
-            key={t.id}
-            onClick={() => onSelect(i)}
-            className="absolute rounded-full overflow-hidden border-2 transition-all duration-500 ease-in-out focus:outline-none"
-            style={{
-              width: isActive ? 80 : 64,
-              height: isActive ? 80 : 64,
-              transform: `translateY(${translateY}px) scale(${scale})`,
-              opacity,
-              zIndex,
-              borderColor: isActive ? "var(--color-brand-primary)" : "white",
-              boxShadow: isActive
-                ? "0 0 0 4px rgba(42,122,91,0.2), 0 8px 24px rgba(0,0,0,0.12)"
-                : "0 2px 8px rgba(0,0,0,0.08)",
-            }}
-          >
-            <img
-              src={t.avatar}
-              alt={t.name}
-              className="w-full h-full object-cover"
-            />
-          </button>
+         <button
+  key={t.id}
+  onClick={() => onSelect(i)}
+  className="absolute rounded-full overflow-hidden border-2 transition-all duration-500 ease-in-out focus:outline-none flex items-center justify-center"
+  style={{
+    width: isActive ? 80 : 64,
+    height: isActive ? 80 : 64,
+    transform: `translateY(${translateY}px) scale(${scale})`,
+    opacity,
+    zIndex,
+    borderColor: isActive ? "var(--color-brand-primary)" : "white",
+    boxShadow: isActive
+      ? "0 0 0 4px rgba(42,122,91,0.2), 0 8px 24px rgba(0,0,0,0.12)"
+      : "0 2px 8px rgba(0,0,0,0.08)",
+    backgroundColor: "#e8f5e8",
+  }}
+>
+  {t.avatar && !t.avatar.includes("placeholder") ? (
+    <img src={t.avatar} alt={t.name} className="w-full h-full object-cover" />
+  ) : (
+    <span
+      className="font-bold select-none"
+      style={{
+        fontSize: isActive ? 28 : 22,
+        color: "var(--color-brand-primary)",
+      }}
+    >
+      {t.name.charAt(0).toUpperCase()}
+    </span>
+  )}
+</button>
         )
       })}
     </div>

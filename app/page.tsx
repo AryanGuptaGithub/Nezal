@@ -85,22 +85,11 @@ async function fetchAllProductsAPI(): Promise<Product[]> {
   return []
 }
 
-async function fetchReviewsAPI(): Promise<Review[]> {
-  const res = await fetch("/api/products/reviews/all", { cache: "no-store" })
+async function fetchReviewsAPI(): Promise<any[]> {
+  const res = await fetch("/api/products/reviews/all?limit=10&sort=highest", { cache: "no-store" })
   if (!res.ok) throw new Error("Failed to fetch reviews")
   const json = await res.json()
-  const raw = Array.isArray(json) ? json : json?.reviews ?? json?.data ?? []
-  if (!Array.isArray(raw)) return []
-  return raw.slice(0, 20).map((r: any) => ({
-    id: r.id || r._id || `${Math.random()}`,
-    productName: r.productName || r.product?.name || "Product",
-    productImage: r.productImage || r.product?.image || "/placeholder.jpg",
-    productId: r.productId || r.product?._id || "",
-    customerName: r.userName || r.customerName || r.name || "Anonymous",
-    rating: typeof r.rating === "number" ? r.rating : 5,
-    comment: r.comment || r.review || "",
-    company: r.company || r.brand || BRAND.name,
-  }))
+  return Array.isArray(json) ? json : json?.reviews ?? []
 }
 
 export function invalidateHomeCaches() {
@@ -264,6 +253,7 @@ const router = useRouter()
   const [waMenuOpen, setWaMenuOpen] = useState(false)
   const [isClient, setIsClient] = useState(false)
   const [showAllProducts, setShowAllProducts] = useState(false)
+  const [testimonials, setTestimonials] = useState<any[]>([])
 
   const waMenuRef = useRef<HTMLDivElement | null>(null)
   const waButtonRef = useRef<HTMLButtonElement | null>(null)
@@ -352,21 +342,47 @@ const router = useRouter()
     return () => { mounted = false }
   }, [])
 
-  useEffect(() => {
-    let mounted = true
-    const loadReviews = async () => {
-      try {
-        const data = await fetchWithCache<Review[]>(REVIEWS_KEY, fetchReviewsAPI, {
-          ttlMs: TTL, maxAgeMs: MAX_AGE, backgroundRefresh: true, persistToStorage: true,
-        })
-        if (!mounted) return
-        if (Array.isArray(data) && data.length > 0) setReviews(data)
-        else setReviews(dummyReviews)
-      } catch (err) { console.error("Error fetching reviews:", err); setReviews(dummyReviews) }
+useEffect(() => {
+  let mounted = true
+  const loadReviews = async () => {
+    try {
+      const data = await fetchWithCache<any[]>(REVIEWS_KEY, fetchReviewsAPI, {
+        ttlMs: TTL, maxAgeMs: MAX_AGE, backgroundRefresh: true, persistToStorage: true,
+      })
+      if (!mounted) return
+      if (Array.isArray(data) && data.length > 0) {
+        setReviews(data.slice(0, 20).map((r: any) => ({
+          id: r.id || r._id || `${Math.random()}`,
+          productName: r.productName || r.product?.name || "Product",
+          productImage: r.productImage || r.product?.image || "/placeholder.jpg",
+          productId: r.productId || r.product?._id || "",
+          customerName: r.userName || r.customerName || r.name || "Anonymous",
+          rating: typeof r.rating === "number" ? r.rating : 5,
+          comment: r.comment || r.review || "",
+          company: r.company || r.brand || BRAND.name,
+        })))
+        setTestimonials(data.slice(0, 8).map((r: any) => ({
+          id: r.id || r._id || `${Math.random()}`,
+          name: r.customerName || r.userName || "Anonymous",
+          role: "Verified Buyer",
+          avatar: "/placeholder-user.jpg",
+          rating: typeof r.rating === "number" ? r.rating : 5,
+          quote: r.comment || "",
+          product: r.productName || "Nezal Product",
+        })))
+      } else {
+        setReviews(dummyReviews)
+        setTestimonials([])
+      }
+    } catch (err) {
+      console.error("Error fetching reviews:", err)
+      setReviews(dummyReviews)
+      setTestimonials([])
     }
-    loadReviews()
-    return () => { mounted = false }
-  }, [])
+  }
+  loadReviews()
+  return () => { mounted = false }
+}, [])
 
   useEffect(() => {
     if (reviews.length === 0) return
@@ -623,7 +639,7 @@ const router = useRouter()
 
       {/* Testimonials */}
       <section className="py-12 md:py-16 bg-muted">
-      <AnimatedTestimonials />
+      <AnimatedTestimonials testimonials={testimonials.length > 0 ? testimonials : undefined} />
       </section>
 
       {/* Floating buttons */}
