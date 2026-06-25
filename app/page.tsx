@@ -1,157 +1,87 @@
-"use client"
+// app/page.tsx
+// Server Component — data is fetched on the server, page arrives pre-rendered.
+// No skeleton flash, no client-side waterfall, no 100-product fetch.
 
-import { useEffect, useState, useMemo, useRef } from "react"
-import ProductCard from "@/components/product-card"
+import { Suspense } from "react"
 import { HomeCarousel } from "@/components/home-carousel"
 import { ShopByCategory } from "@/components/shop-by-category"
 import WhyChoose from "@/components/why-choose"
-import Testimonials from "@/components/testimonials"
-import { AnimatedTestimonials } from "@/components/AnimatedTestimonials"
-import { useRouter } from "next/navigation"
 import { ShopByConcern } from "@/components/ShopByConcern"
 import { DiscoverRituals } from "@/components/DiscoverRituals"
 import { DiscoverIngredients } from "@/components/DiscoverIngredients"
-
-import { getCachedSync, fetchWithCache, invalidateCache } from "@/lib/cacheClient"
+import { AnimatedTestimonials } from "@/components/AnimatedTestimonials"
 import { BRAND } from "@/lib/config"
+import { connectDB } from "@/lib/db"
+import HomeClient from "@/components/HomeClient"
 
+// ── Server-side data fetching ─────────────────────────────────────────────────
+// All fetches run in PARALLEL on the server. The page HTML arrives
+// fully populated — zero client waterfalls.
 
+async function getHomeData() {
+  try {
+    const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
 
+    // Fetch all in parallel — not sequentially
+    const [companiesRes, productsRes, reviewsRes] = await Promise.allSettled([
+      fetch(`${base}/api/companies`, {
+        next: { revalidate: 300 }, // cache for 5 minutes
+      }),
+      fetch(`${base}/api/products?limit=8`, {
+        next: { revalidate: 300 },
+      }),
+      fetch(`${base}/api/products/reviews/all?limit=10&sort=highest`, {
+        next: { revalidate: 300 },
+      }),
+    ])
 
+    const companies =
+      companiesRes.status === "fulfilled" && companiesRes.value.ok
+        ? await companiesRes.value.json().then((j: any) => (Array.isArray(j) ? j : j?.data ?? []))
+        : []
 
-// ─── Types ───────────────────────────────────────────
-interface Product {
-  _id: string
-  name: string
-  price: number
-  discountPrice?: number
-  image: string
-  company: { _id: string; name: string; slug: string }
+    const productsJson =
+      productsRes.status === "fulfilled" && productsRes.value.ok
+        ? await productsRes.value.json()
+        : {}
+    const products = Array.isArray(productsJson)
+      ? productsJson
+      : productsJson?.products ?? []
+
+    const reviewsJson =
+      reviewsRes.status === "fulfilled" && reviewsRes.value.ok
+        ? await reviewsRes.value.json()
+        : []
+    const reviews = Array.isArray(reviewsJson) ? reviewsJson : reviewsJson?.reviews ?? []
+
+    const nezalCompany =
+      companies.find((c: any) => c.slug === "nezal" || c.name?.toLowerCase() === "nezal") ??
+      companies[0] ??
+      null
+
+    return { companies, products, reviews, nezalCompany }
+  } catch (err) {
+    console.error("Home page data fetch error:", err)
+    return { companies: [], products: [], reviews: [], nezalCompany: null }
+  }
 }
 
-interface Company {
-  _id: string
-  name: string
-  slug: string
-  carouselImages?: Array<{ _id: string; url: string; title?: string; description?: string }>
-}
-
-interface Review {
-  id: string
-  productName: string
-  productImage: string
-  productId: string
-  customerName: string
-  rating: number
-  comment: string
-  company: string
-}
-
-// ─── Cache config ────────────────────────────────────
-const COMPANIES_KEY = "home:companies:all"
-const SUGGESTED_PRODUCTS_KEY = "home:products:suggested:8"
-const ALL_PRODUCTS_KEY = "home:products:all:100"
-const REVIEWS_KEY = "home:reviews:all"
-const TTL = 1000 * 60 * 5
-const MAX_AGE = 1000 * 60 * 60 * 24
-
-// ─── API fetchers ────────────────────────────────────
-async function fetchCompaniesAPI(): Promise<Company[]> {
-  const res = await fetch("/api/companies", { cache: "no-store" })
-  if (!res.ok) throw new Error("Failed to fetch companies")
-  const json = await res.json()
-  if (Array.isArray(json)) return json
-  if (Array.isArray(json?.data)) return json.data
-  return []
-}
-
-async function fetchSuggestedProductsAPI(): Promise<Product[]> {
-  const res = await fetch("/api/products?limit=8", { cache: "no-store" })
-  if (!res.ok) throw new Error("Failed to fetch suggested products")
-  const json = await res.json()
-  if (Array.isArray(json)) return json
-  if (Array.isArray(json?.products)) return json.products
-  if (Array.isArray(json?.data)) return json.data
-  return []
-}
-
-async function fetchAllProductsAPI(): Promise<Product[]> {
-  const res = await fetch("/api/products?limit=100", { cache: "no-store" })
-  if (!res.ok) throw new Error("Failed to fetch all products")
-  const json = await res.json()
-  if (Array.isArray(json)) return json
-  if (Array.isArray(json?.products)) return json.products
-  if (Array.isArray(json?.data)) return json.data
-  return []
-}
-
-async function fetchReviewsAPI(): Promise<any[]> {
-  const res = await fetch("/api/products/reviews/all?limit=10&sort=highest", { cache: "no-store" })
-  if (!res.ok) throw new Error("Failed to fetch reviews")
-  const json = await res.json()
-  return Array.isArray(json) ? json : json?.reviews ?? []
-}
-
-export function invalidateHomeCaches() {
-  invalidateCache(COMPANIES_KEY)
-  invalidateCache(SUGGESTED_PRODUCTS_KEY)
-  invalidateCache(ALL_PRODUCTS_KEY)
-  invalidateCache(REVIEWS_KEY)
-}
-
-// ─── Ticker items ────────────────────────────────────
-const TICKER_ITEMS = [
-  "Own Manufacturing",
-  "Crafted With Care",
-  "Quality Tested Formulations",
- 
-]
-
-
+// ── Promo banners (static, no fetch needed) ───────────────────────────────────
 const PROMO_BANNERS = [
-  {
-    image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779278431/nezal/uploads/rwzzisquhzzalhdngf9z.jpg",
-    label: "Face Wash",
-    sub: "From ₹199",
-    href: "/collections/foaming-face-wash",
-  },
-  {
-    image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779342398/nezal/uploads/wiutayfpcujdko7zdyt4.jpg",
-    label: "Hair Serum",
-    sub: "Reduce Hair Fall",
-    href: "/collections/hair-serum",
-  },
-  {
-    image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779342041/nezal/uploads/vhoi1owzq0cun9zyxq70.jpg",
-    label: "Body Lotion",
-    sub: "All-Day Hydration",
-    href: "/collections/body-lotion",
-  },
-  {
-    image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779278227/nezal/uploads/db5xjbpwpnmb6uf6yep6.jpg",
-    label: "Massage Oil",
-    sub: "Relax & Restore",
-    href: "/collections/body-massage-oil",
-  },
-  {
-    image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779341640/nezal/uploads/klcvgxsephlxhm6n4xib.jpg",
-    label: "Face Cream",
-    sub: "Deep Nourishment",
-    href: "/collections/face-serum",
-  },
-  {
-    image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779341557/nezal/uploads/vz9jkgrr5tdccprgfl5a.jpg",
-    label: "Bath Salts",
-    sub: "Turn Bath Into Ritual",
-    href: "/collections/bath-salt",
-  },
+  { image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779278431/nezal/uploads/rwzzisquhzzalhdngf9z.jpg", label: "Face Wash", sub: "From ₹199", href: "/collections/foaming-face-wash" },
+  { image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779342398/nezal/uploads/wiutayfpcujdko7zdyt4.jpg", label: "Hair Serum", sub: "Reduce Hair Fall", href: "/collections/hair-serum" },
+  { image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779342041/nezal/uploads/vhoi1owzq0cun9zyxq70.jpg", label: "Body Lotion", sub: "All-Day Hydration", href: "/collections/body-lotion" },
+  { image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779278227/nezal/uploads/db5xjbpwpnmb6uf6yep6.jpg", label: "Massage Oil", sub: "Relax & Restore", href: "/collections/body-massage-oil" },
+  { image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779341640/nezal/uploads/klcvgxsephlxhm6n4xib.jpg", label: "Face Cream", sub: "Deep Nourishment", href: "/collections/face-serum" },
+  { image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779341557/nezal/uploads/vz9jkgrr5tdccprgfl5a.jpg", label: "Bath Salts", sub: "Turn Bath Into Ritual", href: "/collections/bath-salt" },
 ]
+
+const TICKER_ITEMS = ["Own Manufacturing", "Crafted With Care", "Quality Tested Formulations"]
 
 function PromoBannerGrid() {
   return (
     <section className="py-12 md:py-16 bg-[#FAFAF8]">
       <div className="container-nezal">
-        {/* Heading */}
         <div className="text-center mb-10">
           <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-brand-primary)]">
             Our Collections
@@ -160,54 +90,28 @@ function PromoBannerGrid() {
             Shop by Product
           </h2>
         </div>
- 
-        {/* Grid — 3 cols desktop, 2 cols mobile */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
           {PROMO_BANNERS.map((banner) => (
-            <a
-  key={banner.href}
-  href={banner.href}
-  className="group flex flex-col items-center gap-3"
->
-  {/* IMAGE CARD */}
-  <div className="relative w-full aspect-square overflow-hidden rounded-2xl bg-white border border-[var(--color-border)] shadow-sm transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1">
-
-    {/* soft glow background */}
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(42,122,91,0.10),transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-    {/* subtle shine sweep */}
-    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/25 to-transparent" />
-
-    {/* image */}
-    <img
-      src={banner.image}
-      alt={banner.label}
-      className="absolute inset-0 h-full w-full object-cover scale-105 transition-transform duration-700 group-hover:scale-110 group-hover:rotate-[1.5deg]"
-    />
-
-    {/* dark-to-light edge polish */}
-    <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-  </div>
-
-  {/* TEXT */}
-  <div className="text-center transition-all duration-300 group-hover:-translate-y-1">
-    <p className="font-bold text-[var(--color-text-heading)] text-sm md:text-base">
-      {banner.label}
-    </p>
-    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-      {banner.sub}
-    </p>
-  </div>
-</a>
+            <a key={banner.href} href={banner.href} className="group flex flex-col items-center gap-3">
+              <div className="relative w-full aspect-square overflow-hidden rounded-2xl bg-white border border-[var(--color-border)] shadow-sm transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(42,122,91,0.10),transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+                <img
+                  src={banner.image}
+                  alt={banner.label}
+                  loading="lazy"
+                  className="absolute inset-0 h-full w-full object-cover scale-105 transition-transform duration-700 group-hover:scale-110 group-hover:rotate-[1.5deg]"
+                />
+              </div>
+              <div className="text-center transition-all duration-300 group-hover:-translate-y-1">
+                <p className="font-bold text-[var(--color-text-heading)] text-sm md:text-base">{banner.label}</p>
+                <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{banner.sub}</p>
+              </div>
+            </a>
           ))}
         </div>
- 
-        {/* View all link */}
         <div className="mt-10 text-center">
-          <a
-            href="/shop"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-brand-primary)] hover:bg-[#0d600e] hover:text-white border px-3 py-2 rounded-xl"
-          >
+          <a href="/shop" className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-brand-primary)] hover:bg-[#0d600e] hover:text-white border px-3 py-2 rounded-xl">
             View All Products →
           </a>
         </div>
@@ -216,421 +120,74 @@ function PromoBannerGrid() {
   )
 }
 
+// ── Page (Server Component) ───────────────────────────────────────────────────
+export default async function Home() {
+  const { companies, products, reviews, nezalCompany } = await getHomeData()
 
-// ─── Home component ──────────────────────────────────
-export default function Home() {
+  const testimonials = reviews.slice(0, 8).map((r: any) => ({
+    id: r._id || r.id,
+    name: r.customerName || r.userName || "Anonymous",
+    role: "Verified Buyer",
+    avatar: "/placeholder-user.jpg",
+    rating: typeof r.rating === "number" ? r.rating : 5,
+    quote: r.comment || "",
+    product: r.productName || "Nezal Product",
+  }))
 
-  
-const router = useRouter()
-
-  // Initial cache reads
-  const initialCompanies = useMemo(
-    () => (typeof window === "undefined" ? [] : getCachedSync<Company[]>(COMPANIES_KEY, MAX_AGE) ?? []),
-    []
-  )
-  const initialSuggestedProducts = useMemo(
-    () => (typeof window === "undefined" ? [] : getCachedSync<Product[]>(SUGGESTED_PRODUCTS_KEY, MAX_AGE) ?? []),
-    []
-  )
-  const initialAllProducts = useMemo(
-    () => (typeof window === "undefined" ? [] : getCachedSync<Product[]>(ALL_PRODUCTS_KEY, MAX_AGE) ?? []),
-    []
-  )
-  const initialReviews = useMemo(
-    () => (typeof window === "undefined" ? [] : getCachedSync<Review[]>(REVIEWS_KEY, MAX_AGE) ?? []),
-    []
-  )
-
-  // State
-  const [suggestedProducts, setSuggestedProducts] = useState<Product[]>(initialSuggestedProducts)
-  const [allProducts, setAllProducts] = useState<Product[]>(initialAllProducts)
-  const [companies, setCompanies] = useState<Company[]>(initialCompanies)
-  const [loading, setLoading] = useState(initialAllProducts.length === 0)
-  const [selectedConcernCompany, setSelectedConcernCompany] = useState<Company | null>(null)
-  const [reviews, setReviews] = useState<Review[]>(initialReviews)
-  const [currentReviewIndex, setCurrentReviewIndex] = useState(0)
-  const [showTopButton, setShowTopButton] = useState(false)
-  const [waMenuOpen, setWaMenuOpen] = useState(false)
-  const [isClient, setIsClient] = useState(false)
-  const [showAllProducts, setShowAllProducts] = useState(false)
-  const [testimonials, setTestimonials] = useState<any[]>([])
-
-  const waMenuRef = useRef<HTMLDivElement | null>(null)
-  const waButtonRef = useRef<HTMLButtonElement | null>(null)
-
-  useEffect(() => { setIsClient(true) }, [])
-
-  const dummyReviews: Review[] = [
-    {
-      id: "1",
-      productName: "Natural Glow Face Cream",
-      productImage: "",
-      productId: "",
-      customerName: "Priya S.",
-      rating: 5,
-      comment: "My skin feels amazing after just one week! Totally recommend it.",
-      company: BRAND.name,
-    },
-  ]
-
-  // ── Effect hooks ───────────────────────────────────
-  useEffect(() => {
-    let mounted = true
-    const loadCompanies = async () => {
-      try {
-        const data = await fetchWithCache<Company[]>(COMPANIES_KEY, fetchCompaniesAPI, {
-          ttlMs: TTL, maxAgeMs: MAX_AGE, backgroundRefresh: true, persistToStorage: true,
-        })
-        if (!mounted) return
-        setCompanies(data)
-        if (data.length > 0) {
-          const nezalCompany = data.find((c) => c.name.toLowerCase() === "nezal" || c.slug === "nezal")
-          setSelectedConcernCompany(nezalCompany || data[0])
-        } else {
-          setSelectedConcernCompany(null)
-        }
-      } catch (err) { console.error("Error fetching companies:", err) }
-    }
-    loadCompanies()
-    return () => { mounted = false }
-  }, [])
-
-  useEffect(() => {
-    let mounted = true
-    const loadSuggested = async () => {
-      try {
-        const data = await fetchWithCache<Product[]>(SUGGESTED_PRODUCTS_KEY, fetchSuggestedProductsAPI, {
-          ttlMs: TTL, maxAgeMs: MAX_AGE, backgroundRefresh: true, persistToStorage: true,
-        })
-        if (!mounted) return
-        data.sort((a, b) => {
-          const aIsNezal = a.company.name.toLowerCase() === "nezal"
-          const bIsNezal = b.company.name.toLowerCase() === "nezal"
-          if (aIsNezal && !bIsNezal) return -1
-          if (!aIsNezal && bIsNezal) return 1
-          return 0
-        })
-        setSuggestedProducts(data)
-      } catch (err) { console.error("Error fetching suggested products:", err) }
-    }
-    loadSuggested()
-    return () => { mounted = false }
-  }, [])
-
-  useEffect(() => {
-    let mounted = true
-    const loadAllProducts = async () => {
-      setLoading(true)
-      try {
-        const data = await fetchWithCache<Product[]>(ALL_PRODUCTS_KEY, fetchAllProductsAPI, {
-          ttlMs: TTL, maxAgeMs: MAX_AGE, backgroundRefresh: true, persistToStorage: true,
-        })
-        if (!mounted) return
-        data.sort((a, b) => {
-          const aIsNezal = a.company.name.toLowerCase() === "nezal"
-          const bIsNezal = b.company.name.toLowerCase() === "nezal"
-          if (aIsNezal && !bIsNezal) return -1
-          if (!aIsNezal && bIsNezal) return 1
-          return 0
-        })
-        setAllProducts(data)
-      } catch (err) { console.error("Error fetching all products:", err) } finally {
-        if (mounted) setLoading(false)
-      }
-    }
-    loadAllProducts()
-    return () => { mounted = false }
-  }, [])
-
-useEffect(() => {
-  let mounted = true
-  const loadReviews = async () => {
-    try {
-      const data = await fetchWithCache<any[]>(REVIEWS_KEY, fetchReviewsAPI, {
-        ttlMs: TTL, maxAgeMs: MAX_AGE, backgroundRefresh: true, persistToStorage: true,
-      })
-      if (!mounted) return
-      if (Array.isArray(data) && data.length > 0) {
-        setReviews(data.slice(0, 20).map((r: any) => ({
-          id: r.id || r._id || `${Math.random()}`,
-          productName: r.productName || r.product?.name || "Product",
-          productImage: r.productImage || r.product?.image || "/placeholder.jpg",
-          productId: r.productId || r.product?._id || "",
-          customerName: r.userName || r.customerName || r.name || "Anonymous",
-          rating: typeof r.rating === "number" ? r.rating : 5,
-          comment: r.comment || r.review || "",
-          company: r.company || r.brand || BRAND.name,
-        })))
-        setTestimonials(data.slice(0, 8).map((r: any) => ({
-          id: r.id || r._id || `${Math.random()}`,
-          name: r.customerName || r.userName || "Anonymous",
-          role: "Verified Buyer",
-          avatar: "/placeholder-user.jpg",
-          rating: typeof r.rating === "number" ? r.rating : 5,
-          quote: r.comment || "",
-          product: r.productName || "Nezal Product",
-        })))
-      } else {
-        setReviews(dummyReviews)
-        setTestimonials([])
-      }
-    } catch (err) {
-      console.error("Error fetching reviews:", err)
-      setReviews(dummyReviews)
-      setTestimonials([])
-    }
-  }
-  loadReviews()
-  return () => { mounted = false }
-}, [])
-
-  useEffect(() => {
-    if (reviews.length === 0) return
-    const interval = setInterval(() => {
-      setCurrentReviewIndex((prev) => (prev + 1) % reviews.length)
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [reviews])
-
-  useEffect(() => {
-    const onScroll = () => setShowTopButton(window.scrollY > 300)
-    onScroll()
-    window.addEventListener("scroll", onScroll, { passive: true })
-    return () => window.removeEventListener("scroll", onScroll)
-  }, [])
-
-  useEffect(() => {
-    const onDocClick = (e: MouseEvent) => {
-      const target = e.target as Node
-      if (!waMenuRef.current) return
-      if (waButtonRef.current && waButtonRef.current.contains(target)) return
-      if (!waMenuRef.current.contains(target)) setWaMenuOpen(false)
-    }
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setWaMenuOpen(false) }
-    document.addEventListener("mousedown", onDocClick)
-    document.addEventListener("touchstart", onDocClick)
-    document.addEventListener("keydown", onKey)
-    return () => {
-      document.removeEventListener("mousedown", onDocClick)
-      document.removeEventListener("touchstart", onDocClick)
-      document.removeEventListener("keydown", onKey)
-    }
-  }, [])
-
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" })
-
-  const PRIMARY_WA = BRAND.whatsapp.primary
-  const SECONDARY_WA = BRAND.whatsapp.secondary
-  const buildWaLink = (number: string) => `https://wa.me/${number}`
-  const openWaFor = (number: string) => {
-    window.open(buildWaLink(number), "_blank", "noopener,noreferrer")
-    setWaMenuOpen(false)
-  }
-
-  // ── JSX ────────────────────────────────────────────
   return (
     <main className="min-h-screen bg-background overflow-x-hidden">
+
       {/* Hero Carousel */}
       <section className="w-full">
         <HomeCarousel />
       </section>
 
-      {/* Scrolling Ticker – black strip with gold stars */}
+      {/* Scrolling Ticker */}
       <div className="overflow-hidden py-2.5 bg-[#1A1A1A]">
         <div className="ticker-track select-none">
           {[...TICKER_ITEMS, ...TICKER_ITEMS].map((text, i) => (
             <span key={i} className="flex items-center gap-6 shrink-0">
-              <span className="text-[13px] font-medium uppercase tracking-[0.05em] whitespace-nowrap text-white">
-                {text}
-              </span>
+              <span className="text-[13px] font-medium uppercase tracking-[0.05em] whitespace-nowrap text-white">{text}</span>
               <span className="text-base text-[#F5C842] px-3">✦</span>
             </span>
           ))}
         </div>
       </div>
 
-   {/* Shop By Category (includes trust bar above it) */}
-{selectedConcernCompany && (
-  <ShopByCategory
-    companyId={selectedConcernCompany._id}
-    companySlug={selectedConcernCompany.slug}
-  />
-)}
+      {/* Shop By Category */}
+      {nezalCompany && (
+        <ShopByCategory companyId={nezalCompany._id} companySlug={nezalCompany.slug} />
+      )}
 
-   {/* Discover Your Perfect Ritual */}
+      {/* Discover Rituals */}
       <DiscoverRituals />
 
-
-  {/* Shop By Concern */}
+      {/* Shop By Concern */}
       <ShopByConcern />
 
-
+      {/* Promo Banner Grid */}
       <PromoBannerGrid />
 
-     
-     <DiscoverIngredients />
+      {/* Discover Ingredients */}
+      <DiscoverIngredients />
 
-
-
-
-
-
-
-    {/* 25% Off — limited preview with View More */}
-<section className="py-12 md:py-16 bg-background">
-  <div className="container-nezal">
- 
-   
-    <div className="text-center mb-10">
-      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)] text-xs font-bold uppercase tracking-widest mb-3">
-        <span>✦</span> Limited Time
-      </div>
-      <h2 className="text-[28px] md:text-[32px] font-bold text-foreground">
-        Flash Deal
-      </h2>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Use code <span className="font-bold text-[var(--color-brand-primary)]">NEZAL25</span> at checkout
-      </p>
-    </div>
- 
-    {/* Product grid — show 8 or all */}
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-      {!isClient || loading
-        ? [...Array(8)].map((_, i) => (
-            <div
-              key={i}
-              className="rounded-2xl animate-pulse bg-muted-foreground/20"
-              style={{ height: 280 }}
-            />
-          ))
-        : allProducts.length === 0
-        ? (
-          <div className="col-span-full text-center py-12">
-            <p className="text-muted-foreground">No products available at the moment</p>
+      {/* Flash Deal — products pre-rendered, no skeleton */}
+      <section className="py-12 md:py-16 bg-background">
+        <div className="container-nezal">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)] text-xs font-bold uppercase tracking-widest mb-3">
+              <span>✦</span> Limited Time
+            </div>
+            <h2 className="text-[28px] md:text-[32px] font-bold text-foreground">Flash Deal</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Use code <span className="font-bold text-[var(--color-brand-primary)]">NEZAL25</span> at checkout
+            </p>
           </div>
-        )
-        : (showAllProducts ? allProducts : allProducts.slice(0, 8)).map((product) => (
-            <ProductCard
-              key={product._id}
-              id={product._id}
-              name={product.name}
-              price={product.price}
-              discountPrice={product.discountPrice}
-              image={product.image}
-              company={product.company}
-              size="sm"
-            />
-          ))}
-    </div>
- 
-    {/* View More / View Less button */}
-    {!loading && allProducts.length > 8 && (
-      <div className="mt-10 flex flex-col items-center gap-3">
-        <button
-  onClick={() => router.push("/shop")}
-  className="group inline-flex items-center gap-2 px-8 py-3 rounded-full border-2 border-[var(--color-brand-primary)] text-[var(--color-brand-primary)] font-semibold text-sm hover:bg-[var(--color-brand-primary)] hover:text-white transition-all duration-200"
->
-  View All {allProducts.length} Products
-  <span className="transition-transform group-hover:translate-y-0.5">
-    →
-  </span>
-</button>
-        {!showAllProducts && (
-          <p className="text-xs text-muted-foreground">
-            Showing 8 of {allProducts.length} products
-          </p>
-        )}
-      </div>
-    )}
-  </div>
-</section>
 
-
-
-{/* Our Aim section - Redesigned */}
-
-{/* <section className="py-16 md:py-24 bg-gradient-to-br from-muted/30 to-background relative overflow-hidden">
-  
-  <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
-  <div className="absolute bottom-0 left-0 w-80 h-80 bg-primary/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3" />
-  
-  <div className="container-nezal relative z-10">
-    
-    <div className="text-center mb-12 md:mb-16">
-      <span className="inline-block px-3 py-1 text-xs font-semibold tracking-wide bg-primary/10 text-primary rounded-full mb-4">
-        Our Philosophy
-      </span>
-      <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-primary">
-        Our Aim
-      </h2>
-      <div className="w-20 h-1 bg-primary/30 mx-auto mt-4 rounded-full" />
-    </div>
-
-    
-    <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-     
-      <div className="space-y-6 order-2 lg:order-1">
-        <div className="prose prose-lg max-w-none">
-          <p className="text-lg leading-relaxed text-foreground/80">
-            Introducing <span className="font-semibold text-primary">Nezal</span>, the luxurious brand that deals with a range of natural skincare
-            products. If you're looking to take your beauty routine to the next level, then
-            look no further than Nezal.
-          </p>
-          <p className="text-muted-foreground">
-            Our products are made with only the finest ingredients and are designed to nourish and revitalize your skin. 
-            Trust us, your skin will thank you for using Nezal!
-          </p>
-          <p className="text-muted-foreground">
-            Nezal is a range of natural products for enhancing and preserving your original beauty. 
-            Nezal's products are made with natural ingredients and are free from harsh chemicals. 
-            They are gentle on the skin and help to keep your skin looking young and radiant.
-          </p>
+          {/* Products rendered on server — no loading state needed */}
+          <HomeClient products={products} />
         </div>
-        
-       
-        <div className="flex flex-wrap gap-4 pt-4">
-          <div className="flex items-center gap-2 text-sm">
-            <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>100% Natural Ingredients</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>No Harsh Chemicals</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>Gentle on Skin</span>
-          </div>
-        </div>
-      </div>
-      
-        <div className="order-1 lg:order-2 group/image">
-        <div className="relative transition-all duration-500 hover:scale-105">
-        
-          <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-primary/5 rounded-3xl rotate-3 scale-105 transition-all duration-500 group-hover/image:rotate-6 group-hover/image:scale-110 group-hover/image:bg-primary/30" />
-          <img
-            src="/nezallogo.jpg"
-            alt="Nezal natural skincare products"
-            className="relative w-full h-auto max-h-80 lg:max-h-96 object-contain rounded-2xl shadow-2xl bg-white/50 backdrop-blur-sm p-4 transition-all duration-500 group-hover/image:shadow-3xl group-hover/image:bg-white/70"
-          />
-   
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-primary/10 to-transparent opacity-0 transition-opacity duration-500 group-hover/image:opacity-100" />
-        </div>
-      </div>
-    
-  
-
-
-    </div>
-  </div>
-</section> */}
-
+      </section>
 
       {/* Why Choose Us */}
       <section className="py-12 md:py-16">
@@ -639,94 +196,12 @@ useEffect(() => {
 
       {/* Testimonials */}
       <section className="py-12 md:py-16 bg-muted">
-      <AnimatedTestimonials testimonials={testimonials.length > 0 ? testimonials : undefined} />
+        <AnimatedTestimonials testimonials={testimonials.length > 0 ? testimonials : undefined} />
       </section>
 
-      {/* Floating buttons */}
-      <div className="fixed left-4 bottom-6 z-50 flex flex-col gap-3">
-        {/* Amazon */}
-        <a
-          href="https://www.amazon.in/stores/NEZAL/page/C2DBA1DC-D672-44B2-A08C-633F5CDBA91A"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Shop on Amazon"
-          className="flex items-center justify-center w-12 h-12 rounded-full bg-card shadow-md border border-border transition-all hover:shadow-lg"
-        >
-          <img
-            src="https://static.vecteezy.com/system/resources/thumbnails/050/816/837/small/amazon-shopping-transparent-icon-free-png.png"
-            alt="Amazon"
-            className="w-6 h-6 object-contain"
-          />
-        </a>
+      {/* Floating buttons — needs client interactivity */}
+      <HomeClient products={products} showFloatingButtons companies={companies} />
 
-        {/* WhatsApp */}
-        <div className="relative" ref={waMenuRef}>
-          <button
-            ref={waButtonRef}
-            onClick={() => setWaMenuOpen((s) => !s)}
-            aria-label="Chat on WhatsApp"
-            className="flex items-center justify-center w-12 h-12 rounded-full text-white shadow-md hover:shadow-lg hover:scale-105 transition-all"
-            style={{ background: "#25D366" }}
-          >
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 448 512">
-              <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z" />
-            </svg>
-          </button>
-
-          <div
-            className={`absolute left-0 bottom-14 z-50 w-56 rounded-xl shadow-xl bg-card border border-border transition-all transform origin-bottom-left ${
-              waMenuOpen
-                ? "opacity-100 scale-100 pointer-events-auto"
-                : "opacity-0 scale-95 pointer-events-none"
-            }`}
-          >
-            <div className="py-2">
-              <button
-                onClick={() => openWaFor(PRIMARY_WA)}
-                className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-3 hover:bg-muted transition-colors"
-              >
-                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ color: "#25D366" }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-                </svg>
-                <div>
-                  <p className="font-medium text-[13px] text-foreground">
-                    Chat with {BRAND.name}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">{PRIMARY_WA}</p>
-                </div>
-              </button>
-              <button
-                onClick={() => openWaFor(SECONDARY_WA)}
-                className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-3 hover:bg-muted transition-colors"
-              >
-                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ color: "#3b82f6" }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M22 12v6a2 2 0 01-2 2H6l-4 4V6a2 2 0 012-2h16a2 2 0 012 2z" />
-                </svg>
-                <div>
-                  <p className="font-medium text-[13px] text-foreground">
-                    Chat with Support
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">{SECONDARY_WA}</p>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Scroll to top button */}
-      <button
-        onClick={scrollToTop}
-        aria-label="Scroll to top"
-        className={`fixed right-6 bottom-6 z-50 flex items-center justify-center w-12 h-12 rounded-full text-primary-foreground shadow-lg transition-all duration-300 ${
-          showTopButton ? "opacity-100 translate-y-0" : "opacity-0 pointer-events-none translate-y-4"
-        }`}
-        style={{ background: "var(--color-brand-primary)" }}
-      >
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-        </svg>
-      </button>
     </main>
   )
 }

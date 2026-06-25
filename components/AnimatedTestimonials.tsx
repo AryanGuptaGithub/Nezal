@@ -182,9 +182,7 @@ export function AnimatedTestimonials({
       <div className="container-nezal">
         {/* Section label */}
         <div className="text-center mb-12">
-          <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-brand-primary)]">
-            Real Reviews
-          </span>
+       
           <h2 className="mt-2 text-[28px] md:text-[32px] font-bold text-[var(--color-text-heading)]">
             What Our Customers Say
           </h2>
