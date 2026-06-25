@@ -22,23 +22,41 @@ import { useEffect, useState } from "react";
 /* ── reuse the same constants from Header.tsx ── */
 const NAV_CATEGORIES = [
   {
-    heading: "Face Care",
-    key: "face-care",
+    heading: "Soap",
+    key: "soaps",
     collections: [
-      { label: "Face Serum",       slug: "face-serum",       tagline: "Targeted actives for every skin story" },
-      { label: "Face Wash",        slug: "face-wash",        tagline: "Clean skin starts with the right ritual" },
-      { label: "Face Moisturizer", slug: "face-moisturizer", tagline: "Deep nourishment your skin deserves" },
-      { label: "Face Scrub",       slug: "face-scrub",       tagline: "Reveal brighter skin beneath the surface" },
+      { label: "Rock Soap",     slug: "rock-soap",     tagline: "Ancient mineral-rich rocks meet Ayurvedic botanicals" },
+      { label: "Designer Soap", slug: "designer-soap", tagline: "Aesthetic skincare with functional benefits"           },
+      { label: "Round Soap",    slug: "round-soap",    tagline: "Gentle care for everyday skin"                        },
+      { label: "Aissis Soap",   slug: "aissis-soap",   tagline: "Advanced skincare solutions in every bar"             },
+      { label: "Premium Soap",  slug: "premium-soap",  tagline: "Luxury bathing reimagined with active botanicals"     },
+      { label: "Doobie Soap",   slug: "doobie-soap",   tagline: "Pure natural cleansing for everyday skin"             },
     ],
   },
   {
     heading: "Body Care",
     key: "body-care",
     collections: [
-      { label: "Body Lotion", slug: "body-lotion", tagline: "All-day hydration, nature's way" },
-      { label: "Body Oil",    slug: "body-oil",    tagline: "Luxurious nourishment from root to surface" },
-      { label: "Body Wash",   slug: "body-wash",   tagline: "Your daily cleanse, elevated" },
-      { label: "Bath Salts",  slug: "bath-salts",  tagline: "Turn your bath into a ritual" },
+      { label: "Body Lotion",   slug: "body-lotion",   tagline: "All-day hydration, nature's way"           },
+      { label: "Aloe Vera Gel", slug: "aloe-vera-gel", tagline: "Pure soothing hydration for skin and hair" },
+      { label: "Hand Wash",     slug: "hand-wash",     tagline: "Clean, protect and care for your hands"    },
+      { label: "Intimate Wash", slug: "intimate-wash", tagline: "Gentle care and daily freshness"           },
+    ],
+  },
+  {
+    heading: "Bath & Shower",
+    key: "bath-shower",
+    collections: [
+      { label: "Shower Gel", slug: "shower-gel", tagline: "Your daily cleanse, elevated" },
+      { label: "Bath Salt",  slug: "bath-salt",  tagline: "Turn your bath into a ritual" },
+    ],
+  },
+  {
+    heading: "Face Care",
+    key: "face-care",
+    collections: [
+      { label: "Foaming Face Wash", slug: "foaming-face-wash", tagline: "Deep cleanse without stripping your skin" },
+      { label: "Face Serum",        slug: "face-serum",        tagline: "Targeted actives for every skin story"   },
     ],
   },
   {
@@ -46,9 +64,22 @@ const NAV_CATEGORIES = [
     key: "hair-care",
     collections: [
       { label: "Shampoo",     slug: "shampoo",     tagline: "Cleanse your scalp, nourish your roots" },
-      { label: "Conditioner", slug: "conditioner", tagline: "Frizz-free, silky, nourished hair" },
+      { label: "Conditioner", slug: "conditioner", tagline: "Frizz-free, silky, nourished hair"      },
       { label: "Hair Serum",  slug: "hair-serum",  tagline: "From root to tip — strength and growth" },
     ],
+  },
+  {
+    heading: "Massage Oil",
+    key: "massage-oil",
+    collections: [
+      { label: "Body Massage Oil", slug: "body-massage-oil", tagline: "Relaxation and skin nourishment in every drop" },
+    ],
+  },
+  {
+    heading: "Nezal's Rituals",
+    key: "rituals",
+    viewAllHref: "/rituals",
+    collections: [],
   },
   {
     heading: "Gift Kits",
@@ -231,22 +262,28 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
 
                 {expandedCategory === cat.key && (
                   <div className="pb-2">
-                    {/* Horizontal scroll collection cards — 2.2 visible = peek UX */}
-                    <div className="flex gap-3 overflow-x-auto pl-3 pr-1 pb-1 scrollbar-hide">
-                      {cat.collections.map((col) => (
-                        <MobileCollectionCard
-                          key={col.slug}
-                          label={col.label}
-                          slug={col.slug}
-                          tagline={col.tagline}
-                          onClick={onClose}
-                        />
-                      ))}
-                    </div>
+                    {cat.collections.length > 0 ? (
+                      /* Horizontal scroll collection cards — 2.2 visible = peek UX */
+                      <div className="flex gap-3 overflow-x-auto pl-3 pr-1 pb-1 scrollbar-hide">
+                        {cat.collections.map((col) => (
+                          <MobileCollectionCard
+                            key={col.slug}
+                            label={col.label}
+                            slug={col.slug}
+                            tagline={col.tagline}
+                            onClick={onClose}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="px-3 text-xs text-[var(--color-text-muted)]">
+                        Curated, step-by-step routines designed around how you want to feel.
+                      </p>
+                    )}
 
                     {/* View all link */}
                     <Link
-                      href={`/collections?category=${cat.key}`}
+                      href={(cat as any).viewAllHref ?? `/collections?category=${cat.key}`}
                       onClick={onClose}
                       className="flex items-center gap-1 ml-3 mt-2 text-xs font-semibold text-[var(--color-brand-primary)] hover:underline"
                     >

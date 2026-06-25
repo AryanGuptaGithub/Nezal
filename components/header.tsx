@@ -56,15 +56,7 @@ function requestIdle(cb: () => void) {
 
 const NAV_CATEGORIES = [
   {
-    heading: "Face Care",
-    key: "face-care",
-    collections: [
-      { label: "Foaming Face Wash", slug: "foaming-face-wash", tagline: "Deep cleanse without stripping your skin" },
-      { label: "Face Serum",        slug: "face-serum",        tagline: "Targeted actives for every skin story"   },
-    ],
-  },
-  {
-    heading: "Soaps",
+    heading: "Soap",
     key: "soaps",
     collections: [
       { label: "Rock Soap",     slug: "rock-soap",     tagline: "Ancient mineral-rich rocks meet Ayurvedic botanicals" },
@@ -79,13 +71,26 @@ const NAV_CATEGORIES = [
     heading: "Body Care",
     key: "body-care",
     collections: [
-      { label: "Body Lotion",      slug: "body-lotion",      tagline: "All-day hydration, nature's way"               },
-      { label: "Aloe Vera Gel",    slug: "aloe-vera-gel",    tagline: "Pure soothing hydration for skin and hair"     },
-      { label: "Body Massage Oil", slug: "body-massage-oil", tagline: "Relaxation and skin nourishment in every drop" },
-      { label: "Shower Gel",       slug: "shower-gel",       tagline: "Your daily cleanse, elevated"                  },
-      { label: "Bath Salt",        slug: "bath-salt",        tagline: "Turn your bath into a ritual"                  },
-      { label: "Hand Wash",        slug: "hand-wash",        tagline: "Clean, protect and care for your hands"        },
-      { label: "Intimate Wash",    slug: "intimate-wash",    tagline: "Gentle care and daily freshness"               },
+      { label: "Body Lotion",      slug: "body-lotion",      tagline: "All-day hydration, nature's way"           },
+      { label: "Aloe Vera Gel",    slug: "aloe-vera-gel",    tagline: "Pure soothing hydration for skin and hair" },
+      { label: "Hand Wash",        slug: "hand-wash",        tagline: "Clean, protect and care for your hands"    },
+      { label: "Intimate Wash",    slug: "intimate-wash",    tagline: "Gentle care and daily freshness"           },
+    ],
+  },
+  {
+    heading: "Bath & Shower",
+    key: "bath-shower",
+    collections: [
+      { label: "Shower Gel", slug: "shower-gel", tagline: "Your daily cleanse, elevated" },
+      { label: "Bath Salt",  slug: "bath-salt",  tagline: "Turn your bath into a ritual" },
+    ],
+  },
+  {
+    heading: "Face Care",
+    key: "face-care",
+    collections: [
+      { label: "Foaming Face Wash", slug: "foaming-face-wash", tagline: "Deep cleanse without stripping your skin" },
+      { label: "Face Serum",        slug: "face-serum",        tagline: "Targeted actives for every skin story"   },
     ],
   },
   {
@@ -97,12 +102,19 @@ const NAV_CATEGORIES = [
       { label: "Hair Serum",  slug: "hair-serum",  tagline: "From root to tip — strength and growth" },
     ],
   },
-   {
-    heading: "Rituals",
-    key: "rituals",
+  {
+    heading: "Massage Oil",
+    key: "massage-oil",
     collections: [
-      { label: "Gift Kits", slug: "gift-kits", tagline: "Curated care for the people you love" },
+      { label: "Body Massage Oil", slug: "body-massage-oil", tagline: "Relaxation and skin nourishment in every drop" },
     ],
+  },
+  {
+    heading: "Nezal's Rituals",
+    key: "rituals",
+    viewAllHref: "/rituals",
+    emptyState: { label: "Explore All Rituals", description: "Curated, step-by-step routines designed around how you want to feel." },
+    collections: [],
   },
   {
     heading: "Gift Kits",
@@ -221,15 +233,33 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
           <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-3">
             {activeCategory.heading} Collections
           </p>
-          <div className="grid grid-cols-2 gap-1">
-            {activeCategory.collections.map((col) => (
-              <CollectionCard key={col.slug} label={col.label} slug={col.slug} tagline={col.tagline} onClick={onClose} />
-            ))}
-          </div>
+
+          {activeCategory.collections.length > 0 ? (
+            <div className="grid grid-cols-2 gap-1">
+              {activeCategory.collections.map((col) => (
+                <CollectionCard key={col.slug} label={col.label} slug={col.slug} tagline={col.tagline} onClick={onClose} />
+              ))}
+            </div>
+          ) : (
+            (activeCategory as any).emptyState && (
+              <Link
+                href={(activeCategory as any).viewAllHref ?? "#"}
+                onClick={onClose}
+                className="flex flex-col gap-1 p-4 rounded-xl border border-[#efecec] hover:bg-[var(--color-bg-cream)] transition-colors"
+              >
+                <h1 className="text-sm font-semibold text-[var(--color-text-heading)]">
+                  {(activeCategory as any).emptyState.label}
+                </h1>
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  {(activeCategory as any).emptyState.description}
+                </p>
+              </Link>
+            )
+          )}
 
           <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--color-border)" }}>
             <Link
-              href={`/collections?category=${activeCategory.key}`}
+              href={(activeCategory as any).viewAllHref ?? `/collections?category=${activeCategory.key}`}
               onClick={onClose}
               className="text-xs font-semibold text-[var(--color-brand-primary)] hover:bg-[#09882f] hover:text-white border px-3 py-2 rounded-xl transition-colors"
             >

@@ -224,8 +224,8 @@ export function RegisterForm() {
                     <Verified className="w-5 h-5 text-[--color-brand-primary]" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-[--color-text-heading]">Verified Results</h3>
-                    <p className="text-sm text-[--color-text-muted]">Trusted by thousands of radiant customers</p>
+                    <h3 className="font-semibold text-[--color-text-heading]">Quality Tested Fromulation</h3>
+                    <p className="text-sm text-[--color-text-muted]">Clinically evaluated for safety efficacy and peace of mind</p>
                   </div>
                 </div>
               </div>

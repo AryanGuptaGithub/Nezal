@@ -25,7 +25,7 @@ export default function Footer() {
               className="text-[14px] font-semibold mb-4 text-center"
               style={{ color: "var(--color-text-footer-heading)" }}
             >
-              About-us
+              Site Map
             </h4>
             <p
               className="text-[13px] leading-relaxed text-center"
@@ -73,7 +73,7 @@ export default function Footer() {
               className="text-[14px] font-semibold mb-4"
               style={{ color: "var(--color-text-footer-heading)" }}
             >
-              Site
+              Site 
             </h4>
             <ul className="space-y-2.5">
               {[

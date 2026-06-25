@@ -102,10 +102,10 @@ const trustReasons = [
 ];
 
 const stats = [
-  { value: "50,000+", label: "Happy Customers" },
+  { value: "5000+", label: "Happy Customers" },
   { value: "4.9★", label: "Average Rating" },
   { value: "15+", label: "Years of R&D" },
-  { value: "24/7", label: "Expert Support" },
+  { value: "100%", label: "Quality Assured" },
 ];
 
 const botanicals = ["Aloe Vera", "Shea Butter", "Saffron", "Seaweed", "Himalayan Salt", "Redensyl", "Niacinamide"];
@@ -435,11 +435,10 @@ export default function AboutUs() {
           <div className="max-w-2xl mx-auto text-center">
             <Leaf className="mx-auto h-8 w-8 mb-6" style={{ color: "#5a8a4a" }} />
             <h2 className="text-4xl md:text-5xl font-bold mb-5" style={{ color: "#1a3a2a" }}>
-              Ready to begin<br />your ritual?
+              Ready to Begin<br />Your Ritual?
             </h2>
             <p className="text-lg leading-relaxed mb-10" style={{ color: "#3d5c45" }}>
-              Experience thoughtfully crafted skincare inspired by nature, refined by science,
-              and designed for modern living.
+              Experience thoughtfully crafted skincare, body care & hair care powered by carefully selected natural active ingredients refired through science and created for morden living.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <a

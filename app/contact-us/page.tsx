@@ -232,13 +232,11 @@ export default function ContactUs() {
               </div>
             </div>
             <h3 className="text-2xl font-bold text-[#1e3a28] md:text-3xl">
-              India’s First Home-Use{" "}
-              <span className="text-emerald-600">Natural Skincare</span>
+              Professional Skincare. {" "}
+              <span className="text-emerald-600">Professional Skincare.</span>
             </h3>
             <p className="mt-4 text-[#4a5e50] leading-relaxed md:text-lg">
-              {BRAND.name} brings professional‑grade natural skincare to your home,
-              adhering to international safety standards. Experience the confidence of
-              clinical results with the goodness of nature.
+              At {BRAND.name} we combine carefully selected natural active ingredients with thoughtfully developed formulations for everyday use. With own manufacturing and quality tested for consistency, every product reflects our commitment to quality, safety, and exceptional care.
             </p>
           </motion.div>
         </div>
