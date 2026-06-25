@@ -193,10 +193,11 @@ export default function ConcernPage() {
       try {
         const res = await fetch(`/api/concerns/${slug}`)
         if (!res.ok) throw new Error("Failed")
-        const data = await res.json()
-        setProducts(data.products ?? [])
+       const data = await res.json()
+        const concern = data.concern ?? data          // unwrap the nested object
+        setProducts(concern.products ?? [])
         setCollections(data.collections ?? [])
-        if ((data.products ?? []).length === 0 && (data.collections ?? []).length === 0) {
+        if ((concern.products ?? []).length === 0 && (data.collections ?? []).length === 0) {
           setNotFound(true)
         }
       } catch {

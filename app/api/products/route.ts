@@ -74,11 +74,12 @@ export async function GET(request: NextRequest) {
 
     const company = searchParams.get("company");
     const category = searchParams.get("category");
+    const search = searchParams.get("search") || "";          // ← ADD
     const page = Number.parseInt(searchParams.get("page") || "1");
     const limit = Number.parseInt(searchParams.get("limit") || "12");
     const exclude = searchParams.get("exclude");
 
-    const cacheKey = getCacheKey({ company, category, page, limit, exclude });
+    const cacheKey = getCacheKey({ company, category, search, page, limit, exclude });
     const cachedResponse = getCachedResponse(cacheKey);
     if (cachedResponse) {
       return NextResponse.json(cachedResponse);
@@ -111,11 +112,15 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    if (exclude) {
+   if (exclude) {
       query._id = { $ne: exclude };
     }
 
-    const skip = (page - 1) * limit;
+    if (search) {                                              // ← ADD THESE 5 LINES
+      query.name = { $regex: search, $options: "i" };
+    }
+
+const skip = (page - 1) * limit;
 
     const [products, total] = await Promise.all([
       Product.find(query)
