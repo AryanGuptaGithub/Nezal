@@ -227,7 +227,7 @@ export default function Footer() {
         >
           <div className="flex items-center gap-3">
             <Image
-              src="/companylogo.png"
+              src="/nezallogo.jpg"
               alt={BRAND.name}
               width={32}
               height={32}

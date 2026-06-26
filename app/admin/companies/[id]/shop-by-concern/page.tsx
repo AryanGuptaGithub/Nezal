@@ -420,7 +420,7 @@ export default function ShopByConcernPage() {
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-4">
-                                                        <img src={item.image || "/companylogo.png"} alt={item.title} className="h-20 w-32 rounded-md object-cover border" />
+                                                        <img src={item.image || "/nezallogo.jpg"} alt={item.title} className="h-20 w-32 rounded-md object-cover border" />
                                                         <p className="text-sm text-muted-foreground line-clamp-3">{item.description || "No description provided."}</p>
                                                     </div>
                                                     <div className="flex gap-2 mt-2">
@@ -489,7 +489,7 @@ export default function ShopByConcernPage() {
                                             return (
                                                 <div key={p._id} onClick={() => setNewConcern((s) => ({ ...s, productId: p._id }))} className={`flex items-center justify-between gap-3 p-2 rounded cursor-pointer mb-1 ${selected ? "ring-2 ring-primary bg-muted/30" : "hover:bg-muted/20"}`}>
                                                     <div className="flex items-center gap-3">
-                                                        <img src={(p as Product).image || "/companylogo.png"} alt={p.name} className="h-10 w-10 object-cover rounded" />
+                                                        <img src={(p as Product).image || "/nezallogo.jpg"} alt={p.name} className="h-10 w-10 object-cover rounded" />
                                                         <div>
                                                             <p className="text-sm font-medium">{p.name}</p>
                                                             <p className="text-xs text-muted-foreground">{p.sku}</p>
@@ -586,7 +586,7 @@ export default function ShopByConcernPage() {
                                             const selected = currentProductId === p._id
                                             return (
                                                 <div key={p._id} onClick={() => setSelectedItem((s) => s ? { ...s, product: p } : s)} className={`flex items-center gap-3 p-2 rounded cursor-pointer mb-1 ${selected ? "ring-2 ring-primary bg-muted/30" : "hover:bg-muted/20"}`}>
-                                                    <img src={p.image || "/companylogo.png"} alt={p.name} className="h-10 w-10 object-cover rounded" />
+                                                    <img src={p.image || "/nezallogo.jpg"} alt={p.name} className="h-10 w-10 object-cover rounded" />
                                                     <div>
                                                         <p className="text-sm font-medium">{p.name}</p>
                                                         <p className="text-xs text-muted-foreground">{p.sku}</p>

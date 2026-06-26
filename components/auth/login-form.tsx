@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import Image from "next/image"
 import { Eye, EyeOff, Mail, Lock, AlertCircle, CheckCircle2, Loader2, ShieldCheck, Sparkles } from "lucide-react"
 import { BRAND } from "@/lib/config"
+import { useLoading } from "@/hooks/use-loading"
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
@@ -25,7 +26,8 @@ export function LoginForm() {
 
   const isSubmitting = isLoading || isRedirecting
   
-  
+  const { withLoading } = useLoading()
+
 const router = useRouter()
 const { data: session, update } = useSession()
 const searchParams = useSearchParams()
@@ -69,19 +71,18 @@ useEffect(() => {
     return true
   }
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError("")
+async function onSubmit(e: React.FormEvent) {
+  e.preventDefault()
+  setError("")
 
-    const isEmailValid = validateEmail(email)
-    const isPasswordValid = validatePassword(password)
+  const isEmailValid = validateEmail(email)
+  const isPasswordValid = validatePassword(password)
 
-    if (!isEmailValid || !isPasswordValid) {
-      return
-    }
+  if (!isEmailValid || !isPasswordValid) return
 
-    setIsLoading(true)
+  setIsLoading(true)
 
+  await withLoading(async () => {
     try {
       const result = await signIn("credentials", {
         email,
@@ -101,14 +102,14 @@ useEffect(() => {
       if (result?.ok) {
         setIsRedirecting(true)
         await update()
-        return
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again later.")
     } finally {
       setIsLoading(false)
     }
-  }
+  }, "Signing you in...")
+}
 
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-[--color-bg-page]">
@@ -122,7 +123,7 @@ useEffect(() => {
               <div className="flex items-center gap-4">
                 <div className="relative w-20 h-20 rounded-2xl overflow-hidden shadow-lg border-4 border-[--color-brand-primary] bg-white">
                   <Image
-                    src="/companylogo.png"
+                    src="/nezallogo.jpg"
                     alt={`${BRAND.name} Logo`}
                     fill
                     className="object-cover"
@@ -184,7 +185,7 @@ useEffect(() => {
             <div className="flex justify-center mb-4">
               <div className="relative w-20 h-20 rounded-2xl overflow-hidden shadow-lg border-4 border-[--color-brand-primary] bg-white">
                 <Image
-                  src="/companylogo.png"
+                  src="/nezallogo.jpg"
                   alt={`${BRAND.name} Logo`}
                   fill
                   className="object-cover"

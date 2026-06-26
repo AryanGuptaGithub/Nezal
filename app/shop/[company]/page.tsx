@@ -3,18 +3,19 @@
 
 import { useEffect, useState, useMemo } from "react"
 import { useParams } from "next/navigation"
-import  ProductCard  from "@/components/product-card"
+import ProductCard from "@/components/product-card"
 import { BrandFilters } from "@/components/brand-filters"
 import { CompanyCarousel } from "@/components/company-carousel"
 import { NewArrivals } from "@/components/new-arrivals"
+import { ShopByConcern } from "@/components/ShopByConcern"
 import { Button } from "@/components/ui/button"
-import { ShopByCategory } from "@/components/shop-by-category"
 import WhyChoose from "@/components/why-choose"
 import Testimonials from "@/components/testimonials"
 import { ComingSoon } from "@/components/coming-soon"
 import { getCachedSync, fetchWithCache, invalidateCache } from "@/lib/cacheClient"
+import { ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react"
 
-// ===== Types & constants unchanged =====
+// ── Types ─────────────────────────────────────────────────────────────────────
 interface CarouselImage {
   _id: string
   url: string
@@ -40,6 +41,7 @@ interface Company {
   carouselImages?: CarouselImage[]
 }
 
+// ── Constants ─────────────────────────────────────────────────────────────────
 const PRODUCTS_PER_PAGE = 12
 const COMPANIES_KEY = "shop:companies:all"
 const TTL = 1000 * 60 * 5
@@ -50,7 +52,6 @@ function productCacheKey(opts: { company?: string; page: number; limit: number; 
   return `shop:products:company:${company}:page:${page}:limit:${limit}:cat:${category}`
 }
 
-// ===== API fetchers unchanged =====
 async function fetchCompaniesAPI(): Promise<Company[]> {
   const res = await fetch("/api/companies", { cache: "no-store" })
   if (!res.ok) throw new Error("Failed to fetch companies")
@@ -61,10 +62,7 @@ async function fetchCompaniesAPI(): Promise<Company[]> {
 }
 
 async function fetchProductsAPI(params: {
-  page: number
-  limit: number
-  company?: string
-  category?: string
+  page: number; limit: number; company?: string; category?: string
 }): Promise<{ products: Product[]; total: number }> {
   const { page, limit, company, category } = params
   const urlParams = new URLSearchParams()
@@ -72,40 +70,29 @@ async function fetchProductsAPI(params: {
   urlParams.append("limit", String(limit))
   if (company) urlParams.append("company", company)
   if (category) urlParams.append("category", category)
-
   const res = await fetch(`/api/products?${urlParams.toString()}`, { cache: "no-store" })
   if (!res.ok) throw new Error("Failed to fetch products")
   const json = await res.json()
-  
-  const products = Array.isArray(json?.products)
-    ? json.products
-    : Array.isArray(json)
-    ? json
-    : Array.isArray(json?.data)
-    ? json.data
-    : []
+  const products = Array.isArray(json?.products) ? json.products
+    : Array.isArray(json) ? json
+    : Array.isArray(json?.data) ? json.data : []
   const total = json?.pagination?.total ?? json?.total ?? json?.totalItems ?? json?.count ?? products.length
   return { products, total: Number(total ?? products.length) }
 }
 
 export function invalidateCompanyShopCaches(companySlug?: string) {
   invalidateCache(COMPANIES_KEY)
-  if (companySlug) {
-    invalidateCache(`shop:products:company:${companySlug}:`)
-  } else {
-    invalidateCache("shop:products:company:")
-  }
+  if (companySlug) invalidateCache(`shop:products:company:${companySlug}:`)
+  else invalidateCache("shop:products:company:")
 }
 
-// ============================
-// Component – all logic kept
-// ============================
+// ── Component ─────────────────────────────────────────────────────────────────
 export default function CompanyShopPage() {
   const params = useParams()
   const companySlug = params.company as string
-  
+
   const initialCompanies = useMemo(() => getCachedSync<Company[]>(COMPANIES_KEY, MAX_AGE) ?? [], [])
-  
+
   const [products, setProducts] = useState<Product[]>([])
   const [companyData, setCompanyData] = useState<Company | null>(null)
   const [loading, setLoading] = useState(true)
@@ -113,25 +100,21 @@ export default function CompanyShopPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalProducts, setTotalProducts] = useState(0)
   const [selectedCategory, setSelectedCategory] = useState("")
-  
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
-  // Fetch company metadata (unchanged)
   useEffect(() => {
     let mounted = true
     async function loadCompany() {
       if (!companySlug) return
       try {
         const companies = await fetchWithCache<Company[]>(
-          COMPANIES_KEY,
-          fetchCompaniesAPI,
+          COMPANIES_KEY, fetchCompaniesAPI,
           { ttlMs: TTL, maxAgeMs: MAX_AGE, backgroundRefresh: true, persistToStorage: true }
         )
         if (!mounted) return
         const found = Array.isArray(companies) ? companies.find((c: Company) => c.slug === companySlug) : null
-        if (found) setCompanyData(found)
-        else setCompanyData(null)
+        setCompanyData(found ?? null)
       } catch (err) {
-        console.error("Error fetching company:", err)
         if (!mounted) return
         setCompanyData(null)
       }
@@ -140,32 +123,23 @@ export default function CompanyShopPage() {
     return () => { mounted = false }
   }, [companySlug])
 
-  // Fetch products (unchanged)
   useEffect(() => {
     let mounted = true
     async function loadProducts() {
       if (!companySlug) return
       setLoading(true)
       try {
-        const productOpts = {
-          company: companySlug,
-          page,
-          limit: PRODUCTS_PER_PAGE,
-          category: selectedCategory || undefined,
-        }
+        const productOpts = { company: companySlug, page, limit: PRODUCTS_PER_PAGE, category: selectedCategory || undefined }
         const cacheKey = productCacheKey(productOpts)
-        
         const { products: fetched, total } = await fetchWithCache<{ products: Product[]; total: number }>(
-          cacheKey,
-          () => fetchProductsAPI(productOpts),
+          cacheKey, () => fetchProductsAPI(productOpts),
           { ttlMs: TTL, maxAgeMs: MAX_AGE, backgroundRefresh: true, persistToStorage: true }
         )
         if (!mounted) return
-       setProducts(fetched)
-setTotalProducts(total)
-setTotalPages(Math.max(1, Math.ceil(total / PRODUCTS_PER_PAGE)))
+        setProducts(fetched)
+        setTotalProducts(total)
+        setTotalPages(Math.max(1, Math.ceil(total / PRODUCTS_PER_PAGE)))
       } catch (err) {
-        console.error("Error fetching products:", err)
         if (!mounted) return
         setProducts([])
         setTotalPages(1)
@@ -181,19 +155,22 @@ setTotalPages(Math.max(1, Math.ceil(total / PRODUCTS_PER_PAGE)))
   const handleCategoryChange = (categorySlug: string) => {
     setSelectedCategory(categorySlug)
     setPage(1)
+    setMobileFiltersOpen(false)
   }
 
-  // Loading / no company skeleton (Nezal styled)
+  // ── Loading skeleton ───────────────────────────────────────────────────────
   if (!companyData) {
     return (
-      <main className="min-h-screen bg-[--color-bg-page]">
-        <div className="container-nezal py-6">
-          <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
-            <div className="hidden lg:block">
-              <div className="w-48 h-96 bg-gray-200 animate-pulse rounded-2xl" />
-            </div>
-            <div className="space-y-8">
-              <div className="w-full h-[300px] md:h-[400px] bg-gray-200 animate-pulse rounded-2xl" />
+      <main className="min-h-screen" style={{ background: "var(--color-bg-page, #f7f5f0)" }}>
+        {/* Skeleton hero */}
+        <div className="w-full h-[55vh] bg-gray-200 animate-pulse" />
+        <div className="max-w-7xl mx-auto px-4 py-10">
+          <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
+            <div className="hidden lg:block h-96 bg-gray-200 animate-pulse rounded-2xl" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-72 bg-gray-200 animate-pulse rounded-2xl" />
+              ))}
             </div>
           </div>
         </div>
@@ -202,180 +179,391 @@ setTotalPages(Math.max(1, Math.ceil(total / PRODUCTS_PER_PAGE)))
   }
 
   const hasCarousel = companyData.carouselImages && companyData.carouselImages.length > 0
-
-  if (!hasCarousel) {
-    return <ComingSoon companyName={companyData.name} />
-  }
+  if (!hasCarousel) return <ComingSoon companyName={companyData.name} />
 
   return (
-    <main className="min-h-screen bg-[--color-bg-page]">
-      <div className="container-nezal py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
-          {/* Sidebar */}
-          <div className="hidden lg:block">
-            <div className="sticky top-4">
-              <BrandFilters
-                companySlug={companySlug}
-                onCategoryChange={handleCategoryChange}
-                selectedCategory={selectedCategory}
-              />
-            </div>
+    <main
+      className="min-h-screen"
+      style={{ background: "var(--color-bg-page, #f7f5f0)", fontFamily: "'Inter', sans-serif" }}
+    >
+
+      {/* ── HERO CAROUSEL (full-width, cinematic) ─────────────────────────── */}
+      <section className="relative w-full overflow-hidden" style={{ height: "clamp(300px, 55vh, 640px)" }}>
+        <CompanyCarousel images={companyData.carouselImages} />
+
+        {/* Gradient overlay at bottom for text legibility */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: "linear-gradient(to top, rgba(15,40,25,0.6) 0%, transparent 50%)",
+          }}
+        />
+
+        {/* Company name badge over carousel */}
+        <div className="absolute bottom-6 left-6 z-10">
+          <span
+            className="inline-block text-xs font-semibold tracking-widest uppercase px-3 py-1 rounded-full mb-2"
+            style={{ background: "rgba(255,255,255,0.15)", color: "#fff", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)" }}
+          >
+            Official Store
+          </span>
+          <h1
+            className="text-3xl md:text-5xl font-bold text-white"
+            style={{ textShadow: "0 2px 20px rgba(0,0,0,0.4)", letterSpacing: "-0.02em" }}
+          >
+            {companyData.name}
+          </h1>
+          {companyData.description && (
+            <p className="text-white/80 mt-1 text-sm md:text-base max-w-md">
+              {companyData.description}
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* ── MARQUEE TRUST BAR ─────────────────────────────────────────────── */}
+      <div
+        className="w-full overflow-hidden py-3"
+        style={{ background: "#1a3a2a", color: "#c8a96e" }}
+      >
+        <div
+          className="flex gap-10 whitespace-nowrap"
+          style={{
+            animation: "marquee 24s linear infinite",
+            width: "max-content",
+          }}
+        >
+          {[
+            "🌿 Natural Ingredients",
+            "✦ Cruelty-Free",
+            "✦ Made in India",
+            "✦ Quality Tested",
+            "✦ Own Manufacturing",
+            "✦ Safe for Daily Use",
+            "🌿 Natural Ingredients",
+            "✦ Cruelty-Free",
+            "✦ Made in India",
+            "✦ Quality Tested",
+            "✦ Own Manufacturing",
+            "✦ Safe for Daily Use",
+          ].map((item, i) => (
+            <span key={i} className="text-xs font-semibold tracking-widest uppercase">{item}</span>
+          ))}
+        </div>
+        <style>{`
+          @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+        `}</style>
+      </div>
+
+      {/* ── NEW ARRIVALS ──────────────────────────────────────────────────── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-14 pb-4">
+        {/* Section label */}
+        <div className="text-center mb-8">
+          <span
+            className="inline-block text-xs font-semibold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3"
+            style={{ background: "#e8f4ec", color: "#2d6a4f" }}
+          >
+            🌱 Fresh Drops
+          </span>
+          <h2
+            className="text-3xl md:text-4xl font-bold"
+            style={{ color: "#1a2e1a", letterSpacing: "-0.02em" }}
+          >
+            New <span style={{ color: "#2d6a4f" }}>Arrivals</span>
+          </h2>
+          <p className="text-sm mt-2" style={{ color: "#6b7c6b" }}>
+            The latest from {companyData.name} — be the first to try
+          </p>
+        </div>
+        <NewArrivals
+          companyId={companyData._id}
+          companySlug={companySlug}
+          companyName={companyData.name}
+        />
+      </section>
+
+      {/* ── DIVIDER ───────────────────────────────────────────────────────── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div style={{ height: 1, background: "linear-gradient(to right, transparent, #c8d8c8, transparent)" }} />
+      </div>
+
+      {/* ── MAIN SHOP AREA: sidebar + products ───────────────────────────── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 pb-16">
+
+        {/* Section heading */}
+        <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
+          <div>
+            <span
+              className="inline-block text-xs font-semibold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3"
+              style={{ background: "#e8f4ec", color: "#2d6a4f" }}
+            >
+              Our Collection
+            </span>
+            <h2
+              className="text-3xl md:text-4xl font-bold"
+              style={{ color: "#1a2e1a", letterSpacing: "-0.02em" }}
+            >
+              We <span style={{ color: "#2d6a4f" }}>Suggest</span> Our Products
+            </h2>
           </div>
 
-          {/* Main content */}
-          <div className="space-y-8">
-            {/* Carousel */}
-            {hasCarousel ? (
-              <CompanyCarousel images={companyData.carouselImages} />
-            ) : (
-              <div className="w-full h-[300px] md:h-[400px] bg-gray-200 animate-pulse rounded-2xl" />
-            )}
+          {/* Mobile filter toggle */}
+          <button
+            className="lg:hidden flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition"
+            style={{ background: "#1a3a2a", color: "#fff" }}
+            onClick={() => setMobileFiltersOpen(true)}
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            Filters {selectedCategory && "(1)"}
+          </button>
+        </div>
 
-            {/* Mobile filter */}
-            <div className="lg:hidden">
-              <BrandFilters
-                companySlug={companySlug}
-                onCategoryChange={handleCategoryChange}
-                selectedCategory={selectedCategory}
-              />
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8 items-start">
 
-            {/* New Arrivals */}
-            {companyData ? (
-              <NewArrivals
-                companyId={companyData._id}
-                companySlug={companySlug}
-                companyName={companyData.name}
-              />
-            ) : (
-              <div className="text-center mb-6">
-                <div className="w-48 h-8 bg-gray-200 animate-pulse rounded mx-auto" />
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
-                  {[...Array(4)].map((_, i) => (
-                    <div key={i} className="bg-gray-200 animate-pulse rounded-2xl h-80 w-full" />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Suggested Products – Nezal heading */}
-            <div>
-              <div className="text-center mb-6">
-                <h2 className="text-3xl md:text-4xl font-bold text-[--color-text-heading] flex items-center justify-center gap-3">
-                  <span className="text-[--color-brand-accent]">🌿</span>
-                  We Suggest Our Products
-                  <span className="text-[--color-brand-accent]">🌿</span>
-                </h2>
-              </div>
-
-              <div>
-                {loading ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
-                    {[...Array(PRODUCTS_PER_PAGE)].map((_, i) => (
-                      <div key={i} className="bg-gray-200 animate-pulse rounded-2xl h-80 w-full" />
-                    ))}
-                  </div>
-                ) : products.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16">
-                    <svg className="w-16 h-16 text-[--color-text-muted] mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                    </svg>
-                    <h3 className="text-xl font-semibold text-[--color-text-heading] mb-2">No products found</h3>
-                    <p className="text-sm text-[--color-text-muted] mb-6">We couldn't find any products matching your criteria.</p>
-                    {selectedCategory && (
-                      <Button variant="outline" onClick={() => { setSelectedCategory(""); setPage(1); }} className="border-[--color-border]">
-                        Clear All Filters
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5 p-8 rounded-2xl bg-[--color-bg-cream]">
-                      {products.map((product) => (
-                        <ProductCard
-                          key={product._id}
-                          id={product._id}
-                          name={product.name}
-                          price={product.price}
-                          discountPrice={product.discountPrice}
-                          image={product.image}
-                          company={product.company}
-                        />
-                      ))}
-                    </div>
-
-                    {/* Pagination — Nezal green accent */}
-                    {totalPages > 1 && (
-                      <div className="mt-8 pt-6 border-t border-[--color-border]">
-                        <div className="flex justify-center items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setPage(Math.max(1, page - 1))}
-                            disabled={page === 1}
-                            className="h-9 px-4 border-[--color-border]"
-                          >
-                            Previous
-                          </Button>
-                          <div className="hidden sm:flex gap-1">
-                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                              let pageNum
-                              if (totalPages <= 5) pageNum = i + 1
-                              else if (page <= 3) pageNum = i + 1
-                              else if (page >= totalPages - 2) pageNum = totalPages - 4 + i
-                              else pageNum = page - 2 + i
-                              return pageNum
-                            }).map((pageNum) => (
-                              <Button
-                                key={pageNum}
-                                variant={page === pageNum ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => setPage(pageNum)}
-                                className={`w-9 h-9 ${page === pageNum ? "bg-[--color-brand-primary] text-white hover:bg-[--color-brand-primary-dark]" : "border-[--color-border]"}`}
-                              >
-                                {pageNum}
-                              </Button>
-                            ))}
-                          </div>
-                          <div className="sm:hidden text-sm font-medium text-[--color-text-body] px-3">
-                            {page} / {totalPages}
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setPage(Math.min(totalPages, page + 1))}
-                            disabled={page === totalPages}
-                            className="h-9 px-4 border-[--color-border]"
-                          >
-                            Next
-                          </Button>
-                        </div>
-                        <div className="text-center mt-3 text-xs text-[--color-text-muted]">
-                         Showing {(page - 1) * PRODUCTS_PER_PAGE + 1}-{Math.min(page * PRODUCTS_PER_PAGE, totalProducts)} of {totalProducts} products
-                        </div>
-                      </div>
-                    )}
-                  </>
+          {/* ── Desktop Sidebar ─────────────────────────────────────────── */}
+          <aside className="hidden lg:block sticky top-4">
+            <div
+              className="rounded-2xl p-5"
+              style={{ background: "#fff", border: "1px solid #e2ece2", boxShadow: "0 2px 16px rgba(0,0,0,0.04)" }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-base" style={{ color: "#1a2e1a" }}>
+                  Filter by Category
+                </h3>
+                {selectedCategory && (
+                  <button
+                    onClick={() => handleCategoryChange("")}
+                    className="text-xs font-medium flex items-center gap-1"
+                    style={{ color: "#2d6a4f" }}
+                  >
+                    <X className="w-3 h-3" /> Clear
+                  </button>
                 )}
               </div>
-            </div>
-
-            {/* Shop By Concern */}
-            {companyData ? (
-              <ShopByConcern
-                companyId={companyData._id}
-                companySlug={companyData.slug}
+              <BrandFilters
+                companySlug={companySlug}
+                onCategoryChange={handleCategoryChange}
+                selectedCategory={selectedCategory}
               />
-            ) : null}
+            </div>
+          </aside>
 
-            {/* Why Choose Us */}
-            <WhyChoose />
+          {/* ── Mobile Filters Drawer ───────────────────────────────────── */}
+          {mobileFiltersOpen && (
+            <div className="fixed inset-0 z-50 lg:hidden">
+              <div className="absolute inset-0 bg-black/40" onClick={() => setMobileFiltersOpen(false)} />
+              <div
+                className="absolute right-0 top-0 h-full w-80 max-w-full p-6 overflow-y-auto"
+                style={{ background: "#fff" }}
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-bold text-lg" style={{ color: "#1a2e1a" }}>Filters</h3>
+                  <button onClick={() => setMobileFiltersOpen(false)}>
+                    <X className="w-5 h-5" style={{ color: "#1a2e1a" }} />
+                  </button>
+                </div>
+                <BrandFilters
+                  companySlug={companySlug}
+                  onCategoryChange={handleCategoryChange}
+                  selectedCategory={selectedCategory}
+                />
+              </div>
+            </div>
+          )}
 
-            {/* Testimonials */}
-            <Testimonials companySlug={companySlug} />
+          {/* ── Products Grid ───────────────────────────────────────────── */}
+          <div>
+            {/* Active filter chip */}
+            {selectedCategory && (
+              <div className="flex items-center gap-2 mb-5">
+                <span className="text-sm" style={{ color: "#6b7c6b" }}>Filtered by:</span>
+                <span
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
+                  style={{ background: "#e8f4ec", color: "#2d6a4f" }}
+                >
+                  {selectedCategory}
+                  <button onClick={() => handleCategoryChange("")}>
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              </div>
+            )}
+
+            {loading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-5">
+                {[...Array(PRODUCTS_PER_PAGE)].map((_, i) => (
+                  <div key={i} className="rounded-2xl bg-gray-100 animate-pulse" style={{ height: 320 }} />
+                ))}
+              </div>
+            ) : products.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <div
+                  className="w-16 h-16 rounded-full flex items-center justify-center mb-4 text-2xl"
+                  style={{ background: "#e8f4ec" }}
+                >
+                  🌿
+                </div>
+                <h3 className="text-xl font-semibold mb-2" style={{ color: "#1a2e1a" }}>
+                  No products found
+                </h3>
+                <p className="text-sm mb-6" style={{ color: "#6b7c6b" }}>
+                  Try removing filters or explore a different category.
+                </p>
+                {selectedCategory && (
+                  <Button
+                    variant="outline"
+                    onClick={() => handleCategoryChange("")}
+                    style={{ borderColor: "#2d6a4f", color: "#2d6a4f" }}
+                  >
+                    Clear Filters
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <>
+                {/* Count */}
+                <p className="text-sm mb-4" style={{ color: "#6b7c6b" }}>
+                  Showing {(page - 1) * PRODUCTS_PER_PAGE + 1}–{Math.min(page * PRODUCTS_PER_PAGE, totalProducts)} of{" "}
+                  <span className="font-semibold" style={{ color: "#1a2e1a" }}>{totalProducts}</span> products
+                </p>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-5">
+                  {products.map((product) => (
+                    <ProductCard
+                      key={product._id}
+                      id={product._id}
+                      name={product.name}
+                      price={product.price}
+                      discountPrice={product.discountPrice}
+                      image={product.image}
+                      company={product.company}
+                    />
+                  ))}
+                </div>
+
+                {/* ── Pagination ───────────────────────────────────────── */}
+                {totalPages > 1 && (
+                  <div className="mt-10 flex items-center justify-center gap-2">
+                    <button
+                      onClick={() => setPage(Math.max(1, page - 1))}
+                      disabled={page === 1}
+                      className="w-9 h-9 rounded-xl flex items-center justify-center transition disabled:opacity-30"
+                      style={{ background: "#fff", border: "1px solid #d4e4d4", color: "#1a3a2a" }}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum: number
+                      if (totalPages <= 5) pageNum = i + 1
+                      else if (page <= 3) pageNum = i + 1
+                      else if (page >= totalPages - 2) pageNum = totalPages - 4 + i
+                      else pageNum = page - 2 + i
+                      return pageNum
+                    }).map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPage(pageNum)}
+                        className="w-9 h-9 rounded-xl text-sm font-semibold transition"
+                        style={
+                          page === pageNum
+                            ? { background: "#1a3a2a", color: "#fff", border: "1px solid #1a3a2a" }
+                            : { background: "#fff", color: "#1a2e1a", border: "1px solid #d4e4d4" }
+                        }
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+
+                    <button
+                      onClick={() => setPage(Math.min(totalPages, page + 1))}
+                      disabled={page === totalPages}
+                      className="w-9 h-9 rounded-xl flex items-center justify-center transition disabled:opacity-30"
+                      style={{ background: "#fff", border: "1px solid #d4e4d4", color: "#1a3a2a" }}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
+      </section>
+
+      {/* ── DIVIDER ───────────────────────────────────────────────────────── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div style={{ height: 1, background: "linear-gradient(to right, transparent, #c8d8c8, transparent)" }} />
       </div>
+
+      {/* ── SHOP BY CONCERN ───────────────────────────────────────────────── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-14">
+        <div className="text-center mb-8">
+          <span
+            className="inline-block text-xs font-semibold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3"
+            style={{ background: "#e8f4ec", color: "#2d6a4f" }}
+          >
+            Targeted Care
+          </span>
+          <h2
+            className="text-3xl md:text-4xl font-bold"
+            style={{ color: "#1a2e1a", letterSpacing: "-0.02em" }}
+          >
+            Shop by <span style={{ color: "#2d6a4f" }}>Concern</span>
+          </h2>
+          <p className="text-sm mt-2" style={{ color: "#6b7c6b" }}>
+            Find exactly what your skin or hair needs
+          </p>
+        </div>
+        <ShopByConcern companyId={companyData._id} companySlug={companyData.slug} />
+      </section>
+
+      {/* ── WHY CHOOSE US ─────────────────────────────────────────────────── */}
+      <section
+        className="py-14"
+        style={{ background: "#1a3a2a" }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-8">
+            <span
+              className="inline-block text-xs font-semibold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3"
+              style={{ background: "rgba(200,169,110,0.15)", color: "#c8a96e" }}
+            >
+              Our Trust, Your Confidence
+            </span>
+            <h2
+              className="text-3xl md:text-4xl font-bold text-white"
+              style={{ letterSpacing: "-0.02em" }}
+            >
+              Why Choose <span style={{ color: "#c8a96e" }}>Nezal?</span>
+            </h2>
+          </div>
+          <WhyChoose />
+        </div>
+      </section>
+
+      {/* ── TESTIMONIALS ──────────────────────────────────────────────────── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-14">
+        <div className="text-center mb-8">
+          <span
+            className="inline-block text-xs font-semibold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3"
+            style={{ background: "#e8f4ec", color: "#2d6a4f" }}
+          >
+            Real Results
+          </span>
+          <h2
+            className="text-3xl md:text-4xl font-bold"
+            style={{ color: "#1a2e1a", letterSpacing: "-0.02em" }}
+          >
+            What Our <span style={{ color: "#2d6a4f" }}>Customers</span> Say
+          </h2>
+        </div>
+        <Testimonials companySlug={companySlug} />
+      </section>
+
     </main>
   )
 }

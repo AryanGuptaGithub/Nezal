@@ -1,3 +1,4 @@
+// promos/[id]/route.ts
 import { connectDB } from "@/lib/db"
 import { Promo } from "@/lib/models/promo"
 import { NextResponse, type NextRequest } from "next/server"

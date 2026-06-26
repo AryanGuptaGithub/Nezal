@@ -140,7 +140,7 @@ export function ImageUploadField({
             alt="preview"
             className="h-32 w-48 object-cover rounded border"
             onError={(e) => {
-              (e.target as HTMLImageElement).src = "/companylogo.png"
+              (e.target as HTMLImageElement).src = "/nezallogo.jpg"
             }}
           />
         </div>

@@ -219,7 +219,7 @@ export function getWelcomeEmail(name: string) {
           <div class="container">
             <!-- Header -->
             <div class="header">
-              <img src="https://nezal.com/companylogo.png" alt="Nezal Logo" class="logo">
+              <img src="https://nezal.com/nezallogo.jpg" alt="Nezal Logo" class="logo">
               <h1>Welcome to Nezal!</h1>
               <p>Premium Skincare Solutions</p>
             </div>
@@ -551,7 +551,7 @@ export function getOrderConfirmationEmail({
           <div class="container">
             <!-- Header -->
             <div class="header">
-              <img src="https://nezal.com/companylogo.png" alt="Nezal Logo" class="logo">
+              <img src="https://nezal.com/nezallogo.jpg" alt="Nezal Logo" class="logo">
               <h1>Order Confirmation</h1>
               <p>Your order has been received!</p>
             </div>
@@ -889,7 +889,7 @@ export function getOrderStatusUpdateEmail({
           <div class="container">
             <!-- Header -->
             <div class="header">
-              <img src="https://nezal.com/companylogo.png" alt="Nezal Logo" class="logo">
+              <img src="https://nezal.com/nezallogo.jpg" alt="Nezal Logo" class="logo">
               <h1>Order Update</h1>
               <p>Your order status has been updated</p>
             </div>

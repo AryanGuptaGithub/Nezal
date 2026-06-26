@@ -187,7 +187,7 @@ function CollectionHero({ collection }: { collection: Collection }) {
             ) : (
               <div className="flex h-full items-center justify-center">
                 <Image
-                  src="/companylogo.png"
+                  src="/nezallogo.jpg"
                   alt="Nezal"
                   width={120}
                   height={120}

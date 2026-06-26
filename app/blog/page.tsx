@@ -139,7 +139,7 @@ export default function BlogPage() {
                   <div className="relative h-48 bg-[--color-bg-cream] overflow-hidden rounded-t-2xl">
                     {blog.image ? (
                       <Image
-                        src={blog.image || "/companylogo.png"}
+                        src={blog.image || "/nezallogo.jpg"}
                         alt={blog.title}
                         fill
                         className="object-cover hover:scale-105 transition-transform duration-300"
