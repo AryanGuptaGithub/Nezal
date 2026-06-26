@@ -114,7 +114,80 @@ const NAV_CATEGORIES = [
     key: "rituals",
     viewAllHref: "/rituals",
     emptyState: { label: "Explore All Rituals", description: "Curated, step-by-step routines designed around how you want to feel." },
-    collections: [],
+collections: [
+  {
+    label: "Clear Skin Ritual",
+    slug: "clear-skin-ritual",
+    tagline: "...",
+    href: "/rituals/clear-skin-ritual",
+  },
+  {
+    label: "Radiance & Glow Ritual",
+    slug: "radiance-glow-ritual",
+    tagline: "Relaxation and skin nourishment in every drop",
+    href: "/rituals/radiance-glow-ritual",
+  },
+  {
+    label: "Hydration Ritual",
+    slug: "hydration-ritual",
+    tagline: "Relaxation and skin nourishment in every drop",
+    href: "/rituals/hydration-ritual",
+  },
+  {
+    label: "Hair Wellness Ritual",
+    slug: "hair-wellness-ritual",
+    tagline: "Relaxation and skin nourishment in every drop",
+    href: "/rituals/hair-wellness-ritual",
+  },
+  {
+    label: "Royal Glow Ritual",
+    slug: "royal-glow-ritual",
+    tagline: "Relaxation and skin nourishment in every drop",
+    href: "/rituals/royal-glow-ritual",
+  },
+  {
+    label: "Bridal Glow Ritual",
+    slug: "bridal-glow-ritual",
+    tagline: "Relaxation and skin nourishment in every drop",
+    href: "/rituals/bridal-glow-ritual",
+  },
+  {
+    label: "Spa Indulgence & Evening Ritual",
+    slug: "spa-indulgence-evening-ritual",
+    tagline: "Relaxation and skin nourishment in every drop",
+    href: "/rituals/spa-indulgence-evening-ritual",
+  },
+  {
+    label: "Daily Essentials Ritual",
+    slug: "daily-essentials-ritual",
+    tagline: "Relaxation and skin nourishment in every drop",
+    href: "/rituals/daily-essentials-ritual",
+  },
+  {
+    label: "Executive Gifting Ritual",
+    slug: "executive-gifting-ritual",
+    tagline: "Relaxation and skin nourishment in every drop",
+    href: "/rituals/executive-gifting-ritual",
+  },
+  {
+    label: "Morning Refresh Ritual",
+    slug: "morning-refresh-ritual",
+    tagline: "Relaxation and skin nourishment in every drop",
+    href: "/rituals/morning-refresh-ritual",
+  },
+  {
+    label: "Botanical Comfort Ritual",
+    slug: "botanical-comfort-ritual",
+    tagline: "Relaxation and skin nourishment in every drop",
+    href: "/rituals/botanical-comfort-ritual",
+  },
+  {
+    label: "Tropical Escape Ritual",
+    slug: "tropical-escape-ritual",
+    tagline: "Relaxation and skin nourishment in every drop",
+    href: "/rituals/tropical-escape-ritual",
+  },
+],
   },
   {
     heading: "Gift Kits",
@@ -155,13 +228,13 @@ const INGREDIENTS = [
 /* ─── Collection Card (inside mega menu) ────────────────── */
 
 function CollectionCard({
-  label, slug, tagline, onClick,
+  label, slug, tagline, onClick, href,
 }: {
-  label: string; slug: string; tagline: string; onClick: () => void;
+  label: string; slug: string; tagline: string; onClick: () => void; href?: string;
 }) {
   return (
     <Link
-      href={`/collections/${slug}`}
+      href={href ?? `/collections/${slug}`}
       onClick={onClick}
       className="group flex items-start gap-3 p-3 border-[#efecec] border rounded-xl hover:bg-[var(--color-bg-cream)] transition-colors"
     >
@@ -237,7 +310,14 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
           {activeCategory.collections.length > 0 ? (
             <div className="grid grid-cols-2 gap-1">
               {activeCategory.collections.map((col) => (
-                <CollectionCard key={col.slug} label={col.label} slug={col.slug} tagline={col.tagline} onClick={onClose} />
+                 <CollectionCard
+    key={col.slug}
+    label={col.label}
+    slug={col.slug}
+    tagline={col.tagline}
+    onClick={onClose}
+    href={(col as any).href}
+  />
               ))}
             </div>
           ) : (
