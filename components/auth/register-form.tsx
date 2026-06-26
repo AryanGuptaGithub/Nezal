@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
 import { trackCompleteRegistration } from "@/lib/facebook-pixel";
 import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2, Lock, Mail, ShieldCheck, Sparkles, UserRound, Verified } from "lucide-react";
+import { Turnstile } from "@marsidev/react-turnstile";
 import OtpForm from "./otp-form";
 import { BRAND } from "@/lib/config";
 
@@ -30,6 +31,8 @@ export function RegisterForm() {
   const [passwordError, setPasswordError] = useState("");
   const [confirmError, setConfirmError] = useState("");
   const [showOtp, setShowOtp] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileError, setTurnstileError] = useState("");
   const router = useRouter();
   const { data: session } = useSession();
 
@@ -105,13 +108,19 @@ export function RegisterForm() {
       return;
     }
 
+    if (!turnstileToken) {
+      setTurnstileError("Please complete the Turnstile verification.");
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, confirmPassword }),
+        body: JSON.stringify({ name, email, password, confirmPassword, turnstileToken }),
       });
 
       const data = await response.json();
@@ -433,6 +442,23 @@ export function RegisterForm() {
                     )}
                   </div>
 
+                  {turnstileError && (
+                    <Alert variant="destructive" className="bg-red-50 border-2 border-red-300">
+                      <AlertCircle className="h-5 w-5 text-red-600" />
+                      <AlertDescription className="ml-2 text-red-800 font-medium">
+                        {turnstileError}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  <Turnstile
+                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                    onSuccess={setTurnstileToken}
+                    onError={() => setTurnstileError("Turnstile verification failed. Please try again.")}
+                    onExpire={() => {
+                      setTurnstileToken(null);
+                      setTurnstileError("Turnstile verification expired. Please try again.");
+                    }}
+                  />
                   <Button
                     type="submit"
                     className="w-full h-12 text-base bg-[#22aa2e]  text-white font-bold shadow-lg hover:shadow-xl transition-all duration-300 rounded-lg"
