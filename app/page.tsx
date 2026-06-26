@@ -13,6 +13,7 @@ import { AnimatedTestimonials } from "@/components/AnimatedTestimonials"
 import { BRAND } from "@/lib/config"
 import { connectDB } from "@/lib/db"
 import HomeClient from "@/components/HomeClient"
+import FlashDeal from "@/components/FlashDeal"
 
 // ── Server-side data fetching ─────────────────────────────────────────────────
 // All fetches run in PARALLEL on the server. The page HTML arrives
@@ -20,49 +21,61 @@ import HomeClient from "@/components/HomeClient"
 
 async function getHomeData() {
   try {
-    const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+    await connectDB()
 
-    // Fetch all in parallel — not sequentially
-    const [companiesRes, productsRes, reviewsRes] = await Promise.allSettled([
-      fetch(`${base}/api/companies`, {
-        next: { revalidate: 300 }, // cache for 5 minutes
-      }),
-      fetch(`${base}/api/products?limit=8`, {
-        next: { revalidate: 300 },
-      }),
-      fetch(`${base}/api/products/reviews/all?limit=10&sort=highest`, {
-        next: { revalidate: 300 },
-      }),
+    const { Product }   = await import("@/lib/models/product")
+    const { Company }   = await import("@/lib/models/company")
+    const { Review }    = await import("@/lib/models/review")
+    const { FlashSale } = await import("@/lib/models/flashsale")
+
+    const now = new Date()
+
+    const [companiesRaw, productsRaw, reviewsRaw, flashSalesRaw] = await Promise.all([
+      Company.find({}).sort({ name: 1 }).lean(),
+
+      Product.find({ isActive: true })
+        .sort({ createdAt: -1 })
+        .limit(8)
+        .populate("company", "name slug _id")
+        .lean(),
+
+      Review.find({ status: "approved" })
+        .sort({ rating: -1, createdAt: -1 })
+        .limit(10)
+        .populate("product", "name image")
+        .populate("company", "name")
+        .lean(),
+
+      FlashSale.find({
+        isActive:  true,
+        startsAt:  { $lte: now },
+        endsAt:    { $gte: now },
+      })
+        .populate({
+          path:     "products",
+          select:   "name slug price discountPrice image images company stock",
+          populate: { path: "company", select: "name slug" },
+        })
+        .lean(),
     ])
 
-    const companies =
-      companiesRes.status === "fulfilled" && companiesRes.value.ok
-        ? await companiesRes.value.json().then((j: any) => (Array.isArray(j) ? j : j?.data ?? []))
-        : []
+    const s = (obj: any) => JSON.parse(JSON.stringify(obj))
 
-    const productsJson =
-      productsRes.status === "fulfilled" && productsRes.value.ok
-        ? await productsRes.value.json()
-        : {}
-    const products = Array.isArray(productsJson)
-      ? productsJson
-      : productsJson?.products ?? []
-
-    const reviewsJson =
-      reviewsRes.status === "fulfilled" && reviewsRes.value.ok
-        ? await reviewsRes.value.json()
-        : []
-    const reviews = Array.isArray(reviewsJson) ? reviewsJson : reviewsJson?.reviews ?? []
+    const companies  = s(companiesRaw)
+    const products   = s(productsRaw)
+    const reviews    = s(reviewsRaw)
+    const flashSales = s(flashSalesRaw)
 
     const nezalCompany =
       companies.find((c: any) => c.slug === "nezal" || c.name?.toLowerCase() === "nezal") ??
-      companies[0] ??
-      null
+      companies[0] ?? null
 
-    return { companies, products, reviews, nezalCompany }
+    const activeSale = flashSales.find((s: any) => s.products?.length > 0) ?? null
+
+    return { companies, products, reviews, nezalCompany, activeSale }
   } catch (err) {
     console.error("Home page data fetch error:", err)
-    return { companies: [], products: [], reviews: [], nezalCompany: null }
+    return { companies: [], products: [], reviews: [], nezalCompany: null, activeSale: null }
   }
 }
 
@@ -122,17 +135,17 @@ function PromoBannerGrid() {
 
 // ── Page (Server Component) ───────────────────────────────────────────────────
 export default async function Home() {
-  const { companies, products, reviews, nezalCompany } = await getHomeData()
+ const { companies, products, reviews, nezalCompany, activeSale } = await getHomeData()
 
-  const testimonials = reviews.slice(0, 8).map((r: any) => ({
-    id: r._id || r.id,
-    name: r.customerName || r.userName || "Anonymous",
-    role: "Verified Buyer",
-    avatar: "/placeholder-user.jpg",
-    rating: typeof r.rating === "number" ? r.rating : 5,
-    quote: r.comment || "",
-    product: r.productName || "Nezal Product",
-  }))
+const testimonials = reviews.slice(0, 8).map((r: any) => ({
+  id:      r._id,
+  name:    r.userName || "Anonymous",
+  role:    "Verified Buyer",
+  avatar:  "/placeholder-user.jpg",
+  rating:  typeof r.rating === "number" ? r.rating : 5,
+  quote:   r.comment || "",
+  product: r.product?.name || "Nezal Product",
+}))
 
   return (
     <main className="min-h-screen bg-background overflow-x-hidden">
@@ -172,22 +185,7 @@ export default async function Home() {
       <DiscoverIngredients />
 
       {/* Flash Deal — products pre-rendered, no skeleton */}
-      <section className="py-12 md:py-16 bg-background">
-        <div className="container-nezal">
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)] text-xs font-bold uppercase tracking-widest mb-3">
-              <span>✦</span> Limited Time
-            </div>
-            <h2 className="text-[28px] md:text-[32px] font-bold text-foreground">Flash Deal</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Use code <span className="font-bold text-[var(--color-brand-primary)]">NEZAL25</span> at checkout
-            </p>
-          </div>
-
-          {/* Products rendered on server — no loading state needed */}
-          <HomeClient products={products} />
-        </div>
-      </section>
+      {activeSale && <FlashDeal sale={activeSale} />}
 
       {/* Why Choose Us */}
       <section className="py-12 md:py-16">

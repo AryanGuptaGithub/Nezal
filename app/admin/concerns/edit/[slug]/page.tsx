@@ -204,44 +204,75 @@ const { data: session, status } = useSession()
                   <div className="h-8 w-full rounded mt-2 border" style={{ backgroundColor: color }} />
                 </div>
               </div>
+              
+<div className="border rounded-xl overflow-hidden">
+  <div className="bg-muted/60 px-4 py-3 border-b">
+    <h2 className="text-sm font-semibold">Recommended Products</h2>
+  </div>
 
-              <div className="border rounded-xl overflow-hidden ">
-                <div className="bg-muted/60 px-4 py-3 border-b ">
-                  <h2 className="text-sm font-semibold">Recommended Products</h2>
-                </div>
-                <div className="p-4 space-y-3 border-2 h-50">
-                  <div className="relative">
-                    <Input value={productSearch} onChange={(e) => setProductSearch(e.target.value)} placeholder="Search products by name..." />
-                    {searchResults.length > 0 && (
-                      <div className="absolute z-10 left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        {searchResults.map((p) => (
-                          <button key={p._id} type="button" onClick={() => addProduct(p)} className="flex w-full items-center gap-3 px-3 py-2 hover:bg-muted text-left">
-                            <div className="relative h-8 w-8 shrink-0 rounded overflow-hidden bg-muted">
-                              {p.image && <Image src={p.image} alt={p.name} fill className="object-cover" />}
-                            </div>
-                            <span className="text-sm">{p.name}</span>
-                            <span className="text-xs text-muted-foreground ml-auto">₹{p.price}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+  <div className="p-4 h-[250px] flex flex-col">
+    <div className="relative">
+      <Input
+        value={productSearch}
+        onChange={(e) => setProductSearch(e.target.value)}
+        placeholder="Search products by name..."
+        className="border-2 border-[#35b308]"
+      />
 
-                  {selectedProducts.length > 0 && (
-                    <div className="space-y-2 pt-2 border-t">
-                      {selectedProducts.map((p) => (
-                        <div key={p._id} className="flex items-center gap-3 bg-background border rounded-lg px-3 py-2">
-                          <div className="relative h-8 w-8 shrink-0 rounded overflow-hidden bg-muted">
-                            {p.image && <Image src={p.image} alt={p.name} fill className="object-cover" />}
-                          </div>
-                          <span className="text-sm flex-1">{p.name}</span>
-                          <button type="button" onClick={() => removeProduct(p._id)} className="text-muted-foreground hover:text-destructive"><X className="w-4 h-4" /></button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+      {searchResults.length > 0 && (
+        <div className="absolute z-10 left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          {searchResults.map((p) => (
+            <button
+              key={p._id}
+              type="button"
+              onClick={() => addProduct(p)}
+              className="flex w-full items-center gap-3 px-3 py-2 hover:bg-muted text-left"
+            >
+              <div className="relative h-8 w-8 shrink-0 rounded overflow-hidden bg-muted">
+                {p.image && (
+                  <Image src={p.image} alt={p.name} fill className="object-cover" />
+                )}
               </div>
+
+              <span className="text-sm">{p.name}</span>
+
+              <span className="text-xs text-muted-foreground ml-auto">
+                ₹{p.price}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+
+    {selectedProducts.length > 0 && (
+      <div className="mt-3 flex-1 overflow-y-auto border-t pt-2 space-y-2 scroll-smooth scrollbar-hide">
+        {selectedProducts.map((p) => (
+          <div
+            key={p._id}
+            className="flex items-center gap-3 bg-background border rounded-lg px-3 py-2"
+          >
+            <div className="relative h-8 w-8 shrink-0 rounded overflow-hidden bg-muted">
+              {p.image && (
+                <Image src={p.image} alt={p.name} fill className="object-cover" />
+              )}
+            </div>
+
+            <span className="text-sm flex-1">{p.name}</span>
+
+            <button
+              type="button"
+              onClick={() => removeProduct(p._id)}
+              className="text-muted-foreground hover:text-destructive"
+            >
+              <X className="w-5 h-5 text-white rounded-xl p-1 bg-[#e96262] hover:bg-[#ee0606]" />
+            </button>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</div>
 
               <div className="flex items-center gap-2">
                 <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="w-4 h-4" />
