@@ -25,7 +25,8 @@ import {
   ImageIcon,
   Sparkles,
   Leaf,
-  TicketPercent
+  TicketPercent,
+  Ticket
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -44,8 +45,10 @@ const navItems: NavItem[] = [
   { href: "/admin/products", label: "Products", icon: <Package className="w-5 h-5" /> },
   { href: "/admin/concerns", label: "Concerns", icon: <Leaf className="w-5 h-5" /> },
    { href: "/admin/rituals", label: "Rituals", icon: <Sparkles className="w-5 h-5" /> },
+     { href: "/admin/flash-sales", label: "Flash Sales", icon: <TicketPercent className="w-5 h-5" /> },
+  { href: "/admin/coupons", label: "Coupons", icon: <Ticket className="w-5 h-5" /> },
   { href: "/admin/categories", label: "Categories", icon: <Layers className="w-5 h-5" /> },
-  { href: "/admin/flash-sales", label: "Flash Sales", icon: <TicketPercent className="w-5 h-5" /> },
+
   { href: "/admin/companies", label: "Companies", icon: <Building2 className="w-5 h-5" /> },
   { href: "/admin/users", label: "Users", icon: <Users className="w-5 h-5" /> },
   { href: "/admin/blogs", label: "Blogs", icon: <BookOpen className="w-5 h-5" /> },
