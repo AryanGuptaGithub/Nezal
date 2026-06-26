@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from "react"
 
 import { signIn, useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,19 +24,23 @@ export function LoginForm() {
   const [passwordError, setPasswordError] = useState("")
 
   const isSubmitting = isLoading || isRedirecting
-  const router = useRouter()
-  const { data: session, update } = useSession()
+  
+  
+const router = useRouter()
+const { data: session, update } = useSession()
+const searchParams = useSearchParams()
+const redirectTo = searchParams.get("redirect") ?? "/"  // ← add this
 
-  useEffect(() => {
-    if (session?.user) {
-      setIsRedirecting(true)
-      if (session.user.role === "admin") {
-        router.push("/admin")
-      } else {
-        router.push("/")
-      }
+useEffect(() => {
+  if (session?.user) {
+    setIsRedirecting(true)
+    if (session.user.role === "admin") {
+      router.push("/admin")
+    } else {
+      router.push(redirectTo)  // ← was router.push("/"), now uses redirect param
     }
-  }, [session, router])
+  }
+}, [session, router, redirectTo])
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/

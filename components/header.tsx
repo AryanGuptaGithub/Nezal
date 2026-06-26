@@ -594,13 +594,14 @@ export function Header() {
 
 
                     {/* WISHLIST */}
-                    <Link
-                      href="/profile/wishlist"
-                      className="relative rounded-full p-2 transition-colors hover:bg-red-50 group"
-                      aria-label="My Wishlist"
-                    >
-                      <Heart className="h-5 w-5 text-gray-400 group-hover:text-red-500 transition-colors" />
-                    </Link>
+                 
+<Link
+  href={session?.user ? "/profile/wishlist" : "/auth/login?redirect=/profile/wishlist"}
+  className="relative rounded-full p-2 transition-colors hover:bg-red-50 group"
+  aria-label="My Wishlist"
+>
+  <Heart className="h-5 w-5 text-gray-400 group-hover:text-red-500 transition-colors" />
+</Link>
 
                     {/* CART */}
                     <CartIcon />
