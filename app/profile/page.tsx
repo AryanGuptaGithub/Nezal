@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Mail, User, Phone, MapPin, Edit2, Check, X, Home, Building2, Globe } from "lucide-react"
+import { useLoading } from "@/hooks/use-loading"
 
 interface UserProfile {
   name: string
@@ -23,6 +24,7 @@ interface UserProfile {
 
 export default function ProfilePage() {
   const { data: session, status } = useSession()
+  const { withLoading } = useLoading()
   const router = useRouter()
   const [profile, setProfile] = useState<UserProfile>({
     name: "",
@@ -88,7 +90,7 @@ export default function ProfilePage() {
     e.preventDefault()
     setLoading(true)
     setMessage("")
-
+  await withLoading(async () => { 
     try {
       const res = await fetch("/api/users/profile", {
         method: "PUT",
@@ -111,6 +113,7 @@ export default function ProfilePage() {
     } finally {
       setLoading(false)
     }
+      }, "Saving your profile...")  
   }
 
   if (status === "loading") {

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useLoading } from "@/hooks/use-loading"
 
 interface Props {
   email: string;
@@ -14,11 +15,13 @@ export default function OtpForm({ email, onSuccess }: Props) {
   const [error, setError] = useState("");
   const [info, setInfo] = useState(`We've sent a 6-digit code to ${email}`);
   const [isLoading, setIsLoading] = useState(false);
+  const { withLoading } = useLoading()   
 
   async function verifyOtp(e?: React.FormEvent) {
     e?.preventDefault();
     setError("");
     setIsLoading(true);
+    await withLoading(async () => {  
     try {
       const res = await fetch("/api/auth/verify-otp", {
         method: "POST",
@@ -36,11 +39,13 @@ export default function OtpForm({ email, onSuccess }: Props) {
     } finally {
       setIsLoading(false);
     }
+    }, "Verifying your code...")  
   }
 
   async function resend() {
     setError("");
     setIsLoading(true);
+     await withLoading(async () => {  
     try {
       const res = await fetch("/api/auth/resend-otp", {
         method: "POST",
@@ -58,6 +63,7 @@ export default function OtpForm({ email, onSuccess }: Props) {
     } finally {
       setIsLoading(false);
     }
+     }, "Resending code...")  
   }
 
   return (

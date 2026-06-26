@@ -131,7 +131,7 @@ export default function AboutUs() {
 
     
       {/* ── Our Story ── */}
-      <section className="md:py-10">
+      <section id="story" className="md:py-10">
         <div className="container mx-auto max-w-6xl px-6 ">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
 
@@ -217,7 +217,7 @@ export default function AboutUs() {
   
 
       {/* ── Philosophy ── */}
-      <section className="md:py-10 ">
+      <section id="philosophy" className="md:py-10 ">
         <div className="container mx-auto max-w-6xl px-6">
           <motion.div
             initial="hidden"
@@ -282,7 +282,7 @@ export default function AboutUs() {
       </section>
 
       {/* ── Commitments ── */}
-      <section className="  md:py-20" style={{ backgroundColor: "#1a3a2a" }}>
+      <section  id="commitment"  className=" md:py-20" style={{ backgroundColor: "#1a3a2a" }}>
         <div className="container mx-auto max-w-6xl px-6">
           <motion.div
             initial="hidden"
@@ -368,7 +368,7 @@ export default function AboutUs() {
       </div>
 
       {/* ── Why Customers Trust Nezal ── */}
-      <section className="py-10  md:py-32">
+      <section id="trust" className="py-10  md:py-32">
         <div className="container mx-auto max-w-6xl px-6">
           <motion.div
             initial="hidden"

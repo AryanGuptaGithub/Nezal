@@ -20,80 +20,65 @@ export default function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-6">
 
           {/* Col 1 – About-us */}
-          <div className="lg:col-span-1">
-            <h4
-              className="text-[14px] font-semibold mb-4 text-center"
-              style={{ color: "var(--color-text-footer-heading)" }}
-            >
-              Site Map
-            </h4>
-            <p
-              className="text-[13px] leading-relaxed text-center"
-              style={{ color: "var(--color-text-footer)" }}
-            >
-              Nezal.com offers 100% natural products, such as shea butter, cocoa
-              butter, aloe vera, olive oil, pure milk, turmeric, aromatherapy
-              oils, and natural herbal scrubs.
-            </p>
-          </div>
-
-          {/* Col 2 – Categories */}
-          {/* <div>
-            <h4
-              className="text-[14px] font-semibold mb-4"
-              style={{ color: "var(--color-text-footer-heading)" }}
-            >
-              Categories
-            </h4>
-            <ul className="space-y-2.5">
-              {[
-                { label: "Soaps", href: "/shop?category=soaps" },
-                { label: "Body Care", href: "/shop?category=body-care" },
-                { label: "Face Care", href: "/shop?category=face-care" },
-                { label: "Hair Care", href: "/shop?category=hair-care" },
-                { label: "Intimate hygiene", href: "/shop?category=intimate-hygiene" },
-                { label: "Handwash", href: "/shop?category=handwash" },
-              ].map((item) => (
-                <li key={item.label}>
-                  <Link
-                    href={item.href}
-                    className="text-[13px] transition-colors hover:text-white"
-                    style={{ color: "var(--color-text-footer)" }}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div> */}
-
-          {/* Col 3 – More Details */}
           <div>
-            <h4
-              className="text-[14px] font-semibold mb-4"
-              style={{ color: "var(--color-text-footer-heading)" }}
-            >
-              Site 
-            </h4>
-            <ul className="space-y-2.5">
-              {[
-                { label: "About Us", href: "/about-us" },
-                { label: "Blog", href: "/blog" },
-                { label: "Review", href: "/reviews" },
-                
-              ].map((item) => (
-                <li key={item.label}>
-                  <Link
-                    href={item.href}
-                    className="text-[13px] transition-colors hover:text-white"
-                    style={{ color: "var(--color-text-footer)" }}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+  <h4
+    className="text-[14px] font-semibold mb-4"
+    style={{ color: "var(--color-text-footer-heading)" }}
+  >
+    Site Map
+  </h4>
+  <ul className="space-y-2.5">
+    {[
+      { label: "The Nezal Story", href: "/about-us#story" },
+      { label: "Our Philosophy", href: "/about-us#philosophy" },
+      { label: "Our Commitment", href: "/about-us#commitment" },
+      { label: "Why customer trust us", href: "/about-us#trust" },
+      { label: "Reviews", href: "/reviews" },
+      { label: "Blogs", href: "/blog" },
+    ].map((item) => (
+      <li key={item.label}>
+        <Link
+          href={item.href}
+          className="text-[13px] transition-colors hover:text-white"
+          style={{ color: "var(--color-text-footer)" }}
+        >
+          {item.label}
+        </Link>
+      </li>
+    ))}
+  </ul>
+</div>
+
+    {/* Col 2 – Product */}
+<div>
+  <h4
+    className="text-[14px] font-semibold mb-4"
+    style={{ color: "var(--color-text-footer-heading)" }}
+  >
+    Product
+  </h4>
+  <ul className="space-y-2.5">
+    {[
+      { label: "Shop By Category", href: "/shop" },
+      { label: "Shop By Concern", href: "/concerns" },
+      { label: "Shop By Ingredient", href: "/ingredients" },
+      { label: "Nezal Rituals", href: "/rituals" },
+      { label: "Gift kits", href: "/collections/gift-kits" },
+    ].map((item) => (
+      <li key={item.label}>
+        <Link
+          href={item.href}
+          className="text-[13px] transition-colors hover:text-white"
+          style={{ color: "var(--color-text-footer)" }}
+        >
+          {item.label}
+        </Link>
+      </li>
+    ))}
+  </ul>
+</div>
+
+     
 
            {/* Col 3 – More Details */}
           <div>

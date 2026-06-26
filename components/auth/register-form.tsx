@@ -16,6 +16,7 @@ import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2, Lock, Mail, ShieldChec
 import { Turnstile } from "@marsidev/react-turnstile";
 import OtpForm from "./otp-form";
 import { BRAND } from "@/lib/config";
+import { useLoading } from "@/hooks/use-loading"
 
 export function RegisterForm() {
   const [name, setName] = useState("");
@@ -35,6 +36,7 @@ export function RegisterForm() {
   const [turnstileError, setTurnstileError] = useState("");
   const router = useRouter();
   const { data: session } = useSession();
+   const { withLoading } = useLoading()   
 
   useEffect(() => {
     if (session?.user) {
@@ -115,7 +117,7 @@ export function RegisterForm() {
     }
 
     setIsLoading(true);
-
+   await withLoading(async () => { 
     try {
       const response = await fetch("/api/auth/register", {
         method: "POST",
@@ -141,6 +143,7 @@ export function RegisterForm() {
     } finally {
       setIsLoading(false);
     }
+      }, "Creating your account...")  
   }
 
   if (showOtp) {

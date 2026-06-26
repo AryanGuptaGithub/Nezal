@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import ProductDescription from "@/components/ProductDescription"
 import ProductSections from "@/components/ProductSections"
+import { useLoading } from "@/hooks/use-loading"
 
 
 
@@ -242,6 +243,7 @@ const ProductDetailPage = memo(function ProductDetailPage() {
   const addItem = useCartStore((state) => state.addItem)
   const getTotalItems = useCartStore((state) => state.getTotalItems)
   const router = useRouter()  
+  const { withLoading } = useLoading()
 
  const initialProduct = null
 const initialReviews = null
@@ -443,6 +445,7 @@ const initialReviews = null
       return
     }
     setSubmittingReview(true)
+    await withLoading(async () => { 
     try {
       const res = await fetch(`/api/products/${id}/reviews`, {
         method: "POST",
@@ -468,6 +471,7 @@ const initialReviews = null
     } finally {
       setSubmittingReview(false)
     }
+     }, "Submitting your review...") 
   }
 
   const ratingPercentage = useCallback(
