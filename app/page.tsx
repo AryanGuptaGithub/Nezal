@@ -89,7 +89,7 @@ const PROMO_BANNERS = [
   { image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779341557/nezal/uploads/vz9jkgrr5tdccprgfl5a.jpg", label: "Bath Salts", sub: "Turn Bath Into Ritual", href: "/collections/bath-salt" },
 ]
 
-const TICKER_ITEMS = ["Own Manufacturing", "Crafted With Care", "Quality Tested Formulations"]
+const TICKER_ITEMS = ["Own Manufacturing", "Crafted With Care", "Quality Tested Formulations", "Inhouse Saponification", "Premium Ingredents"]
 
 function PromoBannerGrid() {
   return (

@@ -52,7 +52,7 @@ const commitments = [
     icon: Shield,
     title: "Safety You Don't Have to Question",
     description:
-      "Dermatologically tested, thoughtfully formulated without unnecessary harsh ingredients, never tested on animals. If we wouldn't use it ourselves, it doesn't ship.",
+      "Tested for quality, thoughtfully formulated without unnecessary harsh ingredients, never tested on animals. If we wouldn't use it ourselves, it doesn't ship.",
   },
   {
     icon: CheckCircle,
@@ -149,7 +149,7 @@ export default function AboutUs() {
               <motion.div variants={stagger} className="space-y-5 text-base leading-relaxed" style={{ color: "#3d5c45" }}>
                 <motion.p variants={fadeUp}>
                   Today, {BRAND.name} is a modern skincare, hair care, bath &amp; body care, and wellness brand
-                  inspired by botanical ingredients and formulation science, spanning premium handmade soap, advanced
+                  inspired by natural active ingredients and formulation science, spanning premium handmade soap, advanced
                   face serums, nourishing herbal shampoo and conditioner, body lotion, Aloe Vera gels, bath salts,
                   and wellness essentials — each one designed to turn an ordinary moment into a considered one.
                 </motion.p>
@@ -297,7 +297,7 @@ export default function AboutUs() {
             </motion.h2>
             <motion.p variants={fadeUp} className="text-lg max-w-2xl leading-relaxed" style={{ color: "#a8c9a0" }}>
               A philosophy is what we believe. A commitment is what we promise to do about it — whether
-              you're buying your first bar of soap or restocking a routine you've trusted for years.
+              you're buying your first bar of soap or restocking a routine you've trusted us for years.
             </motion.p>
           </motion.div>
 

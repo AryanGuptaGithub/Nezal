@@ -86,10 +86,10 @@ const collectionSchema = new mongoose.Schema(
     // Used for grouping within a navCategory on the collections index page
     // e.g. body-care collections split into "soaps" and "body-care" subsections
     subCategory: {
-      type: String,
-      enum: ["face-care", "soaps", "body-care", "hair-care", "gift-kits"],
-      required: true,
-    },
+  type: String,
+  enum: ["face-care", "soaps", "body-care", "hair-care", "gift-kits", "bath-shower", "massage-oil"],
+  required: true,
+},
 
     // Display order within its navCategory (for mega menu ordering)
     sortOrder: {

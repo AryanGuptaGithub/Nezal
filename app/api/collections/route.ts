@@ -10,10 +10,10 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const category = searchParams.get("category")
 
-    const query: Record<string, unknown> = { isActive: true }
-    if (category && category !== "all") {
-      query.navCategory = category
-    }
+   const query: Record<string, unknown> = { isActive: true }
+if (category && category !== "all") {
+  query.$or = [{ navCategory: category }, { subCategory: category }]
+}
 
     const collections = await Collection.find(query, {
       _id: 1,
