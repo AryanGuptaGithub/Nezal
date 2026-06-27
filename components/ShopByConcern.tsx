@@ -18,6 +18,8 @@ interface ConcernCard {
   slug: string
   heroImage: string
   color: string
+  order?: number
+  createdAt?: string
 }
 
 export function ShopByConcern() {
@@ -31,7 +33,19 @@ export function ShopByConcern() {
         const res = await fetch("/api/concerns")
         if (!res.ok) throw new Error("Failed")
         const data = await res.json()
-        if (mounted) setConcerns(data.concerns || [])
+        const list: ConcernCard[] = data.concerns || []
+
+        // The API currently returns concerns newest-first (e.g. sorted by
+        // createdAt descending), which makes the grid render upside down —
+        // the concern created first (Acne) ends up last instead of first.
+        // If every item has an explicit `order` field, respect that;
+        // otherwise fall back to reversing so the oldest/first-created
+        // concern shows first, matching the intended display order.
+        const sorted = list.every((c) => typeof c.order === "number")
+          ? [...list].sort((a, b) => (a.order as number) - (b.order as number))
+          : [...list].reverse()
+
+        if (mounted) setConcerns(sorted)
       } catch {
         if (mounted) setConcerns([])
       } finally {
