@@ -4,9 +4,9 @@
  * ShopByConcern
  *
  * Homepage section. Fetches active concerns from /api/concerns and
- * renders them as image cards linking to /concerns/[slug]. Replaces
- * the old hardcoded 6-concern version — concerns are now fully
- * admin-manageable via /admin/concerns.
+ * renders a preview (first 8) as image cards linking to /concerns/[slug].
+ * A "See All Concerns" button links to the full /concerns index page.
+ * Concerns are fully admin-manageable via /admin/concerns.
  */
 
 import { useEffect, useState } from "react"
@@ -22,8 +22,11 @@ interface ConcernCard {
   createdAt?: string
 }
 
+const HOMEPAGE_PREVIEW_COUNT = 5
+
 export function ShopByConcern() {
   const [concerns, setConcerns] = useState<ConcernCard[]>([])
+  const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -45,9 +48,15 @@ export function ShopByConcern() {
           ? [...list].sort((a, b) => (a.order as number) - (b.order as number))
           : [...list].reverse()
 
-        if (mounted) setConcerns(sorted)
+        if (mounted) {
+          setTotalCount(sorted.length)
+          setConcerns(sorted.slice(0, HOMEPAGE_PREVIEW_COUNT))
+        }
       } catch {
-        if (mounted) setConcerns([])
+        if (mounted) {
+          setConcerns([])
+          setTotalCount(0)
+        }
       } finally {
         if (mounted) setLoading(false)
       }
@@ -57,6 +66,8 @@ export function ShopByConcern() {
   }, [])
 
   if (!loading && concerns.length === 0) return null
+
+  const hasMore = totalCount > HOMEPAGE_PREVIEW_COUNT
 
   return (
     <section className="py-12 md:py-16" style={{ backgroundColor: "#fdfaf5" }}>
@@ -75,10 +86,10 @@ export function ShopByConcern() {
           </p>
         </div>
 
-        {/* Concern grid — 2 cols mobile, 3 tablet, 5 desktop (fits 15 cleanly in 3 rows) */}
+        {/* Concern grid — 2 cols mobile, 3 tablet, 5 desktop (fits 8 cleanly in 2 rows on desktop) */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-5">
           {loading
-            ? [...Array(10)].map((_, i) => (
+            ? [...Array(HOMEPAGE_PREVIEW_COUNT)].map((_, i) => (
                 <div key={i} className="aspect-square rounded-2xl bg-gray-100 animate-pulse" />
               ))
             : concerns.map((concern) => (
@@ -117,7 +128,22 @@ export function ShopByConcern() {
               ))}
         </div>
 
+        {/* See More */}
+        {!loading && hasMore && (
+          <div className="flex justify-center mt-10">
+            <Link
+              href="/concerns"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm transition-all hover:gap-3"
+              style={{ backgroundColor: "#1e3a28", color: "#fdfaf5" }}
+            >
+              See All Concerns <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        )}
+
       </div>
     </section>
   )
 }
+
+export default ShopByConcern
