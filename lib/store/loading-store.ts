@@ -1,15 +1,26 @@
 import { create } from "zustand"
 
 interface LoadingStore {
-  isLoading: boolean
+  count: number
   message: string
   startLoading: (message?: string) => void
   stopLoading: () => void
+  isLoading: boolean
 }
 
-export const useLoadingStore = create<LoadingStore>((set) => ({
-  isLoading: false,
+export const useLoadingStore = create<LoadingStore>((set, get) => ({
+  count: 0,
   message: "",
-  startLoading: (message = "Please wait...") => set({ isLoading: true, message }),
-  stopLoading: () => set({ isLoading: false, message: "" }),
+  isLoading: false,
+  startLoading: (message = "Please wait...") =>
+    set((state) => ({
+      count: state.count + 1,
+      isLoading: true,
+      message,
+    })),
+  stopLoading: () =>
+    set((state) => {
+      const count = Math.max(0, state.count - 1)
+      return { count, isLoading: count > 0, message: count > 0 ? state.message : "" }
+    }),
 }))

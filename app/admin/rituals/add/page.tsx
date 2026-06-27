@@ -170,21 +170,70 @@ export default function AddRitualPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Hero Image</label>
-                  <label className="flex items-center justify-center border-2 border-dashed border-border rounded-lg p-4 cursor-pointer hover:bg-muted/50">
-                    <div className="text-center">
-                      <Upload className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
-                      <p className="text-xs">{uploading ? "Uploading..." : "Upload image"}</p>
-                    </div>
-                    <input type="file" accept="image/*" onChange={handleHeroUpload} disabled={uploading} className="hidden" />
-                  </label>
-                  {heroImage && (
-                    <div className="relative h-24 w-full mt-2 rounded-lg overflow-hidden">
-                      <Image src={heroImage} alt="Hero preview" fill className="object-cover" />
-                    </div>
-                  )}
-                </div>
+               <div>
+  <label className="block text-sm font-medium mb-2">Hero Image</label>
+  <div className="space-y-3 border border-border rounded-lg p-4 bg-muted/50">
+    
+    {/* URL input */}
+    <div>
+      <label className="block text-xs text-muted-foreground mb-1">Paste Image URL</label>
+      <div className="flex gap-2">
+        <Input
+          type="url"
+          placeholder="https://example.com/image.jpg"
+          value={heroImage}
+          onChange={(e) => setHeroImage(e.target.value)}
+          className="flex-1"
+        />
+        {heroImage && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setHeroImage("")}
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        )}
+      </div>
+    </div>
+
+    {/* Divider */}
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-px bg-border" />
+      <span className="text-xs text-muted-foreground">or</span>
+      <div className="flex-1 h-px bg-border" />
+    </div>
+
+    {/* File upload */}
+    <label className="flex items-center justify-center border-2 border-dashed border-border rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition">
+      <div className="text-center">
+        <Upload className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
+        <p className="text-xs font-medium">
+          {uploading ? "Uploading..." : "Upload from device"}
+        </p>
+        <p className="text-xs text-muted-foreground mt-0.5">PNG, JPG up to 5MB</p>
+      </div>
+      <input
+        type="file"
+        accept="image/*"
+        onChange={handleHeroUpload}
+        disabled={uploading}
+        className="hidden"
+      />
+    </label>
+
+    {/* Preview */}
+    {heroImage && (
+      <div className="relative h-32 w-full rounded-lg overflow-hidden border border-border">
+        <Image src={heroImage} alt="Hero preview" fill className="object-cover" />
+        <div className="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full">
+          Preview
+        </div>
+      </div>
+    )}
+  </div>
+</div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Background Color (hex)</label>
                   <Input value={color} onChange={(e) => setColor(e.target.value)} placeholder="#F3F5EF" />
@@ -282,7 +331,7 @@ export default function AddRitualPage() {
 </div>
 
               {/* ── Curated Products ── */}
-              <div className="border rounded-xl h-80 overflow-hidden">
+              <div className="border rounded-xl h-80 overflow-visible">
                 <div className="bg-muted/60 px-4 py-3 border-b">
                   <h2 className="text-sm font-semibold">Curated Products</h2>
                   <p className="text-xs text-muted-foreground mt-0.5">Search and add products that belong to this ritual</p>

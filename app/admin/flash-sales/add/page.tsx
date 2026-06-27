@@ -148,7 +148,7 @@ export default function AddFlashSalePage() {
                 </div>
               </div>
 
-              <div className="border rounded-xl overflow-hidden">
+              <div className="border rounded-xl overflow-visible">
                 <div className="bg-muted/60 px-4 py-3 border-b">
                   <h2 className="text-sm font-semibold">Products on Sale</h2>
                   <p className="text-xs text-muted-foreground mt-0.5">Search and add the products this discount applies to</p>

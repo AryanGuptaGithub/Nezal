@@ -11,6 +11,8 @@ import Footer from "@/components/footer";
 import "./globals.css";
 import { BRAND } from "@/lib/config";
 import { GlobalLoader } from "@/components/ui/global-loader"
+import { FetchInterceptorInit } from "@/components/ui/fetch-interceptor-init"
+import NextTopLoader from "nextjs-toploader"
 
 // Load Nezal fonts
 const playfair = Playfair_Display({
@@ -123,8 +125,17 @@ export default function RootLayout({
         />
       </head>
      <body className="font-sans antialiased min-h-screen flex flex-col">
+       <NextTopLoader
+    color="var(--color-brand-primary)"
+    height={3}
+    showSpinner={false}
+    shadow="0 0 10px var(--color-brand-primary), 0 0 5px var(--color-brand-primary)"
+    easing="ease"
+    speed={200}
+  />
   <AuthSessionProvider>
     <GlobalLoader />   {/* ← add this line */}
+     <FetchInterceptorInit />  
     <PromoBar />
     <Header />
     <main className="flex-1">{children}</main>
