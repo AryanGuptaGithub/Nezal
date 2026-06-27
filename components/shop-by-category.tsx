@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -139,6 +139,7 @@ const getCategoryImage = (title: string): string => {
   return "https://images.unsplash.com/photo-1612817288484-6f916006741a?w=400&h=400&fit=crop";
 };
 
+
 // ── Trust bar ──────────────────────────────────────────
 const trustFeatures = [
   { icon: Leaf,          label: "Made In India",            sub: "Proudly crafted in India with love and care" },
@@ -213,6 +214,100 @@ export function ShopByCategory({ companyId, companySlug }: ShopByCategoryProps) 
         .slice(0, settings.limit),
     [items, settings.limit]
   );
+
+const marqueeWrapRef = useRef<HTMLDivElement>(null);
+const trackRef = useRef<HTMLDivElement>(null);
+const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+
+const offsetRef = useRef(0);        // current translateX, in px (negative = scrolled left)
+const draggingRef = useRef(false);
+const dragStartXRef = useRef(0);
+const dragStartOffsetRef = useRef(0);
+const velocityRef = useRef(0);      // px/frame, for momentum after release
+const lastDragXRef = useRef(0);
+
+
+useEffect(() => {
+  let frameId: number;
+  const autoSpeed = 1;     // px/frame auto-scroll speed
+  const maxScale = 1;
+  const minScale = 0.72;
+  const falloff = 260;
+
+  function tick() {
+    const wrap = marqueeWrapRef.current;
+    const track = trackRef.current;
+
+    if (track && wrap) {
+      // ── position ──
+      if (draggingRef.current) {
+        velocityRef.current *= 0.0; // velocity computed on the fly in pointermove instead
+      } else {
+        if (Math.abs(velocityRef.current) > 0.05) {
+          offsetRef.current += velocityRef.current;
+          velocityRef.current *= 0.95; // momentum decay
+        } else {
+          velocityRef.current = 0;
+          offsetRef.current -= autoSpeed; // resume auto-scroll
+        }
+      }
+
+      // seamless infinite wrap (content is duplicated, so half width = one full loop)
+      const halfWidth = track.scrollWidth / 2;
+      if (halfWidth > 0) {
+        if (offsetRef.current <= -halfWidth) offsetRef.current += halfWidth;
+        if (offsetRef.current > 0) offsetRef.current -= halfWidth;
+      }
+
+      track.style.transform = `translateX(${offsetRef.current}px)`;
+
+      // ── coverflow scaling ──
+      const wrapRect = wrap.getBoundingClientRect();
+      const centerX = wrapRect.left + wrapRect.width / 2;
+
+      itemRefs.current.forEach((el) => {
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const itemCenterX = rect.left + rect.width / 2;
+        const dist = Math.abs(itemCenterX - centerX);
+        const t = Math.min(dist / falloff, 1);
+        const eased = 1 - Math.pow(1 - t, 2);
+        const scale = maxScale - eased * (maxScale - minScale);
+
+        el.style.transform = `scale(${scale})`;
+        el.style.zIndex = String(Math.round((1 - t) * 100));
+      });
+    }
+
+    frameId = requestAnimationFrame(tick);
+  }
+
+  frameId = requestAnimationFrame(tick);
+  return () => cancelAnimationFrame(frameId);
+}, [activeItems.length]);
+
+// ── Drag handlers ──
+function handlePointerDown(e: React.PointerEvent) {
+  draggingRef.current = true;
+  dragStartXRef.current = e.clientX;
+  dragStartOffsetRef.current = offsetRef.current;
+  lastDragXRef.current = e.clientX;
+  velocityRef.current = 0;
+  (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+}
+
+function handlePointerMove(e: React.PointerEvent) {
+  if (!draggingRef.current) return;
+  const delta = e.clientX - dragStartXRef.current;
+  offsetRef.current = dragStartOffsetRef.current + delta;
+  velocityRef.current = e.clientX - lastDragXRef.current; // for momentum on release
+  lastDragXRef.current = e.clientX;
+}
+
+function handlePointerUp() {
+  draggingRef.current = false;
+  // velocityRef.current already holds last frame's delta — momentum decay picks it up in tick()
+}
 
   if (loading) {
     return (
@@ -293,89 +388,95 @@ export function ShopByCategory({ companyId, companySlug }: ShopByCategoryProps) 
         </div>
       </div>
 
-      {/* Shop by Category section */}
-      <section className="py-16 md:py-20">
-        <div className="container-nezal">
-          <div className="mb-12 text-center">
-            {/* <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
-              <Flower2 className="h-4 w-4" />
-              Explore by Category
-            </div> */}
-            <h2 className="mt-4 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
-              Shop by <span className="text-primary">Category</span>
-            </h2>
-            <div className="mt-2 flex justify-center">
-              <div className="h-0.5 w-24 rounded-full bg-primary" />
-            </div>
-            <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-              Browse our curated collections and find exactly what you're looking for.
-            </p>
+     {/* Shop by Category section — auto-scrolling circle marquee */}
+<section className="py-16 md:py-16 overflow-hidden">
+  <div className="container-nezal">
+    <div className="mb-12 text-center">
+      <h2 className="mt-4 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+        Shop by <span className="text-primary">Category</span>
+      </h2>
+      <div className="mt-2 flex justify-center">
+        <div className="h-0.5 w-24 rounded-full bg-primary" />
+      </div>
+      <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
+        Browse our curated collections and find exactly what you're looking for.
+      </p>
+    </div>
+
+{/* Marquee */}
+<div
+  ref={marqueeWrapRef}
+  className="nezal-marquee-wrap relative w-full cursor-grab active:cursor-grabbing select-none overflow-hidden "
+  style={{ touchAction: "pan-y" }}
+  onPointerDown={handlePointerDown}
+  onPointerMove={handlePointerMove}
+  onPointerUp={handlePointerUp}
+  onPointerCancel={handlePointerUp}
+>
+  <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-16 bg-gradient-to-r from-background to-transparent" />
+  <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-16 bg-gradient-to-l from-background to-transparent" />
+
+  <div ref={trackRef} className="flex items-center" style={{ gap: "2rem", willChange: "transform" }}>
+    {[...activeItems, ...activeItems].map((item, i) => {
+      const href = getCategoryHref(item.title);
+      const imageUrl = getCategoryImage(item.title);
+      const baseSize = 200;
+
+      return (
+        <Link
+          key={`${item._id}-${i}`}
+          ref={(el) => { itemRefs.current[i] = el; }}
+          href={href}
+          draggable={false}
+          onClick={(e) => {
+            // if the user dragged more than a few px, treat it as a drag, not a click
+            if (Math.abs(velocityRef.current) > 1 || draggingRef.current) e.preventDefault();
+          }}
+          className="group relative overflow-hidden rounded-full border-2 border-border shadow-sm transition-shadow duration-300 hover:shadow-xl"
+          style={{
+            flex: `0 0 ${baseSize}px`,
+            width: baseSize,
+            height: baseSize,
+            transformOrigin: "center center",
+          }}
+        >
+          <img
+            src={imageUrl}
+            alt={`${item.title} category`}
+            draggable={false}
+            className="h-full w-full object-cover pointer-events-none"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src =
+                "https://images.unsplash.com/photo-1612817288484-6f916006741a?w=400&h=400&fit=crop";
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 px-3 pb-4 text-center">
+            <p className="font-bold text-white drop-shadow-sm text-sm">{item.title}</p>
           </div>
+        </Link>
+      );
+    })}
+  </div>
+</div>
 
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            className="grid grid-cols-2 gap-6 lg:grid-cols-4"
-          >
-            {activeItems.map((item) => {
-              // ✅ THE FIX — links to /collections?category=face-care etc.
-              const href = getCategoryHref(item.title);
+  </div>
 
-              const imageUrl = getCategoryImage(item.title);
-
-              return (
-                <motion.div
-                  key={item._id}
-                  variants={cardVariants}
-                  whileHover={{ y: -6 }}
-                  className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-300 hover:shadow-xl"
-                >
-                  <div className="flex flex-col p-5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="mb-2 inline-flex rounded-xl bg-primary/10 p-2 text-primary">
-                          <CategoryIcon title={item.title} />
-                        </div>
-                        <h3 className="text-lg font-bold text-foreground">{item.title}</h3>
-                        {item.description && (
-                          <p className="mt-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">
-                            {item.description}
-                          </p>
-                        )}
-                      </div>
-                      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-muted shadow-sm">
-                        <img
-                          src={imageUrl}
-                          alt={`${item.title} category`}
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src =
-                              "https://images.unsplash.com/photo-1612817288484-6f916006741a?w=400&h=400&fit=crop";
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="mt-5">
-                      <Link
-                        href={href}
-                        className="flex w-full items-center justify-center rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 hover:shadow-md"
-                      >
-                        Shop Now
-                      </Link>
-                    </div>
-                  </div>
-
-                  {/* Bottom hover bar */}
-                  <div className="absolute bottom-0 left-0 h-1 w-0 bg-primary transition-all duration-300 group-hover:w-full" />
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        </div>
-      </section>
+  <style>{`
+    @keyframes nezal-marquee {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+    .nezal-marquee-track {
+      animation-name: nezal-marquee;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+    }
+    .nezal-marquee-wrap:hover .nezal-marquee-track {
+      animation-play-state: paused;
+    }
+  `}</style>
+</section>
     </>
   );
 }
