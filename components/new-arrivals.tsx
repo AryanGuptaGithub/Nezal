@@ -24,6 +24,10 @@ interface NewArrivalsProps {
 const TTL = 1000 * 60 * 5
 const MAX_AGE = 1000 * 60 * 60 * 24
 
+
+
+
+
 function getCacheKey(companyId: string) { return `newArrivals:${companyId}` }
 
 async function fetchNewArrivalsAPI(companyId: string) {

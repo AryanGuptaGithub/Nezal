@@ -438,7 +438,7 @@ export default function AboutUs() {
               Ready to Begin<br />Your Ritual?
             </h2>
             <p className="text-lg leading-relaxed mb-10" style={{ color: "#3d5c45" }}>
-              Experience thoughtfully crafted skincare, body care & hair care powered by carefully selected natural active ingredients refired through science and created for morden living.
+              Experience thoughtfully crafted skincare, body care & hair care powered by carefully selected natural active ingredients enhanced through science and created for morden living.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <a

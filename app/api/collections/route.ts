@@ -22,6 +22,7 @@ if (category && category !== "all") {
       tagline: 1,
       heroImage: 1,
       navCategory: 1,
+      subCategory: 1,
       sortOrder: 1,
     })
       .sort({ navCategory: 1, sortOrder: 1 })

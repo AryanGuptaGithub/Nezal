@@ -31,31 +31,41 @@ const NAV_CATEGORIES = [
 ]
 
 const CATEGORY_LABELS: Record<string, string> = {
-  "face-care": "Face Care",
-  "body-care": "Body Care",
-  "hair-care": "Hair Care",
-  "gift-kits": "Gift Kits",
+  "face-care":   "Face Care",
+  "body-care":   "Body Care",
+  "hair-care":   "Hair Care",
+  "gift-kits":   "Gift Kits",
+  "soaps":       "Soaps",
+  "bath-shower": "Bath & Shower",
+  "massage-oil": "Massage Oil",
 }
 
 const CATEGORY_DESCRIPTIONS: Record<string, string> = {
-  "face-care": "Serums, washes, moisturizers and scrubs — crafted for every skin story.",
-  "body-care": "Head-to-toe rituals that nourish, hydrate and restore.",
-  "hair-care": "Root-to-tip Ayurvedic care for stronger, healthier hair.",
-  "gift-kits": "Curated sets for the people you love.",
+  "face-care":   "Serums, washes, moisturizers and scrubs — crafted for every skin story.",
+  "body-care":   "Head-to-toe rituals that nourish, hydrate and restore.",
+  "hair-care":   "Root-to-tip Ayurvedic care for stronger, healthier hair.",
+  "gift-kits":   "Curated sets for the people you love.",
+  "soaps":       "Handcrafted bar soaps with botanical extracts — for every skin type and mood.",
+  "bath-shower": "Your daily cleanse, elevated.",
+  "massage-oil": "Relaxation and skin nourishment in every drop.",
 }
 
 // Labels for sub-categories shown within Body Care
 const SUBCATEGORY_LABELS: Record<string, string> = {
-  "soaps":     "Soaps",
-  "body-care": "Body Care",
-  "face-care": "Face Care",
-  "hair-care": "Hair Care",
-  "gift-kits": "Gift Kits",
+  "soaps":        "Soaps",
+  "body-care":    "Body Care",
+  "face-care":    "Face Care",
+  "hair-care":    "Hair Care",
+  "gift-kits":    "Gift Kits",
+  "bath-shower":  "Bath & Shower",
+  "massage-oil":  "Massage Oil",
 }
 
 const SUBCATEGORY_DESCRIPTIONS: Record<string, string> = {
-  "soaps":     "Handcrafted bar soaps with botanical extracts — for every skin type and mood.",
-  "body-care": "Lotions, oils, gels and washes to nourish and care for your body every day.",
+  "soaps":       "Handcrafted bar soaps with botanical extracts — for every skin type and mood.",
+  "body-care":   "Lotions, oils, gels and washes to nourish and care for your body every day.",
+  "bath-shower": "Your daily cleanse, elevated.",
+  "massage-oil": "Relaxation and skin nourishment in every drop.",
 }
 
 // ─── Collection Card ──────────────────────────────────────────────────────────
@@ -218,10 +228,19 @@ function CollectionsInner() {
     return map
   }, [collections, categoryParam])
 
-  const activeCategory = NAV_CATEGORIES.find((c) => c.key === categoryParam) ?? NAV_CATEGORIES[0]
+  const SUBCATEGORY_TO_PARENT_TAB: Record<string, string> = {
+  soaps: "body-care",
+  "bath-shower": "body-care",
+  "massage-oil": "body-care",
+}
+
+const activeCategory =
+  NAV_CATEGORIES.find((c) => c.key === categoryParam) ??
+  NAV_CATEGORIES.find((c) => c.key === SUBCATEGORY_TO_PARENT_TAB[categoryParam]) ??
+  NAV_CATEGORIES[0]
 
   // Sub-category render order for body-care
-  const BODY_CARE_SUB_ORDER = ["soaps", "body-care"]
+  const BODY_CARE_SUB_ORDER = ["soaps", "bath-shower", "massage-oil", "body-care"]
 
   return (
     <main className="min-h-screen bg-[var(--color-bg-page)]">

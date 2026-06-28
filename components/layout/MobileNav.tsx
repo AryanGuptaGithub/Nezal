@@ -98,6 +98,20 @@ const CONCERNS = [
   { label: "Hair Fall",    slug: "hairfall"     },
   { label: "Dryness",      slug: "dryness"      },
 ];
+const INGREDIENTS = [
+  { label: "Aloe Vera",       slug: "aloe-vera"       },
+  { label: "Neem",            slug: "neem"            },
+  { label: "Turmeric",        slug: "turmeric"        },
+  { label: "Tea Tree",        slug: "tea-tree"        },
+  { label: "Vitamin C",       slug: "vitamin-c"       },
+  { label: "Hyaluronic Acid", slug: "hyaluronic-acid" },
+  { label: "Niacinamide",     slug: "niacinamide"     },
+  { label: "Bhringraj",       slug: "bhringraj"       },
+  { label: "Tulsi",           slug: "tulsi"           },
+  { label: "Shea Butter",     slug: "shea-butter"     },
+  { label: "Salicylic Acid",  slug: "salicylic-acid"  },
+  { label: "Rose",            slug: "rose"            },
+]
 
 const NAV_LINKS = [
   { label: "Home",     href: "/"          },
@@ -134,6 +148,7 @@ function MobileCollectionCard({
 export function MobileNav({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState<"concerns" | "ingredients">("concerns")
 
   // Animate in/out
   useEffect(() => {
@@ -194,25 +209,59 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
         {/* ── Scrollable body ── */}
         <div className="flex-1 overflow-y-auto">
 
-          {/* Concern pills — sticky section */}
-          <div className="px-5 pt-4 pb-3 bg-[var(--color-bg-cream)] border-b" style={{ borderColor: "var(--color-border)" }}>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2.5">
-              What's your concern?
-            </p>
-            {/* Horizontal scroll with peek — 2.5 pills visible */}
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
-              {CONCERNS.map((concern) => (
-                <Link
-                  key={concern.slug}
-                  href={`/concerns/${concern.slug}`}
-                  onClick={onClose}
-                  className="flex-shrink-0 px-3 py-1.5 rounded-full border text-xs font-semibold text-[var(--color-brand-primary)] border-[var(--color-brand-primary)]/30 bg-white hover:bg-[var(--color-brand-primary)] hover:text-white hover:border-[var(--color-brand-primary)] transition-colors"
-                >
-                  {concern.label}
-                </Link>
-              ))}
-            </div>
-          </div>
+         {/* Concerns + Ingredients tabbed section */}
+<div className="px-5 pt-4 pb-3 bg-[var(--color-bg-cream)] border-b" style={{ borderColor: "var(--color-border)" }}>
+  
+  {/* Tab switcher */}
+  <div className="flex gap-1 mb-3 bg-white rounded-xl p-1 border" style={{ borderColor: "var(--color-border)" }}>
+    <button
+      onClick={() => setActiveTab("concerns")}
+      className={`flex-1 text-[10px] font-bold uppercase tracking-widest py-1.5 rounded-lg transition-colors ${
+        activeTab === "concerns"
+          ? "bg-[var(--color-brand-primary)] text-white"
+          : "text-[var(--color-text-muted)]"
+      }`}
+    >
+      By Concern
+    </button>
+    <button
+      onClick={() => setActiveTab("ingredients")}
+      className={`flex-1 text-[10px] font-bold uppercase tracking-widest py-1.5 rounded-lg transition-colors ${
+        activeTab === "ingredients"
+          ? "bg-[var(--color-brand-primary)] text-white"
+          : "text-[var(--color-text-muted)]"
+      }`}
+    >
+      By Ingredient
+    </button>
+  </div>
+
+  {/* Pills */}
+  <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
+    {activeTab === "concerns"
+      ? CONCERNS.map((item) => (
+          <Link
+            key={item.slug}
+            href={`/concerns/${item.slug}`}
+            onClick={onClose}
+            className="flex-shrink-0 px-3 py-1.5 rounded-full border text-xs font-semibold text-[var(--color-brand-primary)] border-[var(--color-brand-primary)]/30 bg-white hover:bg-[var(--color-brand-primary)] hover:text-white hover:border-[var(--color-brand-primary)] transition-colors"
+          >
+            {item.label}
+          </Link>
+        ))
+      : INGREDIENTS.map((item) => (
+          <Link
+            key={item.slug}
+            href={`/ingredients/${item.slug}`}
+            onClick={onClose}
+            className="flex-shrink-0 px-3 py-1.5 rounded-full border text-xs font-semibold text-[var(--color-brand-primary)] border-[var(--color-brand-primary)]/30 bg-white hover:bg-[var(--color-brand-primary)] hover:text-white hover:border-[var(--color-brand-primary)] transition-colors"
+          >
+            {item.label}
+          </Link>
+        ))
+    }
+  </div>
+</div>
 
           <div className="px-4 py-3 flex flex-col gap-0.5">
 
