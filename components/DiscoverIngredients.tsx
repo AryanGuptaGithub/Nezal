@@ -149,12 +149,12 @@ export function DiscoverIngredients() {
         {/* View all */}
         <div className="mt-10 text-center">
           <Link
-            href="/shop"
+            href="/ingredients"
             className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl border transition-all hover:bg-[#1e6636] hover:text-white hover:border-[#1e6636]"
             style={{ color: "#1e6636", borderColor: "#1e6636" }}
           >
             <Leaf size={14} />
-            Browse All Products
+            Browse All Ingredients
           </Link>
         </div>
 
