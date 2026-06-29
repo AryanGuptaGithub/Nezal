@@ -8,54 +8,63 @@ import { sendEmail, getOrderConfirmationEmail, getAdminOrderNotificationEmail } 
 import "@/lib/models/product"
 import "@/lib/models/user"
 
-
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession();
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const { items, shippingAddress, totalAmount, paymentMethod } = body;
 
     await connectDB();
 
-    const user = await User.findOne({ email: session.user.email });
+    let user = null;
 
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (session?.user?.email) {
+      // ── Logged-in path (unchanged) ──
+      user = await User.findOne({ email: session.user.email });
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
+    } else {
+      // ── Guest path ──
+      if (!shippingAddress?.email) {
+        return NextResponse.json(
+          { error: "Email is required to place an order" },
+          { status: 400 }
+        );
+      }
     }
 
     const orderNumber = `ORD-${Date.now()}`;
 
-    // Map form fields to database schema
     const mappedAddress = {
       name: shippingAddress.name,
       phone: shippingAddress.phone,
       street: shippingAddress.street,
-      address: shippingAddress.street, // Map street to address
+      address: shippingAddress.street,
       city: shippingAddress.city,
       state: shippingAddress.state,
       zipCode: shippingAddress.zipCode,
-      pincode: shippingAddress.zipCode, // Map zipCode to pincode
+      pincode: shippingAddress.zipCode,
       country: shippingAddress.country,
     };
 
     const order = await Order.create({
       orderNumber,
-      user: user._id,
+      user: user?._id, // undefined for guests — schema now allows this
+      guestEmail: user ? undefined : shippingAddress.email,
+      guestName: user ? undefined : shippingAddress.name,
+      guestPhone: user ? undefined : shippingAddress.phone,
       items,
       totalAmount,
       shippingAddress: mappedAddress,
       paymentMethod: paymentMethod || "cod",
       paymentStatus: "pending",
-      orderStatus: paymentMethod === "razorpay" ? "pending" : "pending",
+      orderStatus: "pending",
     });
 
-    //  IMPORTANT: Only send emails for COD orders immediately
-    // For Razorpay: emails are sent by /api/razorpay/verify-payment after payment verification
+    const recipientEmail = user?.email || shippingAddress.email;
+    const recipientName = user?.name || shippingAddress.name;
+
     if (paymentMethod !== "razorpay") {
       try {
         const populatedOrder = await Order.findById(order._id)
@@ -72,26 +81,24 @@ export async function POST(request: NextRequest) {
 
           const orderDate = new Date(order.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
 
-          // Send confirmation email to customer
           const confirmationEmailHtml = getOrderConfirmationEmail({
             orderId: order.orderNumber,
-            customerName: user.name,
+            customerName: recipientName,
             items: itemsData,
             total: order.totalAmount,
             orderDate: orderDate,
           });
 
           await sendEmail({
-            to: user.email,
+            to: recipientEmail,
             subject: `Order Received - ${order.orderNumber}`,
             html: confirmationEmailHtml,
           });
 
-          // Send admin notification email
           const adminEmailHtml = getAdminOrderNotificationEmail({
-            customerName: user.name,
-            customerEmail: user.email,
-            customerPhone: user.phone || "N/A",
+            customerName: recipientName,
+            customerEmail: recipientEmail,
+            customerPhone: user?.phone || shippingAddress.phone || "N/A",
             orderId: order.orderNumber,
             items: itemsData,
             totalAmount: order.totalAmount,
@@ -109,7 +116,6 @@ export async function POST(request: NextRequest) {
         }
       } catch (emailError) {
         console.error("Failed to send order emails:", emailError);
-        // Don't fail the order creation if email fails
       }
     }
 
@@ -131,6 +137,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  // Unchanged — order history stays login-only, guests have no account to list against
   try {
     const session = await getServerSession();
 
@@ -146,9 +153,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const orders = await Order.find({ 
+    const orders = await Order.find({
       user: user._id,
-      paymentStatus: { $ne: "failed" }  // Exclude failed orders
+      paymentStatus: { $ne: "failed" }
     })
       .sort({ createdAt: -1 })
       .populate("items.product");

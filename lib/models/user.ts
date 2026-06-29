@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: false,
     },
     name: {
       type: String,
@@ -35,13 +35,15 @@ const userSchema = new mongoose.Schema(
       default: true,
     },
     wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
-    // NEW field:
     isVerified: {
       type: Boolean,
       default: false,
     },
-
-    // ✅ NEW FIELDS for Forgot Password OTP system
+    provider: {
+      type: String,
+      enum: ["credentials", "google"],
+      default: "credentials",
+    },
     resetOtpHash: { type: String },
     resetOtpExpires: { type: Date },
   },

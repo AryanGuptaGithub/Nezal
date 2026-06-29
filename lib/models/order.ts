@@ -1,3 +1,4 @@
+// lib/models/order.ts
 import mongoose from "mongoose";
 
 const orderSchema = new mongoose.Schema(
@@ -10,8 +11,14 @@ const orderSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      required: false, // ← was required: true — guest orders have no User
     },
+
+    // NEW: guest contact info, used when `user` is absent
+    guestEmail: String,
+    guestName: String,
+    guestPhone: String,
+
     items: [
       {
         product: {

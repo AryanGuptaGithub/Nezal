@@ -6,26 +6,19 @@ import { useRouter } from "next/navigation";
 import { ShoppingCart } from "lucide-react";
 import { useCartStore } from "@/lib/store/cart-store";
 import { Button } from "@/components/ui/button";
-import { useSession } from "next-auth/react"
 
 export function CartIcon() {
-
-
   const router = useRouter();
 
-    const { data: session } = useSession()
-
-  // mounted prevents server/client mismatch for UI that depends on client-only storage
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => {
     setMounted(true);
   }, []);
 
-  // read total items from your client store (may read localStorage/persisted data on client)
   const totalItems = useCartStore((state) => state.getTotalItems());
 
-  // If you want to still avoid rendering the number until mounted:
-  const showBadge = mounted && !!session?.user && totalItems > 0;
+  // Badge reflects the cart regardless of login state now
+  const showBadge = mounted && totalItems > 0;
 
   return (
     <Button

@@ -76,11 +76,7 @@ const [couponData, setCouponData]       = useState<{
 } | null>(null)
 
   // ===== ALL LOGIC UNCHANGED =====
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.replace("/auth/login")
-    }
-  }, [status, router])
+
 
   useEffect(() => {
     if (items.length > 0) {
@@ -277,9 +273,9 @@ const finalTotal     = Math.max(0, totalPrice - discountAmount)
             },
           },
           prefill: {
-            email: session?.user?.email,
-            name: session?.user?.name,
-          },
+  email: session?.user?.email || shippingAddress?.email,
+  name: session?.user?.name || shippingAddress?.name,
+},
         }
 
         const razorpay = new window.Razorpay(options)
@@ -312,7 +308,7 @@ const finalTotal     = Math.max(0, totalPrice - discountAmount)
     )
   }
 
-  if (status === "unauthenticated") return null
+  
 
   const totalPrice = getTotalPrice()
   const availablePaymentMethods = getAvailablePaymentMethods()
@@ -327,21 +323,22 @@ const finalTotal     = Math.max(0, totalPrice - discountAmount)
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Checkout Form – 2/3 */}
           <div className="lg:col-span-2">
-            <CheckoutForm
-              totalAmount={finalTotal}
-              onSubmit={handleCheckout}
-              availablePaymentMethods={availablePaymentMethods}
-              initialData={{
-                name: userData?.name || session?.user?.name || "",
-                phone: userData?.phone || "",
-                street: userData?.address || "",
-                city: userData?.city || "",
-                state: userData?.state || "",
-                zipCode: userData?.pincode || "",
-                country: "India",
-              }}
-              isSubmitting={isLoading}
-            />
+           <CheckoutForm
+  totalAmount={finalTotal}
+  onSubmit={handleCheckout}
+  availablePaymentMethods={availablePaymentMethods}
+  initialData={{
+    name: userData?.name || session?.user?.name || "",
+    email: userData?.email || session?.user?.email || "", // ← new
+    phone: userData?.phone || "",
+    street: userData?.address || "",
+    city: userData?.city || "",
+    state: userData?.state || "",
+    zipCode: userData?.pincode || "",
+    country: "India",
+  }}
+  isSubmitting={isLoading}
+/>
           </div>
 
           {/* Order Summary – 1/3 */}

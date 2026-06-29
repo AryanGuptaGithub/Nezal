@@ -12,7 +12,6 @@ export async function POST(request: NextRequest) {
   try {
     const { razorpayOrderId, razorpayPaymentId, razorpaySignature, items, shippingAddress, totalAmount } = await request.json()
 
-    // Verify signature
     const body = razorpayOrderId + "|" + razorpayPaymentId
     const expectedSignature = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!).update(body).digest("hex")
 
@@ -22,38 +21,50 @@ export async function POST(request: NextRequest) {
 
     await connectDB()
 
-    // Get current user session
     const session = await getServerSession()
+    let user = null
 
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (session?.user?.email) {
+      user = await User.findOne({ email: session.user.email })
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 })
+      }
+    } else {
+      if (!shippingAddress?.email) {
+        return NextResponse.json(
+          { error: "Email is required to place an order" },
+          { status: 400 }
+        )
+      }
     }
 
-    const user = await User.findOne({ email: session.user.email })
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
-    // Check if order already exists with this Razorpay payment ID (idempotency)
+    // Idempotency check (unchanged)
     let existingOrder = await Order.findOne({ razorpayPaymentId })
     if (existingOrder) {
       return NextResponse.json({ success: true, orderId: existingOrder._id })
     }
 
-    // Check if order was already created via /api/orders with pending status (for this user)
-    // If found, update it with payment details instead of creating a new one
-    existingOrder = await Order.findOne({
-      user: user._id,
-      paymentMethod: "razorpay",
-      paymentStatus: "pending",
-      totalAmount,
-    }).sort({ createdAt: -1 })
+    // Find a pending order to update — match by user OR guest email
+    existingOrder = await Order.findOne(
+      user
+        ? { user: user._id, paymentMethod: "razorpay", paymentStatus: "pending", totalAmount }
+        : { guestEmail: shippingAddress.email, paymentMethod: "razorpay", paymentStatus: "pending", totalAmount }
+    ).sort({ createdAt: -1 })
 
     let order;
+    const mappedAddress = {
+      name: shippingAddress.name,
+      phone: shippingAddress.phone,
+      street: shippingAddress.street,
+      address: shippingAddress.street,
+      city: shippingAddress.city,
+      state: shippingAddress.state,
+      zipCode: shippingAddress.zipCode,
+      pincode: shippingAddress.zipCode,
+      country: shippingAddress.country,
+    }
 
     if (existingOrder) {
-      // Update existing order with payment details
       order = await Order.findByIdAndUpdate(
         existingOrder._id,
         {
@@ -65,37 +76,25 @@ export async function POST(request: NextRequest) {
         { new: true }
       )
     } else {
-      // Payment verified - create new order (for backwards compatibility)
       const orderNumber = `ORD-${Date.now()}`
-
-      // Map form fields to database schema
-      const mappedAddress = {
-        name: shippingAddress.name,
-        phone: shippingAddress.phone,
-        street: shippingAddress.street,
-        address: shippingAddress.street,
-        city: shippingAddress.city,
-        state: shippingAddress.state,
-        zipCode: shippingAddress.zipCode,
-        pincode: shippingAddress.zipCode,
-        country: shippingAddress.country,
-      }
 
       order = await Order.create({
         orderNumber,
-        user: user._id,
+        user: user?._id,
+        guestEmail: user ? undefined : shippingAddress.email,
+        guestName: user ? undefined : shippingAddress.name,
+        guestPhone: user ? undefined : shippingAddress.phone,
         items,
         totalAmount,
         shippingAddress: mappedAddress,
         paymentMethod: "razorpay",
-        paymentStatus: "completed", // Payment already verified
+        paymentStatus: "completed",
         orderStatus: "processing",
         razorpayOrderId,
         razorpayPaymentId,
       })
     }
 
-    // Update product stock
     await Promise.all(
       items.map(async (item: any) => {
         const quantity = item.quantity ?? 0
@@ -105,7 +104,9 @@ export async function POST(request: NextRequest) {
       }),
     )
 
-    // Send confirmation emails
+    const recipientEmail = user?.email || shippingAddress.email
+    const recipientName = user?.name || shippingAddress.name
+
     try {
       const populatedOrder = await Order.findById(order._id)
         .populate("items.product")
@@ -121,10 +122,9 @@ export async function POST(request: NextRequest) {
 
         const orderDate = new Date(order.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })
 
-        // Send confirmation email to customer
         const confirmationEmailHtml = getOrderConfirmationEmail({
           orderId: order.orderNumber,
-          customerName: user.name,
+          customerName: recipientName,
           items: itemsData,
           total: order.totalAmount,
           orderDate: orderDate,
@@ -132,16 +132,15 @@ export async function POST(request: NextRequest) {
         })
 
         await sendEmail({
-          to: user.email,
+          to: recipientEmail,
           subject: `Order Confirmation - ${order.orderNumber}`,
           html: confirmationEmailHtml,
         })
 
-        // Send admin notification email
         const adminEmailHtml = getAdminOrderNotificationEmail({
-          customerName: user.name,
-          customerEmail: user.email,
-          customerPhone: user.phone || "N/A",
+          customerName: recipientName,
+          customerEmail: recipientEmail,
+          customerPhone: user?.phone || shippingAddress.phone || "N/A",
           orderId: order.orderNumber,
           items: itemsData,
           totalAmount: order.totalAmount,
@@ -159,7 +158,6 @@ export async function POST(request: NextRequest) {
       }
     } catch (emailError) {
       console.error("Failed to send order emails:", emailError)
-      // Don't fail the order creation if email fails
     }
 
     return NextResponse.json({

@@ -12,6 +12,7 @@ interface CheckoutFormProps {
   availablePaymentMethods: string[]
   initialData?: {
     name?: string
+    email?: string // ← new
     phone?: string
     street?: string
     city?: string
@@ -152,15 +153,18 @@ export function CheckoutForm({
   initialData,
   isSubmitting = false,
 }: CheckoutFormProps) {
+  
   const [formData, setFormData] = useState({
-    name: initialData?.name || "",
-    phone: initialData?.phone || "",
-    street: initialData?.street || "",
-    city: initialData?.city || "",
-    state: initialData?.state || "",
-    zipCode: initialData?.zipCode || "",
-    country: initialData?.country || "India",
-  })
+  name: initialData?.name || "",
+  email: initialData?.email || "", // ← new
+  phone: initialData?.phone || "",
+  street: initialData?.street || "",
+  city: initialData?.city || "",
+  state: initialData?.state || "",
+  zipCode: initialData?.zipCode || "",
+  country: initialData?.country || "India",
+})
+
   const [paymentMethod, setPaymentMethod] = useState(availablePaymentMethods[0] || "razorpay")
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -242,6 +246,14 @@ export function CheckoutForm({
                 />
               </div>
             </div>
+            <div>
+  <FieldLabel>Email Address</FieldLabel>
+  <StyledInput
+    name="email" type="email" value={formData.email} onChange={handleChange}
+    placeholder="you@example.com" required
+    icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>}
+  />
+</div>
 
             <div>
               <FieldLabel>Street Address</FieldLabel>

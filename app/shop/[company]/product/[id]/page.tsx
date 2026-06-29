@@ -1,4 +1,5 @@
 // app/shop/[company]/product/[id]/page.tsx
+
 "use client"
 
 import { FormEvent, useCallback, useEffect, useRef, useState, useMemo, memo } from "react"
@@ -388,42 +389,34 @@ const initialReviews = null
   }
 
  const handleShopNow = () => {
-    if (!product) return
+  if (!product) return
 
-    if (!session?.user) {
-      toast({ 
-        title: "Login required", 
-        description: "Please sign in to purchase.", 
-        variant: "destructive" 
-      })
-      router.push("/auth/login")
-      return
-    }
+  // ← removed: the !session?.user redirect block
 
-    if (product.sizes && product.sizes.length > 0 && !selectedSize) {
-      toast({ 
-        title: "Select a size", 
-        description: "Please choose a size before purchasing.", 
-        variant: "destructive" 
-      })
-      return
-    }
-
-    if (isOutOfStock) return
-
-    addItem({
-      productId: product._id,
-      name: product.name,
-      price: selectedSize ? selectedSize.price : product.price,
-      discountPrice: selectedSize ? selectedSize.discountPrice : product.discountPrice,
-      image: product.image,
-      quantity,
-      company: product.company || { name: "Unknown", slug: "unknown" },
-      selectedSize: selectedSize || undefined,
+  if (product.sizes && product.sizes.length > 0 && !selectedSize) {
+    toast({
+      title: "Select a size",
+      description: "Please choose a size before purchasing.",
+      variant: "destructive"
     })
-
-    router.push("/checkout")
+    return
   }
+
+  if (isOutOfStock) return
+
+  addItem({
+    productId: product._id,
+    name: product.name,
+    price: selectedSize ? selectedSize.price : product.price,
+    discountPrice: selectedSize ? selectedSize.discountPrice : product.discountPrice,
+    image: product.image,
+    quantity,
+    company: product.company || { name: "Unknown", slug: "unknown" },
+    selectedSize: selectedSize || undefined,
+  })
+
+  router.push("/checkout")
+}
 
   const handleSubmitReview = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()

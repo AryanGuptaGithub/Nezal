@@ -1,3 +1,4 @@
+// app/cart/page.tsx
 "use client"
 
 import { useCartStore, Size } from "@/lib/store/cart-store"
