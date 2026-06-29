@@ -1,5 +1,4 @@
-// lib/models/order.ts
-import mongoose from "mongoose";
+import mongoose from "mongoose"
 
 const orderSchema = new mongoose.Schema(
   {
@@ -11,69 +10,92 @@ const orderSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: false, // ← was required: true — guest orders have no User
+      required: false,
     },
 
-    // NEW: guest contact info, used when `user` is absent
     guestEmail: String,
-    guestName: String,
+    guestName:  String,
     guestPhone: String,
 
     items: [
       {
-        product: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Product",
-        },
+        product:  { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
         quantity: Number,
-        price: Number,
+        price:    Number,
         selectedSize: {
-          size: String,
-          unit: {
-            type: String,
-            enum: ["ml", "l", "g", "kg"],
-          },
-          quantity: Number,
-          price: Number,
+          size:         String,
+          unit:         { type: String, enum: ["ml", "l", "g", "kg"] },
+          quantity:     Number,
+          price:        Number,
           discountPrice: Number,
         },
       },
     ],
-    totalAmount: {
-      type: Number,
-      required: true,
-    },
+
+    totalAmount: { type: Number, required: true },
+
     shippingAddress: {
-      name: String,
-      phone: String,
+      name:    String,
+      phone:   String,
       address: String,
-      street: String,
-      city: String,
-      state: String,
+      street:  String,
+      city:    String,
+      state:   String,
       pincode: String,
       zipCode: String,
       country: String,
     },
+
     paymentStatus: {
-      type: String,
-      enum: ["pending", "completed", "failed"],
+      type:    String,
+      enum:    ["pending", "completed", "failed"],
       default: "pending",
     },
     paymentMethod: {
-      type: String,
-      enum: ["cod", "razorpay"],
+      type:    String,
+      enum:    ["cod", "razorpay"],
       default: "razorpay",
     },
     orderStatus: {
-      type: String,
-      enum: ["pending", "processing", "shipped", "delivered", "cancelled"],
+      type:    String,
+      enum:    ["pending", "processing", "shipped", "delivered", "cancelled"],
       default: "pending",
     },
-    razorpayOrderId: String,
-    razorpayPaymentId: String,
-  },
-  { timestamps: true }
-);
 
-export const Order =
-  mongoose.models.Order || mongoose.model("Order", orderSchema);
+    razorpayOrderId:  String,
+    razorpayPaymentId: String,
+
+    // ── Shiprocket fields (all optional) ──────────────────
+    shiprocketOrderId:   { type: Number, default: null },
+    shiprocketShipmentId: { type: Number, default: null },
+    awbCode:             { type: String, default: null },
+    courierName:         { type: String, default: null },
+    trackingUrl:         { type: String, default: null },
+    shippingStatus: {
+      type: String,
+      enum: [
+        "not_shipped",
+        "processing",
+        "shipped",
+        "out_for_delivery",
+        "delivered",
+        "rto_initiated",
+        "rto_delivered",
+        "cancelled",
+      ],
+      default: "not_shipped",
+    },
+
+    // ── Coupon ────────────────────────────────────────────
+    couponCode:     { type: String, default: null },
+    discountAmount: { type: Number, default: 0    },
+  },
+  { timestamps: true }   // ← second argument to mongoose.Schema, not a field
+
+)
+
+
+const Order = mongoose.models.Order as mongoose.Model<typeof orderSchema> ||
+  mongoose.model("Order", orderSchema);
+
+export { Order };

@@ -85,6 +85,14 @@ const [couponData, setCouponData]       = useState<{
     }
   }, [])
 
+  // Add this as the first useEffect:
+    useEffect(() => {
+      if (status === "unauthenticated") {
+        router.replace("/auth/login")
+      }
+    }, [status, router])
+
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -126,19 +134,10 @@ const [couponData, setCouponData]       = useState<{
   }, [])
 
 
-  // Add these states after existing useState declarations:
-const [couponCode, setCouponCode]       = useState("")
-const [couponInput, setCouponInput]     = useState("")
-const [couponLoading, setCouponLoading] = useState(false)
-const [couponError, setCouponError]     = useState("")
-const [couponData, setCouponData]       = useState<{
-  code: string
-  discountType: "percentage" | "flat"
-  discountValue: number
-  discountAmount: number
-} | null>(null)
+const totalPrice = getTotalPrice()
 
-// Add this function before handleCheckout:
+
+
 const handleApplyCoupon = async () => {
   const code = couponInput.trim().toUpperCase()
   if (!code) { setCouponError("Enter a coupon code."); return }
@@ -176,9 +175,7 @@ const removeCoupon = () => {
   setCouponError("")
 }
 
-// Derived values:
-const discountAmount = couponData?.discountAmount ?? 0
-const finalTotal     = Math.max(0, totalPrice - discountAmount)
+
 
   const handleCheckout = async (shippingAddress: any, paymentMethod: string) => {
     setIsLoading(true)
@@ -310,7 +307,10 @@ const finalTotal     = Math.max(0, totalPrice - discountAmount)
 
   
 
-  const totalPrice = getTotalPrice()
+
+  const discountAmount = couponData?.discountAmount ?? 0
+  const finalTotal   = Math.max(0, totalPrice - discountAmount)
+
   const availablePaymentMethods = getAvailablePaymentMethods()
 
   return (

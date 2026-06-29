@@ -12,6 +12,7 @@ const productSchema = new mongoose.Schema(
       required: true,
       lowercase: true,
     },
+
     description: String,
     price: {
       type: Number,
@@ -34,8 +35,12 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    
     sku: String,
-
+weight: {
+  type: Number,
+  default: 0.3, // kg — used for Shiprocket shipment weight calculation
+},
     // ─── Legacy fields (kept for backward compatibility) ───────────────────
     ingredients: [String],
     benefits: [String],
@@ -167,6 +172,7 @@ const productSchema = new mongoose.Schema(
       { isActive: 1, collectionSlug: 1 },
     ],
   },
+  
 )
 
 export const Product =

@@ -4,6 +4,7 @@ import mongoose from "mongoose"
 import "@/lib/models/product";
 import "@/lib/models/category";
 import "@/lib/models/company";
+import "@/lib/models/order";
 // add any other models here
 
 
@@ -12,7 +13,7 @@ if (!MONGODB_URI) {
   throw new Error("Please define the MONGODB_URI environment variable")
 }
 
-let cached = global.mongoose
+let cached = global.mongoose 
 if (!cached) {
   cached = global.mongoose = { conn: null, promise: null }
 }

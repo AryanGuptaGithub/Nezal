@@ -202,6 +202,9 @@ const ALL_INGREDIENTS = [
   },
   // Emollients
   {
+
+
+     
     slug: "shea-butter",
     label: "Shea Butter",
     tagline: "Deep nourishment & softness",

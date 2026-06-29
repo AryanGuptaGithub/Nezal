@@ -54,8 +54,10 @@ interface FormData {
   price: number; discountPrice?: number; image: string; images: string[]
   category: string; mainCategory: string; company: string
   stock: number; sku: string
+   weight: number
   ingredients: string[]; benefits: string[]; usage: string; suitableFor: string[]
   results: Result[]; isActive: boolean
+  
   // ── New structured section fields ──
   whyYoullLoveIt: string[]
   fragranceExp: string[]
@@ -85,6 +87,7 @@ export default function EditProductPage() {
     price: 0, discountPrice: 0, image: "", images: [],
     category: "", mainCategory: "", company: "",
     stock: 0, sku: "",
+    weight: 0.3,
     ingredients: [], benefits: [], usage: "", suitableFor: [],
     results: [], isActive: true,
     whyYoullLoveIt: [], fragranceExp: [],
@@ -153,6 +156,7 @@ export default function EditProductPage() {
         company: companyId || "",
         stock: productData.stock || 0,
         sku: productData.sku || "",
+        weight: productData.weight ?? 0.3,
         ingredients: normalizeStringArray(productData.ingredients),
         benefits: normalizeStringArray(productData.benefits),
         usage: productData.usage || "",
@@ -297,6 +301,7 @@ export default function EditProductPage() {
         benefits: normalizeStringArray(formData.benefits),
         suitableFor: normalizeByNewlineOnly(formData.suitableFor),
         usage: formData.usage, isActive: formData.isActive, results,
+        weight: Number(formData.weight) || 0.3,
         sizes: sizes.map((s) => ({ ...s, quantity: Number(s.quantity), price: Number(s.price), discountPrice: s.discountPrice ? Number(s.discountPrice) : undefined, stock: Number(s.stock) })),
         // ── New structured fields ──
         whyYoullLoveIt: normalizeByNewlineOnly(formData.whyYoullLoveIt),
@@ -389,20 +394,25 @@ fragranceExp: normalizeByNewlineOnly(formData.fragranceExp),
               </div>
 
               {/* Pricing */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Price (₹) *</label>
-                  <Input type="number" name="price" value={formData.price} onChange={handleChange} required placeholder="0" className="bg-background border-border" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Discount Price (₹)</label>
-                  <Input type="number" name="discountPrice" value={formData.discountPrice || ""} onChange={handleChange} placeholder="0" className="bg-background border-border" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Stock *</label>
-                  <Input type="number" name="stock" value={formData.stock} onChange={handleChange} required placeholder="0" className="bg-background border-border" />
-                </div>
-              </div>
+             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+  <div>
+    <label className="block text-sm font-medium text-foreground mb-2">Price (₹) *</label>
+    <Input type="number" name="price" value={formData.price} onChange={handleChange} required placeholder="0" className="bg-background border-border" />
+  </div>
+  <div>
+    <label className="block text-sm font-medium text-foreground mb-2">Discount Price (₹)</label>
+    <Input type="number" name="discountPrice" value={formData.discountPrice || ""} onChange={handleChange} placeholder="0" className="bg-background border-border" />
+  </div>
+  <div>
+    <label className="block text-sm font-medium text-foreground mb-2">Stock *</label>
+    <Input type="number" name="stock" value={formData.stock} onChange={handleChange} required placeholder="0" className="bg-background border-border" />
+  </div>
+  <div>
+    <label className="block text-sm font-medium text-foreground mb-2">Weight (kg) *</label>
+    <Input type="number" step="0.01" name="weight" value={formData.weight} onChange={handleChange} required placeholder="0.3" className="bg-background border-border" />
+    <p className="text-xs text-muted-foreground mt-1">Used for shipping cost calculation</p>
+  </div>
+</div>
 
               {/* Images */}
               <div>

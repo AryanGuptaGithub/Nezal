@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Eye, MapPin, CreditCard, Package } from "lucide-react"
+import { Eye, MapPin, CreditCard, Package, Truck, ExternalLink } from "lucide-react"
 
 interface OrderItem {
   product?: {
@@ -57,6 +57,9 @@ interface Order {
     email?: string
     phone?: string
   }
+  guestName?: string
+  guestEmail?: string
+  guestPhone?: string
   items: OrderItem[]
   shippingAddress?: ShippingAddress
   totalAmount: number
@@ -66,6 +69,13 @@ interface Order {
   razorpayOrderId?: string
   razorpayPaymentId?: string
   createdAt?: string
+  // Shiprocket fields
+  shiprocketOrderId?: number
+  shiprocketShipmentId?: number
+  awbCode?: string
+  courierName?: string
+  trackingUrl?: string
+  shippingStatus?: string
 }
 
 export default function AdminOrdersPage() {
@@ -74,6 +84,8 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [shippingId, setShippingId] = useState<string | null>(null)
+  const [shipError, setShipError] = useState<Record<string, string>>({})
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [showDetails, setShowDetails] = useState(false)
 
@@ -148,6 +160,30 @@ export default function AdminOrdersPage() {
     }
   }
 
+  const handleShipOrder = async (orderId: string) => {
+    setShippingId(orderId)
+    setShipError((prev) => ({ ...prev, [orderId]: "" }))
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}/ship`, {
+        method: "POST",
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Shipment creation failed")
+
+      await fetchOrders()
+
+      // If modal is open for this order, refresh it too
+      if (selectedOrder && selectedOrder._id === orderId) {
+        const updated = orders.find((o) => o._id === orderId)
+        if (updated) setSelectedOrder({ ...updated, ...data })
+      }
+    } catch (err: any) {
+      setShipError((prev) => ({ ...prev, [orderId]: err.message }))
+    } finally {
+      setShippingId(null)
+    }
+  }
+
   const handleViewDetails = (order: Order) => {
     setSelectedOrder(order)
     setShowDetails(true)
@@ -185,18 +221,21 @@ export default function AdminOrdersPage() {
                       <th className="text-left py-3 px-4 font-semibold">Payment</th>
                       <th className="text-left py-3 px-4 font-semibold">Method</th>
                       <th className="text-left py-3 px-4 font-semibold">Status</th>
+                      <th className="text-left py-3 px-4 font-semibold">Shipping</th>
                       <th className="text-left py-3 px-4 font-semibold">Date</th>
-                      <th className="text-left py-3 px-4 font-semibold">Action</th>
+                      <th className="text-left py-3 px-4 font-semibold">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {orders.map((order) => (
                       <tr key={order._id} className="border-b border-border hover:bg-muted/50">
-                        <td className="py-3 px-4 font-mono text-xs font-semibold">{order.orderNumber || order._id.slice(-6)}</td>
+                        <td className="py-3 px-4 font-mono text-xs font-semibold">
+                          {order.orderNumber || order._id.slice(-6)}
+                        </td>
                         <td className="py-3 px-4">
                           <div>
-                            <p className="font-medium">{order.user?.name || "Unknown"}</p>
-                            <p className="text-xs text-muted-foreground">{order.user?.email}</p>
+                            <p className="font-medium">{order.user?.name || order.guestName || "Guest"}</p>
+                            <p className="text-xs text-muted-foreground">{order.user?.email || order.guestEmail}</p>
                           </div>
                         </td>
                         <td className="py-3 px-4 text-xs">
@@ -242,6 +281,51 @@ export default function AdminOrdersPage() {
                             </SelectContent>
                           </Select>
                         </td>
+
+                        {/* Shiprocket column */}
+                        <td className="py-3 px-4">
+                          {order.shiprocketOrderId ? (
+                            <div className="space-y-1">
+                              <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
+                                Shipped
+                              </Badge>
+                              {order.awbCode && (
+                                <p className="text-xs text-muted-foreground font-mono">
+                                  AWB: {order.awbCode}
+                                </p>
+                              )}
+                              {order.trackingUrl && (
+                                <a
+                                  href={order.trackingUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                                >
+                                  Track <ExternalLink className="w-3 h-3" />
+                                </a>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="space-y-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 text-xs gap-1 border-orange-300 text-orange-700 hover:bg-orange-50"
+                                onClick={() => handleShipOrder(order._id)}
+                                disabled={shippingId === order._id}
+                              >
+                                <Truck className="w-3 h-3" />
+                                {shippingId === order._id ? "Shipping..." : "Ship"}
+                              </Button>
+                              {shipError[order._id] && (
+                                <p className="text-xs text-red-500 max-w-[120px]">
+                                  {shipError[order._id]}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </td>
+
                         <td className="py-3 px-4 text-xs text-muted-foreground">
                           {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "—"}
                         </td>
@@ -280,15 +364,15 @@ export default function AdminOrdersPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs text-muted-foreground">Name</p>
-                    <p className="font-medium">{selectedOrder.user?.name || "N/A"}</p>
+                    <p className="font-medium">{selectedOrder.user?.name || selectedOrder.guestName || "Guest"}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Email</p>
-                    <p className="font-medium">{selectedOrder.user?.email || "N/A"}</p>
+                    <p className="font-medium">{selectedOrder.user?.email || selectedOrder.guestEmail || "N/A"}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Phone</p>
-                    <p className="font-medium">{selectedOrder.user?.phone || "N/A"}</p>
+                    <p className="font-medium">{selectedOrder.user?.phone || selectedOrder.guestPhone || "N/A"}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Order Date</p>
@@ -318,7 +402,6 @@ export default function AdminOrdersPage() {
                           </p>
                         );
                       })()}
-
                       <div className="flex justify-between text-sm mt-2">
                         <span className="text-muted-foreground">
                           Qty: {item.quantity} × ₹{(item.price || 0).toFixed(2)}
@@ -399,6 +482,68 @@ export default function AdminOrdersPage() {
                     <Badge variant="outline">{selectedOrder.orderStatus || "pending"}</Badge>
                   </div>
                 </div>
+              </div>
+
+              {/* Shiprocket / Shipping Info */}
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <Truck className="w-4 h-4" />
+                  Shiprocket
+                </h3>
+                {selectedOrder.shiprocketOrderId ? (
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Shiprocket Order ID</p>
+                      <p className="font-medium font-mono">{selectedOrder.shiprocketOrderId}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Shipment ID</p>
+                      <p className="font-medium font-mono">{selectedOrder.shiprocketShipmentId}</p>
+                    </div>
+                    {selectedOrder.awbCode && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">AWB Code</p>
+                        <p className="font-medium font-mono">{selectedOrder.awbCode}</p>
+                      </div>
+                    )}
+                    {selectedOrder.courierName && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Courier</p>
+                        <p className="font-medium">{selectedOrder.courierName}</p>
+                      </div>
+                    )}
+                    {selectedOrder.trackingUrl && (
+                      <div className="col-span-2">
+                        <p className="text-xs text-muted-foreground mb-1">Tracking</p>
+                        <a
+                          href={selectedOrder.trackingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline flex items-center gap-1 text-sm"
+                        >
+                          Track Shipment <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">No shipment created yet.</p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-2 border-orange-300 text-orange-700 hover:bg-orange-50"
+                      onClick={() => handleShipOrder(selectedOrder._id)}
+                      disabled={shippingId === selectedOrder._id}
+                    >
+                      <Truck className="w-4 h-4" />
+                      {shippingId === selectedOrder._id ? "Creating shipment..." : "Ship via Shiprocket"}
+                    </Button>
+                    {shipError[selectedOrder._id] && (
+                      <p className="text-sm text-red-500">{shipError[selectedOrder._id]}</p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </DialogContent>
