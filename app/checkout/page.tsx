@@ -1,7 +1,7 @@
 // app/checkout/page.tsx
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { useCartStore } from "@/lib/store/cart-store"
@@ -55,6 +55,21 @@ function FullPageLoader({ message = "Processing your request..." }: { message?: 
 }
 
 export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-[--color-bg-page] flex items-center justify-center">
+        <div className="text-lg text-[--color-text-muted] flex items-center gap-3">
+          <div className="w-5 h-5 border-2 border-[--color-text-muted] border-t-[--color-brand-primary] rounded-full animate-spin" />
+          Loading checkout...
+        </div>
+      </main>
+    }>
+      <CheckoutPageInner />
+    </Suspense>
+  )
+}
+
+function CheckoutPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session, status } = useSession()
