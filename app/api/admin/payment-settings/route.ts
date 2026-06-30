@@ -6,27 +6,18 @@ import { User } from "@/lib/models/user";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+    // GET is intentionally public — checkout (including guests and
+    // non-admin users) needs to read these settings to decide which
+    // payment options to show. Only PUT (updating settings) is admin-gated.
     await connectDB();
-
-    const user = await User.findOne({ email: session.user.email });
-
-    //  SECURITY CHECK: Only admins can access payment settings
-    if (!user || user.role !== "admin") {
-      return NextResponse.json({ error: "Access denied. Admin privileges required." }, { status: 403 });
-    }
 
     let settings = await PaymentSettings.findOne();
 
     if (!settings) {
       settings = await PaymentSettings.create({
         enableCOD: true,
-        enableRazorpay: true,
+        enableRazorpay: false, // disabled by default, switched to CCAvenue
+        enableCCAvenue: true,
         minCODAmount: 0,
         maxCODAmount: 100000,
       });
@@ -59,7 +50,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Access denied. Admin privileges required." }, { status: 403 });
     }
 
-    const { enableCOD, enableRazorpay, minCODAmount, maxCODAmount } =
+    const { enableCOD, enableRazorpay, enableCCAvenue, minCODAmount, maxCODAmount } =
       await request.json();
 
     let settings = await PaymentSettings.findOne();
@@ -68,12 +59,14 @@ export async function PUT(request: NextRequest) {
       settings = await PaymentSettings.create({
         enableCOD,
         enableRazorpay,
+        enableCCAvenue,
         minCODAmount,
         maxCODAmount,
       });
     } else {
       settings.enableCOD = enableCOD;
       settings.enableRazorpay = enableRazorpay;
+      settings.enableCCAvenue = enableCCAvenue;
       settings.minCODAmount = minCODAmount;
       settings.maxCODAmount = maxCODAmount;
       await settings.save();

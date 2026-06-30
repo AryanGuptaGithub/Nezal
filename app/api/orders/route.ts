@@ -65,7 +65,10 @@ export async function POST(request: NextRequest) {
     const recipientEmail = user?.email || shippingAddress.email;
     const recipientName = user?.name || shippingAddress.name;
 
-    if (paymentMethod !== "razorpay") {
+    // Only send "order received" emails for payment methods that confirm
+    // immediately (COD). Razorpay and CCAvenue send their own confirmation
+    // emails once payment is verified, in their respective callback routes.
+    if (paymentMethod === "cod") {
       try {
         const populatedOrder = await Order.findById(order._id)
           .populate("items.product")

@@ -8,6 +8,10 @@ const paymentSettingsSchema = new mongoose.Schema(
     },
     enableRazorpay: {
       type: Boolean,
+      default: false, // disabled by default — kept available to re-enable later
+    },
+    enableCCAvenue: {
+      type: Boolean,
       default: true,
     },
     minCODAmount: {

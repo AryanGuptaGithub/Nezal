@@ -165,7 +165,7 @@ export function CheckoutForm({
   country: initialData?.country || "India",
 })
 
-  const [paymentMethod, setPaymentMethod] = useState(availablePaymentMethods[0] || "razorpay")
+  const [paymentMethod, setPaymentMethod] = useState(availablePaymentMethods[0] || "ccavenue")
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -307,6 +307,15 @@ export function CheckoutForm({
                 Payment Method
               </p>
               <div className="space-y-2.5">
+                {availablePaymentMethods.includes("ccavenue") && (
+                  <PaymentOption
+                    label="Pay Online"
+                    description="Credit card, debit card, UPI, net banking & more"
+                    icon="💳"
+                    selected={paymentMethod === "ccavenue"}
+                    onSelect={() => setPaymentMethod("ccavenue")}
+                  />
+                )}
                 {availablePaymentMethods.includes("razorpay") && (
                   <PaymentOption
                     label="Razorpay"

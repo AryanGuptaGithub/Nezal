@@ -2,7 +2,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { useCartStore } from "@/lib/store/cart-store"
 import { CheckoutForm } from "@/components/checkout-form"
@@ -18,6 +18,7 @@ declare global {
 interface PaymentSettings {
   enableCOD: boolean
   enableRazorpay: boolean
+  enableCCAvenue?: boolean
 }
 
 // ===== Loader components (unchanged) =====
@@ -55,6 +56,7 @@ function FullPageLoader({ message = "Processing your request..." }: { message?: 
 
 export default function CheckoutPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { data: session, status } = useSession()
   const { items, getTotalPrice, clearCart } = useCartStore()
   const [isLoading, setIsLoading] = useState(false)
@@ -62,6 +64,7 @@ export default function CheckoutPage() {
   const [paymentSettings, setPaymentSettings] = useState<PaymentSettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [userData, setUserData] = useState<any>(null)
+  const [checkoutError, setCheckoutError] = useState<string | null>(null)
 
 
 const [couponCode, setCouponCode]       = useState("")
@@ -85,6 +88,14 @@ const [couponData, setCouponData]       = useState<{
     }
   }, [])
 
+  // Surface CCAvenue failure/cancel redirects (?error=...) as a visible message
+  useEffect(() => {
+    const error = searchParams?.get("error")
+    if (error) {
+      setCheckoutError(decodeURIComponent(error.replace(/_/g, " ")))
+    }
+  }, [searchParams])
+
   // Add this as the first useEffect:
     useEffect(() => {
       if (status === "unauthenticated") {
@@ -101,7 +112,7 @@ const [couponData, setCouponData]       = useState<{
           const data = await settingsRes.json()
           setPaymentSettings(data)
         } else {
-          setPaymentSettings({ enableCOD: true, enableRazorpay: true })
+          setPaymentSettings({ enableCOD: true, enableRazorpay: false, enableCCAvenue: true })
         }
 
         const profileRes = await fetch("/api/users/profile")
@@ -111,7 +122,7 @@ const [couponData, setCouponData]       = useState<{
         }
       } catch (error) {
         console.error("Error fetching data:", error)
-        setPaymentSettings({ enableCOD: true, enableRazorpay: true })
+        setPaymentSettings({ enableCOD: true, enableRazorpay: false, enableCCAvenue: true })
       } finally {
         setLoading(false)
       }
@@ -179,6 +190,7 @@ const removeCoupon = () => {
 
   const handleCheckout = async (shippingAddress: any, paymentMethod: string) => {
     setIsLoading(true)
+    setCheckoutError(null)
 
     try {
       if (paymentMethod === "cod") {
@@ -207,6 +219,77 @@ const removeCoupon = () => {
         clearCart()
         setIsLoading(false)
         router.push(`/order-success/${orderData.orderId}`)
+        return
+      }
+
+      if (paymentMethod === "ccavenue") {
+        // Step 1: create the order as "pending" — same as COD does —
+        // so CCAvenue's callback has an existing order to update.
+        const orderResponse = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items: items.map((item) => ({
+              product: item.productId,
+              quantity: item.quantity,
+              price: item.discountPrice || item.price,
+              selectedSize: item.selectedSize,
+            })),
+            shippingAddress,
+            totalAmount: finalTotal,
+            couponCode: couponCode || undefined,
+            paymentMethod: "ccavenue",
+            paymentStatus: "pending",
+          }),
+        })
+
+        const orderData = await orderResponse.json()
+        if (!orderResponse.ok) throw new Error(orderData.error || "Failed to create order")
+
+        // Step 2: ask our server to build the encrypted CCAvenue request
+        const initiateResponse = await fetch("/api/ccavenue/initiate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderId: orderData.orderId,
+            amount: finalTotal,
+            billingName: shippingAddress.name,
+            billingEmail: shippingAddress.email || session?.user?.email,
+            billingPhone: shippingAddress.phone,
+            billingAddress: shippingAddress.street,
+            billingCity: shippingAddress.city,
+            billingState: shippingAddress.state,
+            billingZip: shippingAddress.zipCode,
+            billingCountry: shippingAddress.country,
+          }),
+        })
+
+        const initiateData = await initiateResponse.json()
+        if (!initiateResponse.ok) throw new Error(initiateData.error || "Failed to initiate payment")
+
+        // Step 3: clear cart now (order already exists), then auto-submit
+        // a hidden form that POSTs to CCAvenue's hosted payment page.
+        clearCart()
+
+        const form = document.createElement("form")
+        form.method = "POST"
+        form.action = initiateData.actionUrl
+
+        const encRequestInput = document.createElement("input")
+        encRequestInput.type = "hidden"
+        encRequestInput.name = "encRequest"
+        encRequestInput.value = initiateData.encRequest
+        form.appendChild(encRequestInput)
+
+        const accessCodeInput = document.createElement("input")
+        accessCodeInput.type = "hidden"
+        accessCodeInput.name = "access_code"
+        accessCodeInput.value = initiateData.accessCode
+        form.appendChild(accessCodeInput)
+
+        document.body.appendChild(form)
+        form.submit()
+        // Browser navigates away to CCAvenue here — no further code runs.
         return
       }
 
@@ -286,11 +369,13 @@ const removeCoupon = () => {
   }
 
   const getAvailablePaymentMethods = (): string[] => {
-    if (!paymentSettings) return ["razorpay"]
+    if (!paymentSettings) return ["ccavenue", "cod"]
     const methods: string[] = []
+    if (paymentSettings.enableCCAvenue) methods.push("ccavenue")
+    // Razorpay kept available only if explicitly re-enabled via admin settings
     if (paymentSettings.enableRazorpay) methods.push("razorpay")
     if (paymentSettings.enableCOD) methods.push("cod")
-    return methods.length > 0 ? methods : ["razorpay"]
+    return methods.length > 0 ? methods : ["ccavenue"]
   }
 
   // ===== Loading states =====
@@ -319,6 +404,12 @@ const removeCoupon = () => {
 
       <div className="container-nezal py-10">
         <h1 className="text-4xl font-bold text-[--color-text-heading] mb-8">Checkout</h1>
+
+        {checkoutError && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            Payment was not completed: {checkoutError}. Please try again.
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Checkout Form – 2/3 */}
@@ -465,7 +556,7 @@ const removeCoupon = () => {
         </div>
       </div>
 
-      {isLoading && <FullPageLoader message="Processing your payment..." />}
+      {isLoading && <FullPageLoader message="Redirecting to payment..." />}
     </main>
   )
 }

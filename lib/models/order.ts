@@ -53,9 +53,11 @@ const orderSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type:    String,
-      enum:    ["cod", "razorpay"],
+      enum:    ["cod", "razorpay","ccavenue"],
       default: "razorpay",
     },
+    ccavenueTrackingId: { type: String, default: null },
+ccavenueBankRefNo: { type: String, default: null },
     orderStatus: {
       type:    String,
       enum:    ["pending", "processing", "shipped", "delivered", "cancelled"],
