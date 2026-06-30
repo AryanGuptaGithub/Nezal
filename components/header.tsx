@@ -206,12 +206,29 @@ function getFlatCollections(cat: typeof NAV_CATEGORIES[number]) {
 }
 
 const CONCERNS = [
-  { label: "Acne",          slug: "acne"           },
-  { label: "Pigmentation",  slug: "pigmentation"   },
-  { label: "Open Pores",    slug: "open-pores"     },
-  { label: "Hydration",     slug: "hydration"      },
-  { label: "Hair Fall",     slug: "hairfall"       },
-  { label: "Dryness",       slug: "dryness"        },
+  { label: "Acne & Oil Control",                 slug: "acne"                          },
+  { label: "Pigmentation & Dark Spots",           slug: "pigmentation"                  },
+  { label: "Dry Skin",                            slug: "dryness"                       },
+  { label: "Hair Fall & Thinning Hair",           slug: "hairfall"                      },
+  { label: "Dull & Tired Skin",                   slug: "dull-tired-skin"               },
+  { label: "Skin Brightening & Glow",             slug: "skin-brightening-glow"         },
+  { label: "Deep Hydration",                      slug: "hydration"                     },
+  { label: "Sensitive Skin Care",                 slug: "ensitive-skin-care"            },
+  { label: "Scalp Purification & Freshness",      slug: "scalp-purification-freshness"  },
+  { label: "Frizz Control & Dry Hair",            slug: "frizz-control-dry-hair"        },
+  { label: "Anti-Ageing Care",                    slug: "anti-ageing-care"              },
+  { label: "Daily Skin Nourishment",              slug: "daily-skin-nourishment"        },
+  { label: "Stress Relief & Relaxation",          slug: "stress-relief-relaxation"      },
+  { label: "Spa at Home",                         slug: "spa-at-home"                   },
+  { label: "Luxury Gifting",                      slug: "luxury-gifting"                },
+  { label: "Hair Growth & Scalp Nourishment",     slug: "hair-growth-scalp-nourishment" },
+  { label: "Daily Skin Care",                     slug: "daily-skin-care"               },
+  { label: "Sun Exposure & Tan Care",             slug: "sun-exposure-tan-care"         },
+  { label: "Deep Cleansing & Detox",              slug: "deep-cleansing-detox"          },
+  { label: "Rough & Uneven Skin Texture",         slug: "rough-uneven-skin-texture"     },
+  { label: "Soft & Smooth Skin",                  slug: "soft-smooth-skin"              },
+  { label: "Summer Skin Care",                    slug: "summer-skin-care"              },
+  { label: "Everyday Freshness",                  slug: "everyday-freshness"            },
 ];
 
 const INGREDIENTS = [
@@ -223,7 +240,13 @@ const INGREDIENTS = [
   { label: "Vitamin C",        slug: "vitamin-c"        },
   { label: "Hyaluronic Acid",  slug: "hyaluronic-acid"  },
   { label: "Niacinamide",      slug: "niacinamide"      },
+  { label: "Bhringraj",        slug: "bhringraj"        },
+  { label: "Shea Butter",      slug: "shea-butter"      },
+  { label: "Salicylic Acid",   slug: "salicylic-acid"   },
+  { label: "Rose",             slug: "rose"             },
 ]
+
+
 
 /* ─── Collection Card (inside mega menu) ────────────────── */
 
@@ -260,11 +283,10 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
     <div
       className="absolute top-full z-50 mt-6 rounded-2xl border bg-white shadow-2xl"
       style={{
-        borderColor: "var(--color-border)",
-        width: "1100px",
-        left: -200,
-        
-      }}
+  borderColor: "var(--color-border)",
+  width: "1200px",
+  left: -250,
+}}
     >
       <div className="grid grid-cols-[180px_1fr_160px_160px] items-stretch">
 
@@ -349,40 +371,58 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Zone 3 — By Concern */}
-        <div className="border-l p-4 bg-[var(--color-bg-cream)] self-stretch" style={{ borderColor: "var(--color-border)" }}>
+        <div className="border-l p-4 bg-[var(--color-bg-cream)] self-stretch flex flex-col" style={{ borderColor: "var(--color-border)" }}>
           <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] px-1 mb-3">
             By Concern
           </p>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 overflow-y-auto scrollbar-hide pr-1" style={{ maxHeight: "320px" }}>
             {CONCERNS.map((concern) => (
               <Link
                 key={concern.slug}
                 href={`/concerns/${concern.slug}`}
                 onClick={onClose}
-                className="px-3 py-2 rounded-xl text-sm text-[var(--color-text-body)] hover:bg-white hover:text-[var(--color-brand-primary)] font-medium transition-colors"
+                className="px-3 py-2 rounded-xl text-[13px] text-[var(--color-text-body)] hover:bg-white hover:text-[var(--color-brand-primary)] font-medium transition-colors"
               >
                 {concern.label}
               </Link>
             ))}
           </div>
+          <div className="mt-3 pt-3 border-t" style={{ borderColor: "var(--color-border)" }}>
+            <Link
+              href="/concerns"
+              onClick={onClose}
+              className="text-xs font-semibold text-[var(--color-brand-primary)] hover:underline"
+            >
+              View all concerns →
+            </Link>
+          </div>
         </div>
 
-        {/* Zone 4 — By Ingredient */}
-        <div className="border-l p-4 self-stretch" style={{ borderColor: "var(--color-border)" }}>
+       {/* Zone 4 — By Ingredient */}
+        <div className="border-l p-4 self-stretch flex flex-col" style={{ borderColor: "var(--color-border)" }}>
           <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] px-1 mb-3">
             By Ingredient
           </p>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 overflow-y-auto scrollbar-hide pr-1" style={{ maxHeight: "260px" }}>
             {INGREDIENTS.map((ing) => (
               <Link
                 key={ing.slug}
                 href={`/ingredients/${ing.slug}`}
                 onClick={onClose}
-                className="px-3 py-2 rounded-xl text-sm text-[var(--color-text-body)] hover:bg-[var(--color-bg-cream)] hover:text-[var(--color-brand-primary)] font-medium transition-colors"
+                className="px-3 py-2 rounded-xl text-[13px] text-[var(--color-text-body)] hover:bg-[var(--color-bg-cream)] hover:text-[var(--color-brand-primary)] font-medium transition-colors"
               >
                 {ing.label}
               </Link>
             ))}
+          </div>
+          <div className="mt-3 pt-3 border-t" style={{ borderColor: "var(--color-border)" }}>
+            <Link
+              href="/ingredients"
+              onClick={onClose}
+              className="text-xs font-semibold text-[var(--color-brand-primary)] hover:underline"
+            >
+              View all ingredients →
+            </Link>
           </div>
 
           <div className="pt-4 border-t mt-4" style={{ borderColor: "var(--color-border)" }}>

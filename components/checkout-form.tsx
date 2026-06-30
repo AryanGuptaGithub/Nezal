@@ -285,7 +285,7 @@ export function CheckoutForm({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <FieldLabel>ZIP Code</FieldLabel>
+                <FieldLabel>Pin Code</FieldLabel>
                 <StyledInput
                   name="zipCode" value={formData.zipCode} onChange={handleChange}
                   placeholder="400001" required
