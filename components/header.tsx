@@ -103,10 +103,11 @@ const NAV_CATEGORIES = [
     ],
   },
   {
-    heading: "Massage Oil",
+    heading: "Massage / Spa",
     key: "massage-oil",
     collections: [
       { label: "Body Massage Oil", slug: "body-massage-oil", tagline: "Relaxation and skin nourishment in every drop" },
+       { label: "Bath Salt",  slug: "bath-salt",  tagline: "Turn your bath into a ritual" },
     ],
   },
   {

@@ -11,11 +11,13 @@ export async function GET(request: NextRequest) {
     const page     = Math.max(1, parseInt(searchParams.get("page")  || "1"))
     const limit    = Math.min(50, parseInt(searchParams.get("limit") || "12"))
     const rating   = searchParams.get("rating")   // "1"|"2"|"3"|"4"|"5" or null
+    const productId = searchParams.get("productId")
     const sort     = searchParams.get("sort") || "newest" // "newest"|"highest"|"lowest"
     const skip     = (page - 1) * limit
 
     const filter: Record<string, any> = { status: "approved" }
       if (rating) filter.rating = parseInt(rating)
+        if (productId) filter.product = productId  
 
     const sortMap: Record<string, any> = {
       newest:  { createdAt: -1 },

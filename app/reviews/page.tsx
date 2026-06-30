@@ -170,6 +170,11 @@ export default function ReviewsPage() {
   const [total, setTotal]           = useState(0)
   const [ratingFilter, setRatingFilter] = useState<number | null>(null)
   const [sort, setSort]             = useState<"newest" | "highest" | "lowest">("newest")
+    const [productFilter, setProductFilter] = useState<string | null>(null)
+    const [productFilterName, setProductFilterName] = useState<string>("")
+    const [products, setProducts] = useState<{ id: string; name: string }[]>([])
+    const [productSearch, setProductSearch] = useState("")
+    const [productDropdownOpen, setProductDropdownOpen] = useState(false)
 
   // For rating distribution — fetch all once
   const [distribution, setDistribution] = useState<Record<number, number>>({
@@ -178,47 +183,54 @@ export default function ReviewsPage() {
   const [avgRating, setAvgRating] = useState(0)
 
   // Fetch distribution once on mount
-  useEffect(() => {
-    fetch("/api/products/reviews/all?limit=500")
-      .then((r) => r.json())
-      .then((data) => {
-        if (!data.success) return
-        const dist: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-        let sum = 0
-        data.reviews.forEach((r: Review) => {
-          dist[r.rating] = (dist[r.rating] || 0) + 1
-          sum += r.rating
-        })
-        setDistribution(dist)
-        setAvgRating(data.reviews.length > 0 ? sum / data.reviews.length : 0)
+ useEffect(() => {
+  fetch("/api/products/reviews/all?limit=500")
+    .then((r) => r.json())
+    .then((data) => {
+      if (!data.success) return
+      const dist: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+      let sum = 0
+      const productMap = new Map<string, string>()
+      data.reviews.forEach((r: Review) => {
+        dist[r.rating] = (dist[r.rating] || 0) + 1
+        sum += r.rating
+        productMap.set(r.productId, r.productName)
       })
-      .catch(() => {})
-  }, [])
+      setDistribution(dist)
+      setAvgRating(data.reviews.length > 0 ? sum / data.reviews.length : 0)
+      setProducts(
+        Array.from(productMap, ([id, name]) => ({ id, name }))
+          .sort((a, b) => a.name.localeCompare(b.name))
+      )
+    })
+    .catch(() => {})
+}, [])
 
-  const fetchReviews = useCallback(async () => {
-    setLoading(true)
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: "12",
-        sort,
-        ...(ratingFilter ? { rating: String(ratingFilter) } : {}),
-      })
-      const res  = await fetch(`/api/products/reviews/all?${params}`)
-      const data = await res.json()
-      if (data.success) {
-        setReviews(data.reviews)
-        setTotalPages(data.totalPages)
-        setTotal(data.total)
-      }
-    } catch {}
-    finally { setLoading(false) }
-  }, [page, sort, ratingFilter])
+const fetchReviews = useCallback(async () => {
+  setLoading(true)
+  try {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: "12",
+      sort,
+      ...(ratingFilter ? { rating: String(ratingFilter) } : {}),
+      ...(productFilter ? { productId: productFilter } : {}),
+    })
+    const res  = await fetch(`/api/products/reviews/all?${params}`)
+    const data = await res.json()
+    if (data.success) {
+      setReviews(data.reviews)
+      setTotalPages(data.totalPages)
+      setTotal(data.total)
+    }
+  } catch {}
+  finally { setLoading(false) }
+}, [page, sort, ratingFilter, productFilter])
 
-  useEffect(() => { fetchReviews() }, [fetchReviews])
+useEffect(() => { fetchReviews() }, [fetchReviews])
 
-  // Reset page when filters change
-  useEffect(() => { setPage(1) }, [sort, ratingFilter])
+// Reset page when filters change
+useEffect(() => { setPage(1) }, [sort, ratingFilter, productFilter])
 
   const totalReviews = Object.values(distribution).reduce((a, b) => a + b, 0)
 
@@ -243,7 +255,7 @@ export default function ReviewsPage() {
 
           {/* ── Sidebar ── */}
           <aside className="lg:w-64 flex-shrink-0">
-            <div className="bg-white rounded-2xl border border-[var(--color-border)] p-5 sticky top-24">
+            <div className="bg-white rounded-2xl border border-[var(--color-border)] p-5 sticky top-24 relative">
 
               {/* Average rating */}
               <div className="text-center pb-4 border-b border-[var(--color-border)] mb-4">
@@ -280,6 +292,89 @@ export default function ReviewsPage() {
                 </button>
               )}
 
+
+{/* Filter by product */}
+<div className="pb-4 border-b border-[var(--color-border)] mb-4 relative z-30">
+  <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">
+    Filter by Product
+  </p>
+
+  <div className="relative">
+    <input
+      type="text"
+      value={productDropdownOpen ? productSearch : productFilterName || ""}
+      onChange={(e) => {
+        setProductSearch(e.target.value)
+        setProductDropdownOpen(true)
+      }}
+      onFocus={() => {
+        setProductSearch("")
+        setProductDropdownOpen(true)
+      }}
+      onBlur={() => setTimeout(() => setProductDropdownOpen(false), 150)}
+      placeholder="Search product…"
+      className="w-full text-sm rounded-xl border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-body)] bg-white focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-primary)]"
+    />
+
+    {productDropdownOpen && (
+      <div className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white shadow-lg">
+        <button
+          onMouseDown={() => {
+            setProductFilter(null)
+            setProductFilterName("")
+            setProductDropdownOpen(false)
+          }}
+          className="w-full text-left px-3 py-2 text-sm font-medium hover:bg-[var(--color-bg-cream)] text-[var(--color-text-body)]"
+        >
+          All Products
+        </button>
+
+        {products
+          .filter((p) =>
+            p.name.toLowerCase().includes(productSearch.toLowerCase())
+          )
+          .map((p) => (
+            <button
+              key={p.id}
+              onMouseDown={() => {
+                setProductFilter(p.id)
+                setProductFilterName(p.name)
+                setProductDropdownOpen(false)
+              }}
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-[var(--color-bg-cream)] ${
+                productFilter === p.id
+                  ? "font-semibold text-[var(--color-brand-primary)]"
+                  : "text-[var(--color-text-body)]"
+              }`}
+            >
+              {p.name}
+            </button>
+          ))}
+
+        {products.filter((p) =>
+          p.name.toLowerCase().includes(productSearch.toLowerCase())
+        ).length === 0 && (
+          <p className="px-3 py-2 text-sm text-[var(--color-text-muted)]">
+            No products match.
+          </p>
+        )}
+      </div>
+    )}
+  </div>
+
+  {productFilter && (
+    <button
+      onClick={() => {
+        setProductFilter(null)
+        setProductFilterName("")
+      }}
+      className="mt-2 text-xs font-semibold text-[var(--color-brand-primary)] hover:underline"
+    >
+      Clear product filter
+    </button>
+  )}
+</div>
+
               {/* Sort */}
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">
@@ -309,11 +404,15 @@ export default function ReviewsPage() {
 
             {/* Result count */}
             <div className="flex items-center justify-between mb-6">
-              <p className="text-sm text-[var(--color-text-muted)]">
-                {ratingFilter
-                  ? `Showing ${total} × ${ratingFilter}-star reviews`
-                  : `Showing all ${total} reviews`}
-              </p>
+             <p className="text-sm text-[var(--color-text-muted)]">
+              {ratingFilter && productFilter
+                ? `Showing ${total} × ${ratingFilter}-star reviews for this product`
+                : ratingFilter
+                ? `Showing ${total} × ${ratingFilter}-star reviews`
+                : productFilter
+                ? `Showing ${total} reviews for this product`
+                : `Showing all ${total} reviews`}
+            </p>
             </div>
 
            {loading ? (
@@ -338,7 +437,25 @@ export default function ReviewsPage() {
             ) : reviews.length === 0 ? (
               <div className="text-center py-20">
                 <Star size={40} className="mx-auto mb-3 text-gray-300" />
-                <p className="text-[var(--color-text-muted)]">No reviews found.</p>
+                <p className="text-[var(--color-text-muted)]">
+                  {productFilter
+                    ? `No reviews found for "${productFilterName}".`
+                    : ratingFilter
+                    ? `No ${ratingFilter}-star reviews found.`
+                    : "No reviews found."}
+                </p>
+                {(productFilter || ratingFilter) && (
+                  <button
+                    onClick={() => {
+                      setProductFilter(null)
+                      setProductFilterName("")
+                      setRatingFilter(null)
+                    }}
+                    className="mt-3 text-xs font-semibold text-[var(--color-brand-primary)] hover:underline"
+                  >
+                    Clear filters
+                  </button>
+                )}
               </div>
             ) : (
               <div className="columns-1 md:columns-2 xl:columns-3 gap-4">
