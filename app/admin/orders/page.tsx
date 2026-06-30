@@ -432,12 +432,14 @@ export default function AdminOrdersPage() {
                     <div>
                       <p className="text-xs text-muted-foreground">Address</p>
                       <p className="font-medium">
-                        {[
-                          selectedOrder.shippingAddress.street,
-                          selectedOrder.shippingAddress.address,
-                        ]
-                          .filter(Boolean)
-                          .join(", ") || "N/A"}
+                        {Array.from(
+                          new Set(
+                            [
+                              selectedOrder.shippingAddress.street,
+                              selectedOrder.shippingAddress.address,
+                            ].filter(Boolean)
+                          )
+                        ).join(", ") || "N/A"}
                       </p>
                     </div>
                     <div className="grid grid-cols-3 gap-4">
