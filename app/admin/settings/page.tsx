@@ -14,6 +14,7 @@ interface PaymentSettings {
     _id?: string
     enableCOD: boolean
     enableRazorpay: boolean
+    enableCCAvenue: boolean
     minCODAmount: number
     maxCODAmount: number
 }
@@ -23,7 +24,8 @@ export default function SettingsPage() {
     const { data: session } = useSession()
     const [settings, setSettings] = useState<PaymentSettings>({
         enableCOD: true,
-        enableRazorpay: true,
+        enableRazorpay: false,
+        enableCCAvenue: true,
         minCODAmount: 0,
         maxCODAmount: 100000,
     })
@@ -37,7 +39,7 @@ export default function SettingsPage() {
             return
         }
 
-        if (session.user?.role !== "admin") {
+        if ((session.user as any)?.role !== "admin") {
             router.push("/")
             return
         }
@@ -118,6 +120,27 @@ export default function SettingsPage() {
                     <CardContent className="space-y-8">
                         {/* Payment Methods */}
                         <div className="space-y-4">
+
+                            {/* CCAvenue */}
+                            <div className="border border-border rounded-lg p-4">
+                                <div className="flex items-center space-x-3">
+                                    <Checkbox
+                                        id="ccavenue"
+                                        checked={settings.enableCCAvenue}
+                                        onCheckedChange={(checked) => handleChange("enableCCAvenue", checked)}
+                                    />
+                                    <div className="flex-1">
+                                        <Label htmlFor="ccavenue" className="text-base font-semibold cursor-pointer">
+                                            CCAvenue (Pay Online)
+                                        </Label>
+                                        <p className="text-sm text-muted-foreground">
+                                            Credit card, debit card, UPI, net banking & more via CCAvenue
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Razorpay */}
                             <div className="border border-border rounded-lg p-4">
                                 <div className="flex items-center space-x-3">
                                     <Checkbox
@@ -136,6 +159,7 @@ export default function SettingsPage() {
                                 </div>
                             </div>
 
+                            {/* COD */}
                             <div className="border border-border rounded-lg p-4">
                                 <div className="flex items-center space-x-3">
                                     <Checkbox
@@ -194,10 +218,11 @@ export default function SettingsPage() {
 
                         {/* Message */}
                         {message && (
-                            <div
-                                className={`p-3 rounded text-sm ${message.includes("successfully") ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                                    }`}
-                            >
+                            <div className={`p-3 rounded text-sm ${
+                                message.includes("successfully")
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-red-100 text-red-800"
+                            }`}>
                                 {message}
                             </div>
                         )}
@@ -212,7 +237,7 @@ export default function SettingsPage() {
                             {saving ? "Saving..." : "Save Settings"}
                         </Button>
 
-                        {/* Validation Messages */}
+                        {/* Note */}
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
                             <p className="text-blue-900">
                                 <strong>Note:</strong> At least one payment method must be enabled for customers to make purchases.
