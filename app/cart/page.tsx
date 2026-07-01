@@ -197,19 +197,13 @@ export default function CartPage() {
             </DialogHeader>
             <div className="space-y-3 py-4">
               <a
-                href="tel:+919820623835"
+                href="tel:+917710076400"
                 className="flex items-center gap-3 p-3 border border-border rounded-xl hover:bg-muted transition-colors"
               >
                 <Phone className="w-5 h-5 text-primary" />
-                <span className="text-primary font-semibold">+91 9820623835</span>
+                <span className="text-primary font-semibold">+91 7710076400</span>
               </a>
-              <a
-                href="tel:+919819079079"
-                className="flex items-center gap-3 p-3 border border-border rounded-xl hover:bg-muted transition-colors"
-              >
-                <Phone className="w-5 h-5 text-primary" />
-                <span className="text-primary font-semibold">+91 9819079079</span>
-              </a>
+              
             </div>
             <div className="flex gap-2 justify-end">
               <Button variant="outline" className="border-border" onClick={() => setShowBulkOrderModal(false)}>
