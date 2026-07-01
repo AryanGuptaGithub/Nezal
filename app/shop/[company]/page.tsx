@@ -187,39 +187,33 @@ export default function CompanyShopPage() {
       style={{ background: "var(--color-bg-page, #f7f5f0)", fontFamily: "'Inter', sans-serif" }}
     >
 
-      {/* ── HERO CAROUSEL (full-width, cinematic) ─────────────────────────── */}
-      <section className="relative w-full overflow-hidden" style={{ height: "clamp(300px, 55vh, 640px)" }}>
-        <CompanyCarousel images={companyData.carouselImages} />
+{/* ── HERO CAROUSEL (full-width, cinematic) ─────────────────────────── */}
+{/* ── HERO CAROUSEL (full-width, no forced height) ─────────────────── */}
+<section className="max-w-7xl mx-auto px-4 sm:px-6 pt-4">
+  <CompanyCarousel images={companyData.carouselImages} />
+</section>
 
-        {/* Gradient overlay at bottom for text legibility */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: "linear-gradient(to top, rgba(15,40,25,0.6) 0%, transparent 50%)",
-          }}
-        />
+{/* ── COMPANY INFO (below carousel, normal flow) ────────────────────── */}
+<div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-2">
+  <span
+    className="inline-block text-xs font-semibold tracking-widest uppercase px-3 py-1 rounded-full mb-2"
+    style={{ background: "#e8f4ec", color: "#2d6a4f" }}
+  >
+    Official Store
+  </span>
+  <h1
+    className="text-2xl md:text-4xl font-bold"
+    style={{ color: "#1a2e1a", letterSpacing: "-0.02em" }}
+  >
+    {companyData.name}
+  </h1>
+  {companyData.description && (
+    <p className="mt-1 text-sm md:text-base max-w-2xl" style={{ color: "#4a5c4a" }}>
+      {companyData.description}
+    </p>
+  )}
+</div>
 
-        {/* Company name badge over carousel */}
-        <div className="absolute bottom-6 left-6 z-10">
-          <span
-            className="inline-block text-xs font-semibold tracking-widest uppercase px-3 py-1 rounded-full mb-2"
-            style={{ background: "rgba(255,255,255,0.15)", color: "#fff", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)" }}
-          >
-            Official Store
-          </span>
-          <h1
-            className="text-3xl md:text-5xl font-bold text-white"
-            style={{ textShadow: "0 2px 20px rgba(0,0,0,0.4)", letterSpacing: "-0.02em" }}
-          >
-            {companyData.name}
-          </h1>
-          {companyData.description && (
-            <p className="text-white/80 mt-1 text-sm md:text-base max-w-md">
-              {companyData.description}
-            </p>
-          )}
-        </div>
-      </section>
 
       {/* ── MARQUEE TRUST BAR ─────────────────────────────────────────────── */}
       <div
@@ -259,7 +253,7 @@ export default function CompanyShopPage() {
       </div>
 
       {/* ── NEW ARRIVALS ──────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-14 pb-4">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-14 pb-4 ">
         {/* Section label */}
         <div className="text-center mb-8">
           <span

@@ -17,9 +17,7 @@ export async function GET(request: NextRequest) {
       query.isActive = true;
     }
 
-    const promos = await Promo.find(query)
-      .sort({ priority: -1, createdAt: -1 })
-      .limit(activeOnly ? 1 : undefined); // Return only the highest priority active promo
+    const promos = await Promo.find(query).sort({ priority: -1, createdAt: -1 });
 
     return NextResponse.json(promos);
   } catch (error) {

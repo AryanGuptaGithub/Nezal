@@ -7,7 +7,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/lib/store/cart-store";
 import { useToast } from "@/hooks/use-toast";
-import { Leaf, ShieldCheck, FlaskConical, Rabbit, CalendarCheck, Lock, Flower2 } from "lucide-react"
+
+import {
+  Leaf,
+  ShieldCheck,
+  FlaskConical,
+  Rabbit,
+  CalendarCheck,
+  Lock,
+  Factory,
+} from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────
 interface CategoryProduct {

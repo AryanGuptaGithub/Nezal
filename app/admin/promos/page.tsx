@@ -74,6 +74,16 @@ export default function PromosPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+
+         if (formData.link && !formData.link.startsWith("/") && !formData.link.startsWith("http")) {
+        toast({
+            title: "Invalid link",
+            description: "Link must start with / (internal page) or http(s):// (external URL)",
+            variant: "destructive",
+        })
+        return
+    }
+
         setIsSubmitting(true)
 
         try {
@@ -194,8 +204,8 @@ export default function PromosPage() {
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
+        <div className="space-y-6 p-10">
+            <div className="flex items-center justify-between p-5">
                 <div>
                     <h1 className="text-3xl font-bold">Promo Bar Management</h1>
                     <p className="text-muted-foreground">Manage promotional banners and messages</p>
@@ -251,14 +261,16 @@ export default function PromosPage() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="link">Link URL (Optional)</Label>
-                                    <Input
-                                        id="link"
-                                        type="url"
-                                        value={formData.link}
-                                        onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-                                        placeholder="https://example.com"
-                                    />
+                                    <div className="space-y-2">
+    <Label htmlFor="link">Link URL (Optional)</Label>
+    <Input
+        id="link"
+        type="text"
+        value={formData.link}
+        onChange={(e) => setFormData({ ...formData, link: e.target.value })}
+        placeholder="/shop/nezal-herbocare or https://example.com"
+    />
+</div>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="linkText">Link Text (Optional)</Label>

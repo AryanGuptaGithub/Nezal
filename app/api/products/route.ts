@@ -74,18 +74,26 @@ export async function GET(request: NextRequest) {
 
     const company = searchParams.get("company");
     const category = searchParams.get("category");
-    const search = searchParams.get("search") || "";          // ← ADD
+    const search = searchParams.get("search") || "";
     const page = Number.parseInt(searchParams.get("page") || "1");
     const limit = Number.parseInt(searchParams.get("limit") || "12");
     const exclude = searchParams.get("exclude");
+    const includeInactiveParam = searchParams.get("includeInactive") === "true";
 
-    const cacheKey = getCacheKey({ company, category, search, page, limit, exclude });
+    // Only an authenticated admin can actually see inactive products
+    let includeInactive = false;
+    if (includeInactiveParam) {
+      const session = await getServerSession(authOptions);
+      includeInactive = !!session?.user && session.user.role === "admin";
+    }
+
+    const cacheKey = getCacheKey({ company, category, search, page, limit, exclude, includeInactive: String(includeInactive) });
     const cachedResponse = getCachedResponse(cacheKey);
     if (cachedResponse) {
       return NextResponse.json(cachedResponse);
     }
 
-    const query: any = { isActive: true };
+    const query: any = includeInactive ? {} : { isActive: true };
 
     const [companyDoc, categoryDoc] = await Promise.all([
       company ? Company.findOne({ slug: company, isActive: true }).select("_id") : null,
@@ -112,21 +120,21 @@ export async function GET(request: NextRequest) {
       }
     }
 
-   if (exclude) {
+    if (exclude) {
       query._id = { $ne: exclude };
     }
 
-    if (search) {                                              // ← ADD THESE 5 LINES
+    if (search) {
       query.name = { $regex: search, $options: "i" };
     }
 
-const skip = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
     const [products, total] = await Promise.all([
       Product.find(query)
         .populate("company", "name slug")
         .populate("category", "name slug")
-        .select("name slug price discountPrice image images stock company category createdAt")
+        .select("name slug price discountPrice image images stock company category isActive createdAt")
         .skip(skip)
         .limit(limit)
         .sort({ createdAt: -1 })

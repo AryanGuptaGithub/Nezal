@@ -25,6 +25,7 @@ interface Product {
   discountPrice?: number
   image: string
   stock: number
+  isActive: boolean
   company: { name: string }
   category: { name: string }
 }
@@ -37,6 +38,7 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedCategory, setSelectedCategory] = useState("all")
+  const [togglingId, setTogglingId] = useState<string | null>(null)
   const itemsPerPage = 12
 
   // ── Delete confirmation state ──────────────────────────
@@ -56,18 +58,35 @@ export default function ProductsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, session, router])
 
-  const fetchProducts = async () => {
-    try {
-      const res = await fetch("/api/products?limit=1000")
-      if (!res.ok) throw new Error("Failed to fetch products")
-      const data = await res.json()
-      setProducts(data.products || data)
-    } catch (error) {
-      console.error("Error fetching products:", error)
-    } finally {
-      setLoading(false)
-    }
+const fetchProducts = async () => {
+  try {
+    const res = await fetch("/api/products?limit=1000&includeInactive=true")
+    if (!res.ok) throw new Error("Failed to fetch products")
+    const data = await res.json()
+    setProducts(data.products || data)
+  } catch (error) {
+    console.error("Error fetching products:", error)
+  } finally {
+    setLoading(false)
   }
+}
+
+const handleToggleActive = async (product: Product) => {
+  setTogglingId(product._id)
+  try {
+    const res = await fetch(`/api/products/${product._id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: !product.isActive }),
+    })
+    if (!res.ok) throw new Error("Failed to update product")
+    await fetchProducts()
+  } catch (error) {
+    console.error("Error toggling product status:", error)
+  } finally {
+    setTogglingId(null)
+  }
+}
 
   // ── Open first dialog ──────────────────────────────────
   const promptDelete = (product: Product) => {
@@ -221,82 +240,84 @@ useEffect(() => {
                 </thead>
                 <tbody>
                   {filteredProducts.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="py-8 text-center text-muted-foreground">
-                        No products found
-                      </td>
-                    </tr>
-                  ) : (
-                    paginatedProducts.map((product) => (
-                      <tr key={product._id} className="border-b hover:bg-muted/40 transition">
-                        <td className="py-3 px-2">
-                          <div className="w-16 h-12 relative rounded overflow-hidden bg-muted">
-                            {product.image ? (
-                              <Image
-                                src={product.image}
-                                alt={product.name}
-                                width={64}
-                                height={48}
-                                className="object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
-                                No image
-                              </div>
-                            )}
-                          </div>
-                        </td>
+  <tr>
+    <td colSpan={7} className="py-8 text-center text-muted-foreground">
+      No products found
+    </td>
+  </tr>
+) : (
+  paginatedProducts.map((product) => (
+    <tr
+      key={product._id}
+      className={`border-b hover:bg-muted/40 transition ${!product.isActive ? "opacity-60" : ""}`}
+    >
+      <td className="py-3 px-2">
+        <div className="w-16 h-12 relative rounded overflow-hidden bg-muted">
+          {product.image ? (
+            <Image src={product.image} alt={product.name} width={64} height={48} className="object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">No image</div>
+          )}
+        </div>
+      </td>
 
-                        <td className="py-3 px-2 align-top">
-                          <div className="font-semibold line-clamp-2">{product.name}</div>
-                          <div className="text-xs text-muted-foreground hidden sm:block">ID: {product._id}</div>
-                        </td>
+      <td className="py-3 px-2 align-top">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold line-clamp-2">{product.name}</span>
+          {!product.isActive && (
+            <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+              Inactive
+            </span>
+          )}
+        </div>
+        <div className="text-xs text-muted-foreground hidden sm:block">ID: {product._id}</div>
+      </td>
 
-                        <td className="py-3 px-2 hidden md:table-cell align-top">{product.company?.name}</td>
-                        <td className="py-3 px-2 hidden lg:table-cell align-top">{product.category?.name}</td>
+      <td className="py-3 px-2 hidden md:table-cell align-top">{product.company?.name}</td>
+      <td className="py-3 px-2 hidden lg:table-cell align-top">{product.category?.name}</td>
 
-                        <td className="py-3 px-2 align-top">
-                          <div className="font-bold">₹{product.discountPrice || product.price}</div>
-                          {product.discountPrice && (
-                            <div className="text-xs line-through text-muted-foreground">₹{product.price}</div>
-                          )}
-                        </td>
+      <td className="py-3 px-2 align-top">
+        <div className="font-bold">₹{product.discountPrice || product.price}</div>
+        {product.discountPrice && (
+          <div className="text-xs line-through text-muted-foreground">₹{product.price}</div>
+        )}
+      </td>
 
-                        <td className="py-3 px-2 align-top text-sm text-muted-foreground">{product.stock}</td>
+      <td className="py-3 px-2 align-top text-sm text-muted-foreground">{product.stock}</td>
 
-                        <td className="py-3 px-2 align-top">
-                          <div className="flex gap-2 flex-wrap">
-                            <Link
-                              href={`/shop/${product.company?.name?.toLowerCase().replace(/\s+/g, "-")}/product/${product._id}`}
-                              className="flex-1"
-                            >
-                              <Button size="sm" variant="ghost" className="w-full justify-start bg-[#dcd8d8]">
-                                <Eye className="w-4 h-4 mr-2" />
-                                View
-                              </Button>
-                            </Link>
+      <td className="py-3 px-2 align-top">
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            size="sm"
+            variant="outline"
+            className={product.isActive ? "text-amber-700 border-amber-300 hover:bg-amber-50" : "text-green-700 border-green-300 hover:bg-green-50"}
+            onClick={() => handleToggleActive(product)}
+            disabled={togglingId === product._id}
+          >
+            {togglingId === product._id ? "..." : product.isActive ? "Deactivate" : "Activate"}
+          </Button>
 
-                            <Link href={`/admin/products/edit/${product._id}`} className="flex-1">
-                              <Button size="sm" variant="outline" className="w-full justify-start">
-                                <Edit2 className="w-4 h-4 mr-2" />
-                                Edit
-                              </Button>
-                            </Link>
+          <Link href={`/admin/products/edit/${product._id}`}>
+            <Button size="sm" variant="outline">
+              <Edit2 className="w-4 h-4 mr-2" />
+              Edit
+            </Button>
+          </Link>
 
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="w-full border-red-500 border hover:bg-[#eb2c2c] hover:text-white text-red-500"
-                              onClick={() => promptDelete(product)}
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Delete
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
+          <Button
+            size="sm"
+            variant="destructive"
+            className="border-red-500 border hover:bg-[#eb2c2c] hover:text-white text-red-500"
+            onClick={() => promptDelete(product)}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete
+          </Button>
+        </div>
+      </td>
+    </tr>
+  ))
+)}
                 </tbody>
               </table>
             </div>

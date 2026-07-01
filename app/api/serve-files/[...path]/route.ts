@@ -26,10 +26,22 @@ export async function GET(
     console.log('Full path:', fullPath);
 
     if (!existsSync(fullPath)) {
-      console.log('❌ File not found');
-      console.log('========================================');
-      return new NextResponse('File not found', { status: 404 });
+  console.log('❌ File not found');
+  try {
+    const { readdir } = await import('fs/promises');
+    const folderPath = path.join(process.cwd(), 'public', folder);
+    if (existsSync(folderPath)) {
+      const filesInFolder = await readdir(folderPath);
+      console.log(`📂 Files actually in /public/${folder}:`, filesInFolder);
+    } else {
+      console.log(`📂 Folder /public/${folder} does not exist at all`);
     }
+  } catch (e) {
+    console.log('Could not list folder contents:', e);
+  }
+  console.log('========================================');
+  return new NextResponse('File not found', { status: 404 });
+}
 
     console.log('✓ File found, serving...');
     console.log('========================================');
