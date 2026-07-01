@@ -287,7 +287,7 @@ export default function ProductCard({
             </p>
 
             <div className="space-y-2">
-              {["+91 9820623835", "+91 9819079079"].map((num) => (
+              {["+91 7710076400"].map((num) => (
                 <a
                   key={num}
                   href={`tel:${num.replace(/\s/g, "")}`}

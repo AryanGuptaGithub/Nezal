@@ -209,7 +209,7 @@ export default function CartPage() {
               <Button variant="outline" className="border-border" onClick={() => setShowBulkOrderModal(false)}>
                 Continue Shopping
               </Button>
-              <a href="tel:+919820623835">
+              <a href="tel:+917710076400">
                 <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
                   <Phone className="w-4 h-4 mr-2" />
                   Call Now
