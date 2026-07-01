@@ -4,12 +4,12 @@ import { getToken } from "next-auth/jwt"
 export async function proxy(req: any) {
   const token = await getToken({ req })
 
-  // Check if user is authenticated
   if (!token) {
-    return NextResponse.redirect(new URL("/", req.url))
+    const loginUrl = new URL("/auth/login", req.url)
+    loginUrl.searchParams.set("redirect", req.nextUrl.pathname)
+    return NextResponse.redirect(loginUrl)
   }
 
-  // Check admin routes
   if (req.nextUrl.pathname.startsWith("/admin") && token.role !== "admin") {
     return NextResponse.redirect(new URL("/", req.url))
   }

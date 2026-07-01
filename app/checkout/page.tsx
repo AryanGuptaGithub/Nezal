@@ -112,11 +112,11 @@ const [couponData, setCouponData]       = useState<{
   }, [searchParams])
 
   // Add this as the first useEffect:
-    useEffect(() => {
-      if (status === "unauthenticated") {
-        router.replace("/auth/login")
-      }
-    }, [status, router])
+ useEffect(() => {
+  if (status === "unauthenticated") {
+    router.replace("/auth/login?redirect=/checkout")
+  }
+}, [status, router])
 
 
   useEffect(() => {
