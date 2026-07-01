@@ -1,28 +1,29 @@
-// components/brand-filters.tsx
 "use client"
 
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { X, Filter } from "lucide-react"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
+import { X } from "lucide-react"
 import Link from "next/link"
 
-// Types unchanged
-interface Category { /*...*/ }
-interface BrandFiltersProps { /*...*/ }
+interface SubCategory {
+  _id: string
+  name: string
+  slug: string
+}
+interface Category {
+  _id: string
+  name: string
+  slug: string
+  subCategories?: SubCategory[]
+}
+interface BrandFiltersProps {
+  companySlug: string
+  onCategoryChange: (slug: string) => void
+  selectedCategory: string
+}
 
 export function BrandFilters({ companySlug, onCategoryChange, selectedCategory }: BrandFiltersProps) {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
-  const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -39,124 +40,82 @@ export function BrandFilters({ companySlug, onCategoryChange, selectedCategory }
     fetchCategories()
   }, [companySlug])
 
-  const handleCategoryChange = (categorySlug: string) => {
-    onCategoryChange(categorySlug)
-    setIsOpen(false)
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {[...Array(3)].map((_, i) => (
+          <div key={i}>
+            <div className="h-4 rounded animate-pulse mb-2" style={{ background: "#eef3ee", width: "60%" }} />
+            <div className="space-y-1.5 pl-3">
+              <div className="h-3 rounded animate-pulse" style={{ background: "#eef3ee", width: "75%" }} />
+              <div className="h-3 rounded animate-pulse" style={{ background: "#eef3ee", width: "55%" }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    )
   }
 
-  const FilterContent = () => (
-    <div className="space-y-5">
-      {/* Company header */}
-      <div className="text-center pb-3 border-b border-[--color-border]">
-        <h2 className="text-lg font-bold uppercase tracking-wide text-[--color-text-heading]">
-          {companySlug.includes("intapeels")
-            ? "Exfoliaters"
-            : companySlug.includes("dermaflay")
-            ? "Skincare"
-            : companySlug.replace("-", " ")}
-        </h2>
-      </div>
+  return (
+    <div className="space-y-1">
+      {categories.map((mainCategory) => {
+        const isMainSelected = selectedCategory === mainCategory.slug
+        return (
+          <div key={mainCategory._id} className="py-1.5">
+            <button
+              onClick={() => onCategoryChange(mainCategory.slug)}
+              className="w-full text-left flex items-center justify-between px-2.5 py-2 rounded-lg text-sm font-bold transition-colors"
+              style={{
+                color: isMainSelected ? "#2d6a4f" : "#1a2e1a",
+                background: isMainSelected ? "#e8f4ec" : "transparent",
+              }}
+              onMouseEnter={(e) => {
+                if (!isMainSelected) e.currentTarget.style.background = "#f7faf7"
+              }}
+              onMouseLeave={(e) => {
+                if (!isMainSelected) e.currentTarget.style.background = "transparent"
+              }}
+            >
+              {mainCategory.name}
+            </button>
 
-      {/* Categories */}
-      {loading ? (
-        <div className="py-2 space-y-3">
-          {[...Array(3)].map((_, i) => (
-            <div key={i}>
-              <div className="h-5 bg-[--color-bg-cream] animate-pulse rounded mb-1" />
-              <div className="space-y-1 pl-3">
-                <div className="h-4 bg-[--color-bg-cream] animate-pulse rounded w-3/4" />
-                <div className="h-4 bg-[--color-bg-cream] animate-pulse rounded w-2/3" />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {categories.map((mainCategory) => (
-            <div key={mainCategory._id}>
-              <h3
-                className="font-bold text-base mb-2 cursor-pointer hover:text-[--color-brand-primary] transition-colors"
-                onClick={() => handleCategoryChange(mainCategory.slug)}
-              >
-                {mainCategory.name}
-              </h3>
-              {mainCategory.subCategories && mainCategory.subCategories.length > 0 && (
-                <div className="space-y-1.5 pl-4">
-                  {mainCategory.subCategories.map((subCategory) => (
-                    <div
+            {mainCategory.subCategories && mainCategory.subCategories.length > 0 && (
+              <div className="mt-0.5 ml-2 pl-3 space-y-0.5" style={{ borderLeft: "1.5px solid #eef3ee" }}>
+                {mainCategory.subCategories.map((subCategory) => {
+                  const isSubSelected = selectedCategory === subCategory.slug
+                  return (
+                    <Link
                       key={subCategory._id}
-                      className={`cursor-pointer text-sm transition-colors ${
-                        selectedCategory === subCategory.slug
-                          ? "text-[--color-brand-primary] font-semibold"
-                          : "text-[--color-text-body] hover:text-[--color-brand-primary]"
-                      }`}
-                      onClick={() => handleCategoryChange(subCategory.slug)}
+                      href={`/shop/${companySlug}/${subCategory.slug}`}
+                      onClick={() => onCategoryChange(subCategory.slug)}
+                      className="block px-2.5 py-1.5 rounded-lg text-[13px] transition-colors"
+                      style={{
+                        color: isSubSelected ? "#2d6a4f" : "#6b7c6b",
+                        background: isSubSelected ? "#e8f4ec" : "transparent",
+                        fontWeight: isSubSelected ? 600 : 500,
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSubSelected) e.currentTarget.style.background = "#f7faf7"
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSubSelected) e.currentTarget.style.background = "transparent"
+                      }}
                     >
-                      <Link href={`/shop/${companySlug}/${subCategory.slug}`}>
-                        {subCategory.name}
-                      </Link>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+                      {subCategory.name}
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )
+      })}
 
-      {/* Clear filters */}
-      {selectedCategory && (
-        <div className="pt-3 border-t border-[--color-border]">
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full border-[--color-border] text-[--color-text-heading]"
-            onClick={() => handleCategoryChange("")}
-          >
-            <X className="h-3 w-3 mr-2" />
-            Clear Filters
-          </Button>
-        </div>
+      {categories.length === 0 && (
+        <p className="text-xs px-2.5 py-2" style={{ color: "#9aaa9a" }}>
+          No categories available yet.
+        </p>
       )}
     </div>
-  )
-
-  return (
-    <>
-      {/* Mobile filter button */}
-      <div className="lg:hidden mb-4">
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
-          <SheetTrigger asChild>
-            <Button variant="outline" className="w-full border-[--color-border] text-[--color-text-heading]">
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
-              {selectedCategory && (
-                <span className="ml-2 px-2 py-0.5 bg-[--color-brand-primary] text-white text-xs rounded-full">
-                  1
-                </span>
-              )}
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-[300px] sm:w-[350px] overflow-y-auto bg-white">
-            <SheetHeader>
-              <SheetTitle className="text-[--color-text-heading]">Filters</SheetTitle>
-              <SheetDescription>Filter products by category</SheetDescription>
-            </SheetHeader>
-            <div className="mt-6">
-              <FilterContent />
-            </div>
-          </SheetContent>
-        </Sheet>
-      </div>
-
-      {/* Desktop sidebar */}
-      <div className="hidden lg:block">
-        <Card className="overflow-hidden border border-[--color-border] rounded-2xl shadow-none">
-          <CardContent className="p-5">
-            <FilterContent />
-          </CardContent>
-        </Card>
-      </div>
-    </>
   )
 }

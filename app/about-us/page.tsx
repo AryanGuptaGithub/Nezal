@@ -1,6 +1,7 @@
 // app/about-us/page.tsx
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   CheckCircle,
@@ -101,10 +102,10 @@ const trustReasons = [
   },
 ];
 
-const stats = [
+// ── Rating stat removed from here — it's now computed live in the component ──
+const baseStats = [
   { value: "5000+", label: "Happy Customers" },
-  { value: "4.9★", label: "Average Rating" },
-  { value: "15+", label: "Years of R&D" },
+  { value: "12+", label: "Years of R&D" },
   { value: "100%", label: "Quality Assured" },
 ];
 
@@ -124,12 +125,35 @@ const stagger = {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function AboutUs() {
+  const [avgRating, setAvgRating] = useState<number | null>(null);
+  const [reviewCount, setReviewCount] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/products/reviews/all?limit=500")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.success || !data.reviews?.length) return;
+        const sum = data.reviews.reduce((acc: number, r: any) => acc + r.rating, 0);
+        setAvgRating(sum / data.reviews.length);
+        setReviewCount(data.reviews.length);
+      })
+      .catch(() => {});
+  }, []);
+
+  // ── Build the final stats array, inserting the live rating in position 2 ──
+  const stats = [
+    baseStats[0],
+    {
+      value: avgRating !== null ? `${avgRating.toFixed(1)}★` : "—",
+      label: reviewCount > 0 ? `Rated by Our Customers` : "Average Rating",
+    },
+    baseStats[1],
+    baseStats[2],
+  ];
+
   return (
     <main className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "#f4f9f4", color: "#1a3a2a" }}>
 
-    
-
-    
       {/* ── Our Story ── */}
       <section id="story" className="md:py-10">
         <div className="container mx-auto max-w-6xl px-6 ">
@@ -213,8 +237,6 @@ export default function AboutUs() {
           </div>
         </div>
       </section>
-
-  
 
       {/* ── Philosophy ── */}
       <section id="philosophy" className="md:py-10 ">
@@ -345,7 +367,7 @@ export default function AboutUs() {
         </div>
       </section>
 
-          {/* ── Stats ── */}
+      {/* ── Stats ── */}
       <div className="py-16 border-y" style={{ backgroundColor: "#e8f2e4", borderColor: "#d4e8d0" }}>
         <div className="container mx-auto max-w-6xl px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
@@ -428,6 +450,115 @@ export default function AboutUs() {
           </motion.p>
         </div>
       </section>
+
+      {/* ── Brand Evolution ── */}
+<section id="brand-evolution" className="md:py-16">
+  <div className="container mx-auto max-w-5xl px-6">
+    <motion.div
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true }}
+      variants={stagger}
+      className="text-center mb-12"
+    >
+      <motion.h2 variants={fadeUp} className="text-4xl md:text-5xl font-bold mb-5" style={{ color: "#1a3a2a" }}>
+        Our Brand Evolution
+      </motion.h2>
+      <motion.p variants={fadeUp} className="text-lg max-w-2xl mx-auto leading-relaxed" style={{ color: "#3d5c45" }}>
+        Every growing brand evolves, and {BRAND.name} is no exception. As part of our journey, we've
+        introduced an updated visual identity that reflects who we are today while staying true to the
+        values that have always guided us.
+      </motion.p>
+    </motion.div>
+
+    {/* Logo comparison */}
+    <motion.div
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true }}
+      variants={stagger}
+      className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 mb-12"
+    >
+      {/* Old logo */}
+      <motion.div variants={fadeUp} className="flex flex-col items-center">
+        <div
+          className="w-40 h-40 sm:w-48 sm:h-48 rounded-3xl flex items-center justify-center p-6 border"
+          style={{ backgroundColor: "#fdf6e3", borderColor: "#e8dcb0" }}
+        >
+          <img src="/oldlogo/old-logo.jpg" alt="Nezal — previous logo" className="w-full h-full object-contain" />
+        </div>
+        <span
+          className="mt-4 text-xs font-semibold tracking-widest uppercase px-3 py-1 rounded-full"
+          style={{ backgroundColor: "#f4ecd0", color: "#8a6d1f" }}
+        >
+          Old Logo
+        </span>
+      </motion.div>
+
+      {/* Arrow / connector */}
+      <motion.div variants={fadeUp} className="hidden sm:flex items-center justify-center">
+        <svg width="40" height="24" viewBox="0 0 40 24" fill="none">
+          <path d="M0 12H36M36 12L26 2M36 12L26 22" stroke="#4a7c59" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </motion.div>
+
+      {/* New logo */}
+      <motion.div variants={fadeUp} className="flex flex-col items-center">
+        <div
+          className="w-40 h-40 sm:w-48 sm:h-48 rounded-3xl flex items-center justify-center p-6 border-2"
+          style={{ backgroundColor: "#f4f9f4", borderColor: "#4a7c59" }}
+        >
+          <img src="/oldlogo/new-logo.jpg" alt="Nezal — current logo" className="w-full h-full object-contain" />
+        </div>
+        <span
+          className="mt-4 text-xs font-semibold tracking-widest uppercase px-3 py-1 rounded-full"
+          style={{ backgroundColor: "#e8f2e4", color: "#2e6645" }}
+        >
+          New Logo
+        </span>
+      </motion.div>
+    </motion.div>
+
+    {/* Explanation card */}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.6 }}
+      className="rounded-2xl border p-7 md:p-9 space-y-4"
+      style={{ backgroundColor: "#f4f9f4", borderColor: "#d4e8d0" }}
+    >
+      <p className="text-base leading-relaxed" style={{ color: "#3d5c45" }}>
+        Over the coming months, you may notice products carrying either of our two logos. This is part
+        of a planned transition as we responsibly use our existing packaging materials rather than
+        discarding them unnecessarily.
+      </p>
+      <p className="text-base leading-relaxed" style={{ color: "#3d5c45" }}>
+        Our formulations, manufacturing standards, ingredients, and commitment to quality remain
+        exactly the same.
+      </p>
+      <p className="text-base leading-relaxed" style={{ color: "#3d5c45" }}>
+        To us, sustainability isn't only about what's inside the bottle — it also means making
+        thoughtful choices about the resources we use.
+      </p>
+      <p className="text-base font-medium pt-2" style={{ color: "#1a3a2a" }}>
+        Thank you for supporting us as {BRAND.name} grows.
+      </p>
+    </motion.div>
+
+    {/* Tagline */}
+    <motion.p
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true }}
+      transition={{ delay: 0.3 }}
+      className="mt-10 text-center text-xl italic font-medium"
+      style={{ color: "#0a4121" }}
+    >
+      Different logo. Same {BRAND.name}. Same quality. Same promise.
+    </motion.p>
+  </div>
+</section>
 
       {/* ── CTA ── */}
       <section className="py-10  md:py-28" style={{ backgroundColor: "#e8f2e4" }}>

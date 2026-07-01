@@ -14,6 +14,8 @@ import Testimonials from "@/components/testimonials"
 import { ComingSoon } from "@/components/coming-soon"
 import { getCachedSync, fetchWithCache, invalidateCache } from "@/lib/cacheClient"
 import { ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react"
+import { NewArrivalsSidebar } from "@/components/new-arrivals-sidebar"
+
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface CarouselImage {
@@ -318,32 +320,62 @@ export default function CompanyShopPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8 items-start">
 
           {/* ── Desktop Sidebar ─────────────────────────────────────────── */}
-          <aside className="hidden lg:block sticky top-4">
-            <div
-              className="rounded-2xl p-5"
-              style={{ background: "#fff", border: "1px solid #e2ece2", boxShadow: "0 2px 16px rgba(0,0,0,0.04)" }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-base" style={{ color: "#1a2e1a" }}>
-                  Filter by Category
-                </h3>
-                {selectedCategory && (
-                  <button
-                    onClick={() => handleCategoryChange("")}
-                    className="text-xs font-medium flex items-center gap-1"
-                    style={{ color: "#2d6a4f" }}
-                  >
-                    <X className="w-3 h-3" /> Clear
-                  </button>
-                )}
-              </div>
-              <BrandFilters
-                companySlug={companySlug}
-                onCategoryChange={handleCategoryChange}
-                selectedCategory={selectedCategory}
-              />
-            </div>
-          </aside>
+          
+{/* ── Desktop Sidebar ─────────────────────────────────────────── */}
+<aside className="hidden lg:block sticky top-4 space-y-5">
+  <NewArrivalsSidebar companyId={companyData._id} companySlug={companySlug} />
+
+  <div
+    className="rounded-2xl overflow-hidden"
+    style={{ background: "#fff", border: "1px solid #e2ece2", boxShadow: "0 2px 16px rgba(0,0,0,0.04)" }}
+  >
+    {/* Header strip */}
+    <div
+      className="px-5 pt-5 pb-4"
+      style={{ borderBottom: "1px solid #f0f4f0" }}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div
+            className="w-7 h-7 rounded-lg flex items-center justify-center"
+            style={{ background: "#e8f4ec" }}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" style={{ color: "#2d6a4f" }} />
+          </div>
+          <h3 className="font-bold text-sm tracking-tight" style={{ color: "#1a2e1a" }}>
+            Category
+          </h3>
+        </div>
+
+        {selectedCategory && (
+          <button
+            onClick={() => handleCategoryChange("")}
+            className="text-[11px] font-semibold flex items-center gap-1 px-2 py-1 rounded-full transition-colors"
+            style={{ color: "#2d6a4f", background: "#e8f4ec" }}
+          >
+            <X className="w-3 h-3" /> Clear
+          </button>
+        )}
+      </div>
+
+      {selectedCategory && (
+        <p className="text-[11px] mt-2" style={{ color: "#9aaa9a" }}>
+          Viewing <span className="font-semibold" style={{ color: "#2d6a4f" }}>{selectedCategory}</span>
+        </p>
+      )}
+    </div>
+
+    {/* Filter body */}
+    <div className="p-3">
+      <BrandFilters
+        companySlug={companySlug}
+        onCategoryChange={handleCategoryChange}
+        selectedCategory={selectedCategory}
+      />
+    </div>
+  </div>
+</aside>
+
 
           {/* ── Mobile Filters Drawer ───────────────────────────────────── */}
           {mobileFiltersOpen && (
