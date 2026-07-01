@@ -156,7 +156,7 @@ const trustFeatures = [
    { icon: FlaskConical, label: "Contains Natural Actives", sub: "Carefully selected natural & active ingredients" },
   { icon: Rabbit,        label: "Cruelty-Free",              sub: "We do not test on animals" },
   { icon: CalendarCheck, label: "Suitable For Daily Use",   sub: "Gentle care for everyday beautiful you" },
-    { icon: FlaskConical,  label: "G M P",      sub: "Certified good manufacturing practises " },
+    { icon: Factory,  label: "G M P",      sub: "Certified good manufacturing practises " },
   { icon: Lock,          label: "Secure Payment",            sub: "100% safe & secure checkout" },
 
 ]
