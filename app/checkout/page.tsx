@@ -461,7 +461,7 @@ const removeCoupon = () => {
     <CardContent className="space-y-4">
 
       {/* Items */}
-      {items.map((item) => (
+{items.map((item) => (
   <div key={item.productId} className="text-sm border-b border-[--color-border] pb-3 last:border-b-0">
     <div className="flex justify-between">
       <span className="text-[--color-text-body]">{item.name} x {item.quantity}</span>
@@ -472,6 +472,14 @@ const removeCoupon = () => {
     {item.selectedSize && (
       <div className="text-xs text-[--color-text-muted] mt-1">
         Size: {item.selectedSize.size} ({item.selectedSize.quantity}{item.selectedSize.unit})
+      </div>
+    )}
+    {item.ritual && (
+      <div
+        className="inline-flex items-center gap-1 border text-[10px] bg-[#074d09] text-white font-semibold px-2 py-0.5 rounded-full mt-1.5"
+        
+      >
+        ✨ {item.ritual.name}
       </div>
     )}
     {item.flashSale && item.discountPrice && (

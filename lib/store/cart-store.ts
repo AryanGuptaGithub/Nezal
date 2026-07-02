@@ -27,6 +27,7 @@ export interface CartItem {
     discountPercent: number
     endsAt: string
   } | null
+  ritual?: { slug: string; name: string } | null
 }
 
 interface CartStore {
@@ -80,6 +81,7 @@ export const useCartStore = create<CartStore>()(
                 price: item.price,
                 discountPrice: item.discountPrice,
                 flashSale: item.flashSale,
+                ritual: item.ritual !== undefined ? item.ritual : i.ritual,
               }
             : i,
         ),

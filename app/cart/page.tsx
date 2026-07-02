@@ -94,6 +94,16 @@ export default function CartPage() {
   </p>
 )}
 
+{item.ritual && (
+  <Link
+    href={`/rituals/${item.ritual.slug}`}
+    className="inline-flex items-center gap-1.5 text-xs bg-[#066b2e] text-white font-semibold px-2.5 py-1 rounded-full mt-2 w-fit"
+  
+  >
+    ✨ Part of: {item.ritual.name}
+  </Link>
+)}
+
 {item.flashSale && item.discountPrice && (
   <div
     className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full mt-2"

@@ -3,9 +3,10 @@
 /**
  * DiscoverRituals
  *
- * Homepage section: "Discover Your Perfect Rituals" — fetches active
- * rituals from /api/rituals and renders them as image cards linking to
- * /rituals/[slug]. Mirrors ShopByConcern's visual style.
+ * Homepage section: "Discover Your Perfect Ritual" — fetches active
+ * rituals from /api/rituals and renders a preview (first 6) as image
+ * cards linking to /rituals/[slug]. A "See All Rituals" button links
+ * to the full /rituals index page. Mirrors ShopByConcern's pattern.
  */
 
 import { useEffect, useState } from "react"
@@ -20,8 +21,11 @@ interface RitualCard {
   color: string
 }
 
+const HOMEPAGE_PREVIEW_COUNT = 6
+
 export function DiscoverRituals() {
   const [rituals, setRituals] = useState<RitualCard[]>([])
+  const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -31,9 +35,19 @@ export function DiscoverRituals() {
         const res = await fetch("/api/rituals")
         if (!res.ok) throw new Error("Failed")
         const data = await res.json()
-        if (mounted) setRituals(data.rituals || [])
+        const list: RitualCard[] = data.rituals || []
+
+        // API already returns rituals sorted by sortOrder, so we just
+        // slice the first N for the homepage preview.
+        if (mounted) {
+          setTotalCount(list.length)
+          setRituals(list.slice(0, HOMEPAGE_PREVIEW_COUNT))
+        }
       } catch {
-        if (mounted) setRituals([])
+        if (mounted) {
+          setRituals([])
+          setTotalCount(0)
+        }
       } finally {
         if (mounted) setLoading(false)
       }
@@ -43,6 +57,8 @@ export function DiscoverRituals() {
   }, [])
 
   if (!loading && rituals.length === 0) return null
+
+  const hasMore = totalCount > HOMEPAGE_PREVIEW_COUNT
 
   return (
     <section className="py-12 md:py-16" style={{ backgroundColor: "#ffffff" }}>
@@ -64,7 +80,7 @@ export function DiscoverRituals() {
         {/* Ritual grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-5">
           {loading
-            ? [...Array(6)].map((_, i) => (
+            ? [...Array(HOMEPAGE_PREVIEW_COUNT)].map((_, i) => (
                 <div key={i} className="aspect-square rounded-2xl bg-gray-100 animate-pulse" />
               ))
             : rituals.map((ritual) => (
@@ -107,7 +123,22 @@ export function DiscoverRituals() {
               ))}
         </div>
 
+        {/* See More */}
+        {!loading && hasMore && (
+          <div className="flex justify-center mt-10">
+            <Link
+              href="/rituals"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm transition-all hover:gap-3"
+              style={{ backgroundColor: "#1e3a28", color: "#fdfaf5" }}
+            >
+              See All Rituals <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        )}
+
       </div>
     </section>
   )
 }
+
+export default DiscoverRituals
