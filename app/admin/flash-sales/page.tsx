@@ -43,6 +43,7 @@ export default function AdminFlashSalesPage() {
   const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState<FlashSale | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [togglingId, setTogglingId] = useState<string | null>(null)
 
   useEffect(() => {
     if (status === "loading") return
@@ -61,6 +62,23 @@ export default function AdminFlashSalesPage() {
       setLoading(false)
     }
   }
+
+  const handleToggleActive = async (sale: FlashSale) => {
+  setTogglingId(sale._id)
+  try {
+    const res = await fetch(`/api/flash-sales/${sale._id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: !sale.isActive }),
+    })
+    if (!res.ok) throw new Error("Failed to toggle")
+    await fetchSales()
+  } catch (e) {
+    console.error("Error toggling flash sale:", e)
+  } finally {
+    setTogglingId(null)
+  }
+}
 
   const handleDelete = async () => {
     if (!deleteTarget) return
@@ -130,15 +148,26 @@ export default function AdminFlashSalesPage() {
                             <span className={`text-xs font-semibold px-2 py-1 rounded-full ${status.color}`}>{status.label}</span>
                           </td>
                           <td className="py-3 px-2">
-                            <div className="flex gap-2">
-                              <Link href={`/admin/flash-sales/edit/${sale._id}`}>
-                                <Button size="sm" variant="outline"><Edit2 className="w-4 h-4" /></Button>
-                              </Link>
-                              <Button size="sm" variant="destructive" onClick={() => setDeleteTarget(sale)}>
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </td>
+  <div className="flex gap-2">
+    <Button
+      size="sm"
+      variant="outline"
+      onClick={() => handleToggleActive(sale)}
+      disabled={togglingId === sale._id}
+      className={sale.isActive
+        ? "border-amber-300 text-amber-700 hover:bg-amber-50"
+        : "border-green-300 text-green-700 hover:bg-green-50"}
+    >
+      {togglingId === sale._id ? "..." : sale.isActive ? "Deactivate" : "Activate"}
+    </Button>
+    <Link href={`/admin/flash-sales/edit/${sale._id}`}>
+      <Button size="sm" variant="outline"><Edit2 className="w-4 h-4" /></Button>
+    </Link>
+    <Button size="sm" variant="destructive" onClick={() => setDeleteTarget(sale)}>
+      <Trash2 className="w-4 h-4" />
+    </Button>
+  </div>
+</td>
                         </tr>
                       )
                     })

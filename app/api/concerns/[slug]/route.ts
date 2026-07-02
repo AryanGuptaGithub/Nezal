@@ -109,3 +109,33 @@ export async function DELETE(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  try {
+    await connectDB()
+    const { slug } = await params
+    const body = await req.json()
+
+    if (typeof body.isActive !== "boolean") {
+      return NextResponse.json({ error: "isActive must be a boolean" }, { status: 400 })
+    }
+
+    const concern = await Concern.findOneAndUpdate(
+      { slug },
+      { isActive: body.isActive },
+      { new: true }
+    )
+
+    if (!concern) {
+      return NextResponse.json({ error: "Concern not found" }, { status: 404 })
+    }
+
+    return NextResponse.json({ concern })
+  } catch (error) {
+    console.error("[concerns/slug] PATCH error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}

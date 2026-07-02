@@ -87,3 +87,34 @@ export async function DELETE(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+
+// PATCH /api/flash-sales/[id]  -> toggle isActive only (admin list view button)
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    await connectDB()
+    const { id } = await params
+    const body = await req.json()
+
+    if (typeof body.isActive !== "boolean") {
+      return NextResponse.json({ error: "isActive must be a boolean" }, { status: 400 })
+    }
+
+    const sale = await FlashSale.findByIdAndUpdate(
+      id,
+      { isActive: body.isActive },
+      { new: true }
+    )
+
+    if (!sale) {
+      return NextResponse.json({ error: "Flash sale not found" }, { status: 404 })
+    }
+
+    return NextResponse.json({ sale })
+  } catch (error) {
+    console.error("[flash-sales/id] PATCH error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}

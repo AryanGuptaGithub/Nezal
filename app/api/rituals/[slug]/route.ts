@@ -96,3 +96,35 @@ export async function DELETE(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+
+
+// PATCH /api/rituals/[slug]  -> toggle isActive only (admin list view button)
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  try {
+    await connectDB()
+    const { slug } = await params
+    const body = await req.json()
+
+    if (typeof body.isActive !== "boolean") {
+      return NextResponse.json({ error: "isActive must be a boolean" }, { status: 400 })
+    }
+
+    const ritual = await Ritual.findOneAndUpdate(
+      { slug },
+      { isActive: body.isActive },
+      { new: true }
+    )
+
+    if (!ritual) {
+      return NextResponse.json({ error: "Ritual not found" }, { status: 404 })
+    }
+
+    return NextResponse.json({ ritual })
+  } catch (error) {
+    console.error("[rituals/slug] PATCH error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}

@@ -37,6 +37,8 @@ export default function AdminRitualsPage() {
   const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState<Ritual | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [togglingId, setTogglingId] = useState<string | null>(null)
+  
 
   useEffect(() => {
     if (status === "loading") return
@@ -55,6 +57,24 @@ export default function AdminRitualsPage() {
       setLoading(false)
     }
   }
+
+
+  const handleToggleActive = async (ritual: Ritual) => {
+  setTogglingId(ritual._id)
+  try {
+    const res = await fetch(`/api/rituals/${ritual.slug}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: !ritual.isActive }),
+    })
+    if (!res.ok) throw new Error("Failed to toggle")
+    await fetchRituals()
+  } catch (e) {
+    console.error("Error toggling ritual:", e)
+  } finally {
+    setTogglingId(null)
+  }
+}
 
   const handleDelete = async () => {
     if (!deleteTarget) return
@@ -126,18 +146,29 @@ export default function AdminRitualsPage() {
                           </span>
                         </td>
                         <td className="py-3 px-2">
-                          <div className="flex gap-2">
-                            <Link href={`/rituals/${ritual.slug}`} target="_blank">
-                              <Button size="sm" variant="ghost"><Eye className="w-4 h-4" /></Button>
-                            </Link>
-                            <Link href={`/admin/rituals/edit/${ritual.slug}`}>
-                              <Button size="sm" variant="outline"><Edit2 className="w-4 h-4" /></Button>
-                            </Link>
-                            <Button size="sm" variant="destructive" onClick={() => setDeleteTarget(ritual)}>
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </td>
+  <div className="flex gap-2">
+    <Button
+      size="sm"
+      variant="outline"
+      onClick={() => handleToggleActive(ritual)}
+      disabled={togglingId === ritual._id}
+      className={ritual.isActive
+        ? "border-amber-300 text-amber-700 hover:bg-amber-50"
+        : "border-green-300 text-green-700 hover:bg-green-50"}
+    >
+      {togglingId === ritual._id ? "..." : ritual.isActive ? "Deactivate" : "Activate"}
+    </Button>
+    <Link href={`/rituals/${ritual.slug}`} target="_blank">
+      <Button size="sm" variant="ghost"><Eye className="w-4 h-4" /></Button>
+    </Link>
+    <Link href={`/admin/rituals/edit/${ritual.slug}`}>
+      <Button size="sm" variant="outline"><Edit2 className="w-4 h-4" /></Button>
+    </Link>
+    <Button size="sm" variant="destructive" onClick={() => setDeleteTarget(ritual)}>
+      <Trash2 className="w-4 h-4" />
+    </Button>
+  </div>
+</td>
                       </tr>
                     ))
                   )}

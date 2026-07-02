@@ -34,6 +34,7 @@ interface CartStore {
   items: CartItem[]
   addItem: (item: CartItem) => void
   removeItem: (productId: string, selectedSize?: Size) => void
+  removeRitual: (ritualSlug: string) => void
   updateQuantity: (productId: string, quantity: number, selectedSize?: Size) => void
   clearCart: () => void
   getTotalPrice: () => number
@@ -97,6 +98,12 @@ export const useCartStore = create<CartStore>()(
           items: state.items.filter((i) => !matchItem(i, productId, selectedSize)),
         }))
       },
+
+      removeRitual: (ritualSlug: string) => {
+  set((state) => ({
+    items: state.items.filter((i) => i.ritual?.slug !== ritualSlug),
+  }))
+},
 
       updateQuantity: (productId: string, quantity: number, selectedSize?: Size) => {
         set((state) => ({

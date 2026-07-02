@@ -10,7 +10,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useParams } from "next/navigation"
 import { ChevronRight, Home, Sparkles } from "lucide-react"
-import ProductCard from "@/components/product-card"
+import RitualProductCard from "@/components/RitualProductCard"
 import { useCartStore } from "@/lib/store/cart-store"
 import { useToast } from "@/hooks/use-toast"
 import { ShoppingBag, Phone } from "lucide-react"
@@ -90,26 +90,19 @@ export default function RitualPage() {
     const [addingRitual, setAddingRitual] = useState(false)
 
 
-    function handleAddRitualToCart() {
+  function handleAddRitualToCart() {
   if (!ritual || ritual.products.length === 0) return
 
-  const currentTotal = getTotalItems()
   const incoming = ritual.products.length
 
-  // Same 5-item cap the rest of the site enforces. Adding a partial
-  // ritual would be confusing, so we block the whole action and route
-  // to the same bulk-order flow used elsewhere instead of silently
-  // adding only some of the products.
-  if (currentTotal + incoming > 5) {
-    setShowBulkOrderModal(true)
-    return
-  }
-
+  // Rituals are exempt from the site-wide 5-item cart cap. The cap exists
+  // to route large single-product bulk orders to a phone call, but a
+  // ritual is a curated bundle the user is choosing deliberately — capping
+  // it would block the core "buy the whole set" flow this button exists
+  // for. So we always add every product, no size limit.
   setAddingRitual(true)
   ritual.products.forEach((product) => {
     const hasSizes = !!product.sizes?.length
-    // Products with size variants need one selected — default to the
-    // cheapest option so "add all" never blocks on a missing choice.
     const cheapestSize = hasSizes
       ? [...product.sizes!].sort(
           (a, b) => (a.discountPrice ?? a.price) - (b.discountPrice ?? b.price)
@@ -265,24 +258,11 @@ export default function RitualPage() {
         </section>
       )}
 
-    {/* ── Curated Products ── */}
+{/* ── Curated Products ── */}
 <section className="container-nezal py-12">
-  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-    <h2 className="text-xl font-bold text-[var(--color-text-heading)]">
-      Shop The {ritual.name}
-    </h2>
-    {ritual.products.length > 0 && (
-      <button
-        onClick={handleAddRitualToCart}
-        disabled={addingRitual}
-        className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-        style={{ backgroundColor: "#1e3a28" }}
-      >
-        <ShoppingBag className="h-4 w-4" />
-        Add Full Ritual to Cart ({ritual.products.length} products)
-      </button>
-    )}
-  </div>
+  <h2 className="text-xl font-bold text-[var(--color-text-heading)] mb-6">
+    Shop The {ritual.name}
+  </h2>
 
   {ritual.products.length === 0 ? (
     <div className="flex flex-col items-center justify-center py-16 gap-4">
@@ -292,28 +272,40 @@ export default function RitualPage() {
       </Link>
     </div>
   ) : (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-      {ritual.products.map((product) => (
-        <ProductCard
-          key={product._id}
-          id={product._id}
-          name={product.name}
-          slug={product.slug}
-          price={product.price}
-          discountPrice={product.discountPrice}
-          image={product.image}
-          images={product.images}
-          variantLabel={product.variantLabel}
-          skinTypes={product.skinTypes}
-          concerns={product.concerns}
-          keyIngredients={product.keyIngredients}
-          company={product.company}
-          hasMultipleSizes={!!product.sizes?.length}
-          sizes={product.sizes as any}
-          stock={product.stock}
-        />
-      ))}
-    </div>
+    <>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+        {ritual.products.map((product) => (
+          <RitualProductCard
+            key={product._id}
+            id={product._id}
+            name={product.name}
+            price={product.price}
+            discountPrice={product.discountPrice}
+            image={product.image}
+            company={product.company}
+            hasMultipleSizes={!!product.sizes?.length}
+            sizes={product.sizes as any}
+            stock={product.stock}
+          />
+        ))}
+      </div>
+
+      {/* Single CTA for the whole ritual, placed after the products so
+          the user sees what they're getting before committing. */}
+      <div className="flex justify-center mt-10">
+  <button
+    onClick={handleAddRitualToCart}
+    disabled={addingRitual}
+    className="ritual-cta inline-flex items-center justify-center gap-2.5 px-9 py-4 rounded-2xl font-bold text-base text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+    <ShoppingBag className="h-5 w-5" />
+    Add Full Ritual to Cart
+    <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-full bg-white/25 text-xs font-extrabold">
+      {ritual.products.length}
+    </span>
+  </button>
+</div>
+    </>
   )}
 </section>
 
@@ -338,6 +330,47 @@ export default function RitualPage() {
   </DialogContent>
 </Dialog>
 
+
+<style jsx>{`
+  @keyframes ritual-cta-glow {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(30, 58, 40, 0.4), 0 8px 24px rgba(30, 58, 40, 0.35);
+    }
+    50% {
+      box-shadow: 0 0 0 10px rgba(30, 58, 40, 0), 0 8px 24px rgba(30, 58, 40, 0.35);
+    }
+  }
+  @keyframes ritual-cta-shimmer {
+    0% { transform: translateX(-150%) skewX(-20deg); }
+    100% { transform: translateX(250%) skewX(-20deg); }
+  }
+  @keyframes ritual-cta-gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  .ritual-cta {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(270deg, #1e3a28, #2f5c3d, #3f7a52, #2f5c3d, #1e3a28);
+    background-size: 400% 400%;
+    animation: ritual-cta-gradient 6s ease infinite, ritual-cta-glow 2.5s ease-in-out infinite;
+  }
+  .ritual-cta:hover {
+    animation-play-state: paused;
+    transform: translateY(-3px) scale(1.04);
+  }
+  .ritual-cta::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.35), transparent);
+    animation: ritual-cta-shimmer 3s ease-in-out infinite;
+  }
+`}</style>
     </main>
   )
 }

@@ -178,6 +178,9 @@ const testimonials = reviews.slice(0, 8).map((r: any) => ({
         <ShopByCategory companyId={nezalCompany._id} companySlug={nezalCompany.slug} />
       )}
 
+         {/* Flash Deal — products pre-rendered, no skeleton */}
+      {activeSale && <FlashDeal sale={activeSale} />}
+
       {/* Discover Rituals */}
       <DiscoverRituals />
 
@@ -190,8 +193,7 @@ const testimonials = reviews.slice(0, 8).map((r: any) => ({
       {/* Discover Ingredients */}
       <DiscoverIngredients />
 
-      {/* Flash Deal — products pre-rendered, no skeleton */}
-      {activeSale && <FlashDeal sale={activeSale} />}
+     
 
       {/* Why Choose Us */}
       <section className="py-12 md:py-16">

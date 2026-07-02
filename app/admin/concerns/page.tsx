@@ -35,6 +35,8 @@ export default function AdminConcernsPage() {
   const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState<Concern | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [togglingId, setTogglingId] = useState<string | null>(null)
+
 
   useEffect(() => {
     if (status === "loading") return
@@ -69,6 +71,23 @@ export default function AdminConcernsPage() {
     }
   }
 
+  const handleToggleActive = async (concern: Concern) => {
+  setTogglingId(concern._id)
+  try {
+    const res = await fetch(`/api/concerns/${concern.slug}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: !concern.isActive }),
+    })
+    if (!res.ok) throw new Error("Failed to toggle")
+    await fetchConcerns()
+  } catch (e) {
+    console.error("Error toggling concern:", e)
+  } finally {
+    setTogglingId(null)
+  }
+}
+
   if (status === "loading" || loading) {
     return (
       <main className="min-h-screen bg-background flex items-center justify-center">
@@ -76,6 +95,8 @@ export default function AdminConcernsPage() {
       </main>
     )
   }
+
+
 
   return (
     <main className="min-h-screen bg-background">
@@ -122,18 +143,29 @@ export default function AdminConcernsPage() {
                           </span>
                         </td>
                         <td className="py-3 px-2">
-                          <div className="flex gap-2">
-                            <Link href={`/concerns/${concern.slug}`} target="_blank">
-                              <Button size="sm" variant="ghost"><Eye className="w-4 h-4" /></Button>
-                            </Link>
-                            <Link href={`/admin/concerns/edit/${concern.slug}`}>
-                              <Button size="sm" variant="outline"><Edit2 className="w-4 h-4" /></Button>
-                            </Link>
-                            <Button size="sm" variant="destructive" onClick={() => setDeleteTarget(concern)}>
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </td>
+  <div className="flex gap-2">
+    <Button
+      size="sm"
+      variant="outline"
+      onClick={() => handleToggleActive(concern)}
+      disabled={togglingId === concern._id}
+      className={concern.isActive
+        ? "border-amber-300 text-amber-700 hover:bg-amber-50"
+        : "border-green-300 text-green-700 hover:bg-green-50"}
+    >
+      {togglingId === concern._id ? "..." : concern.isActive ? "Deactivate" : "Activate"}
+    </Button>
+    <Link href={`/concerns/${concern.slug}`} target="_blank">
+      <Button size="sm" variant="ghost"><Eye className="w-4 h-4" /></Button>
+    </Link>
+    <Link href={`/admin/concerns/edit/${concern.slug}`}>
+      <Button size="sm" variant="outline"><Edit2 className="w-4 h-4" /></Button>
+    </Link>
+    <Button size="sm" variant="destructive" onClick={() => setDeleteTarget(concern)}>
+      <Trash2 className="w-4 h-4" />
+    </Button>
+  </div>
+</td>
                       </tr>
                     ))
                   )}
