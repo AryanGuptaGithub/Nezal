@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { connectDB } from "@/lib/db"
 import { Product } from "@/lib/models/product"
+import { getActiveFlashSaleMap, applyFlashSaleToList } from "@/lib/flashSale"
 
 const MAX_PER_GROUP = 5
 
@@ -57,6 +58,11 @@ export async function GET(req: NextRequest) {
       .limit(MAX_PER_GROUP)
       .lean()
 
+    // Merge in flash-sale pricing so a searched product shows the same
+    // sale price / ribbon data as the shop grid and product page.
+    const flashSaleMap = await getActiveFlashSaleMap()
+    const productsWithSales = applyFlashSaleToList(products, flashSaleMap)
+
     // ── Concerns (static list — no DB query needed) ──
     const concerns = CONCERNS.filter((c) => regex.test(c.label)).slice(0, MAX_PER_GROUP)
 
@@ -91,7 +97,7 @@ export async function GET(req: NextRequest) {
       if (ingredients.length >= MAX_PER_GROUP) break
     }
 
-    return NextResponse.json({ products, concerns, ingredients })
+    return NextResponse.json({ products: productsWithSales, concerns, ingredients })
   } catch (error) {
     console.error("[search] GET error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

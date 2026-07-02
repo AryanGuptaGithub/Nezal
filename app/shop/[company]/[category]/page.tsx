@@ -19,6 +19,12 @@ interface Product {
   discountPrice?: number
   image: string
   company: { name: string; slug: string }
+  flashSale?: {
+    saleId: string
+    saleName: string
+    discountPercent: number
+    endsAt: string
+  } | null
 }
 
 interface Category {
@@ -334,6 +340,7 @@ export default function CategoryPage() {
                       discountPrice={product.discountPrice}
                       image={product.image}
                       company={product.company}
+                      flashSale={product.flashSale}
                     />
                   ))}
                 </div>

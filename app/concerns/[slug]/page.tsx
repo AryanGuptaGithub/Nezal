@@ -37,6 +37,12 @@ interface Product {
   }[]
   stock?: number
   company: { name: string; slug: string }
+  flashSale?: {
+    saleId: string
+    saleName: string
+    discountPercent: number
+    endsAt: string
+  } | null
 }
 
 interface RelatedCollection {
@@ -699,22 +705,23 @@ export default function ConcernPage() {
               {products.map((product) => (
                 <div key={product._id}>
                   <ProductCard
-                    id={product._id}
-                    name={product.name}
-                    slug={product.slug}
-                    price={product.price}
-                    discountPrice={product.discountPrice}
-                    image={product.image}
-                    images={product.images}
-                    variantLabel={product.variantLabel}
-                    skinTypes={product.skinTypes}
-                    concerns={product.concerns}
-                    keyIngredients={product.keyIngredients}
-                    company={product.company}
-                    hasMultipleSizes={!!product.sizes?.length}
-                    sizes={product.sizes as any}
-                    stock={product.stock}
-                  />
+  id={product._id}
+  name={product.name}
+  slug={product.slug}
+  price={product.price}
+  discountPrice={product.discountPrice}
+  image={product.image}
+  images={product.images}
+  variantLabel={product.variantLabel}
+  skinTypes={product.skinTypes}
+  concerns={product.concerns}
+  keyIngredients={product.keyIngredients}
+  company={product.company}
+  hasMultipleSizes={!!product.sizes?.length}
+  sizes={product.sizes as any}
+  stock={product.stock}
+  flashSale={product.flashSale}
+/>
                 </div>
               ))}
             </div>

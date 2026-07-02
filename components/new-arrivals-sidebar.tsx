@@ -7,7 +7,18 @@ import { ArrowRight } from "lucide-react"
 
 interface NewArrivalProduct {
   _id: string
-  productId: { _id: string; name: string; price: number; discountPrice?: number }
+  productId: {
+    _id: string
+    name: string
+    price: number
+    discountPrice?: number
+    flashSale?: {
+      saleId: string
+      saleName: string
+      discountPercent: number
+      endsAt: string
+    } | null
+  }
   title: string
   image: string
   company: { _id: string; name: string; slug: string }
@@ -76,11 +87,12 @@ export function NewArrivalsSidebar({ companyId, companySlug }: NewArrivalsSideba
                 return {
                   _id: arrival._id || `${companyId}-${product._id}`,
                   productId: {
-                    _id: product._id,
-                    name: product.name || "Product",
-                    price: product.price ?? 0,
-                    discountPrice: product.discountPrice,
-                  },
+  _id: product._id,
+  name: product.name || "Product",
+  price: product.price ?? 0,
+  discountPrice: product.discountPrice,
+  flashSale: product.flashSale ?? null,
+},
                   title: arrival.title || product.name || "New Arrival",
                   image: arrival.image || product.image || "/nezallogo.jpg",
                   company: { _id: companyId, name: "", slug: companySlug },
@@ -171,18 +183,26 @@ export function NewArrivalsSidebar({ companyId, companySlug }: NewArrivalsSideba
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p
-                    className="text-xs font-semibold leading-snug line-clamp-2 group-hover:text-[#2d6a4f] transition-colors"
-                    style={{ color: "#1a2e1a" }}
-                  >
-                    {product.title}
-                  </p>
-                  {price > 0 && (
-                    <p className="text-xs font-bold mt-1" style={{ color: "#2d6a4f" }}>
-                      ₹{finalPrice}
-                    </p>
-                  )}
-                </div>
+  <p
+    className="text-xs font-semibold leading-snug line-clamp-2 group-hover:text-[#2d6a4f] transition-colors"
+    style={{ color: "#1a2e1a" }}
+  >
+    {product.title}
+  </p>
+  {price > 0 && (
+    <p className="text-xs font-bold mt-1 flex items-center gap-1" style={{ color: "#2d6a4f" }}>
+      ₹{finalPrice}
+      {product.productId.flashSale && (
+        <span
+          className="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white"
+          style={{ background: "#E4432B" }}
+        >
+          SALE
+        </span>
+      )}
+    </p>
+  )}
+</div>
               </button>
             )
           })

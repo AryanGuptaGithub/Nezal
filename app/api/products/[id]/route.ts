@@ -5,6 +5,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import "@/lib/models/category";
+import { getActiveFlashSaleMap, applyFlashSale } from "@/lib/flashSale";
 
 export const dynamic = "force-dynamic";
 
@@ -45,8 +46,14 @@ export async function GET(
     }
 
     const productObj = product.toObject();
+
+    // Merge in flash-sale pricing so the product detail page shows the
+    // same sale price / ribbon as the shop grid, cart, etc.
+    const flashSaleMap = await getActiveFlashSaleMap();
+    const productWithSale = applyFlashSale(productObj, flashSaleMap);
+
     const populatedProduct = {
-      ...productObj,
+      ...productWithSale,
       company: product.company || { name: "Unknown", slug: "unknown" },
       // ── FIX: don't override a real populated category with a fake fallback object;
       //    return null so the UI shows "Product" heading instead of a fake slug ──

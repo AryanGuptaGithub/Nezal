@@ -16,7 +16,7 @@ import { useCartStore } from "@/lib/store/cart-store";
 import { useToast } from "@/hooks/use-toast";
 import { WishlistButton } from "@/components/wishlist-button";
 
-import { Phone } from "lucide-react";
+import { Phone, Zap } from "lucide-react";
 
 /* ───────────────────────────────────── */
 
@@ -27,6 +27,13 @@ interface Size {
   price: number;
   discountPrice?: number;
   stock: number;
+}
+
+interface FlashSaleInfo {
+  saleId: string;
+  saleName: string;
+  discountPercent: number;
+  endsAt: string;
 }
 
 interface ProductCardProps {
@@ -43,6 +50,9 @@ interface ProductCardProps {
   hasMultipleSizes?: boolean;
   sizes?: Size[];
   stock?: number;
+  // Present whenever the product is currently part of an active flash sale.
+  // Comes straight through from the product API responses — see lib/flashSale.ts
+  flashSale?: FlashSaleInfo | null;
 }
 
 /* ───────────────────────────────────── */
@@ -57,6 +67,7 @@ export default function ProductCard({
   hasMultipleSizes = false,
   sizes = [],
   stock = 999,
+  flashSale = null,
 }: ProductCardProps) {
   const router = useRouter();
 
@@ -110,30 +121,32 @@ export default function ProductCard({
         return;
       }
 
-      addItem({
-        productId: id,
-        name,
-        price: selectedSize.price,
-        discountPrice: selectedSize.discountPrice,
-        image,
-        quantity: 1,
-        company,
-        selectedSize,
-      });
+   addItem({
+  productId: id,
+  name,
+  price: selectedSize.price,
+  discountPrice: selectedSize.discountPrice,
+  image,
+  quantity: 1,
+  company,
+  selectedSize,
+  flashSale,
+});
 
       toast({ title: "Added to cart", description: `${name} added.` });
       return;
     }
 
     addItem({
-      productId: id,
-      name,
-      price,
-      discountPrice,
-      image,
-      quantity: 1,
-      company,
-    });
+  productId: id,
+  name,
+  price,
+  discountPrice,
+  image,
+  quantity: 1,
+  company,
+  flashSale,
+});
 
     toast({ title: "Added to cart", description: `${name} added.` });
   }
@@ -152,6 +165,21 @@ export default function ProductCard({
   {/* subtle gradient overlay for depth */}
   <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-transparent via-transparent to-black/5" />
 
+  {/* FLASH SALE RIBBON — only appears when the product is in an active sale.
+      Diagonal corner ribbon so it reads as "time-limited event", distinct
+      from the plain "% OFF" badge, which just states a price fact. */}
+  {flashSale && (
+    <div className="absolute -left-10 top-4 z-20 w-36 -rotate-45 overflow-hidden">
+      <div
+        className="flex items-center justify-center gap-1 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-md"
+        style={{ backgroundColor: "#E4432B" }}
+      >
+        <Zap className="h-3 w-3 fill-current" />
+        Flash Sale
+      </div>
+    </div>
+  )}
+
   {/* DISCOUNT BADGE */}
   {discount > 0 && (
     <div className="absolute right-3 top-3 z-20 rounded-full bg-gradient-to-r from-red-500 to-red-600 px-2.5 py-1 text-xs font-semibold text-white shadow-md">
@@ -159,9 +187,10 @@ export default function ProductCard({
     </div>
   )}
 
-  {/* ❤️ WISHLIST BUTTON */}
+  {/* ❤️ WISHLIST BUTTON — bottom-right so it never collides with the
+      ribbon (top-left) or the discount badge (top-right) */}
   <div
-    className="absolute left-3 top-3 z-20 rounded-full bg-white/80 p-1 shadow-sm backdrop-blur-md transition hover:bg-white"
+    className="absolute bottom-3 right-3 z-20 rounded-full bg-white/80 p-1 shadow-sm backdrop-blur-md transition hover:bg-white"
     onClick={(e) => e.stopPropagation()}
   >
     <WishlistButton productId={id} />

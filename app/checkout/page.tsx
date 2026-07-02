@@ -8,6 +8,7 @@ import { useCartStore } from "@/lib/store/cart-store"
 import { CheckoutForm } from "@/components/checkout-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { trackInitiateCheckout } from "@/lib/facebook-pixel"
+import { Zap } from "lucide-react"
 
 declare global {
   interface Window {
@@ -162,7 +163,10 @@ const [couponData, setCouponData]       = useState<{
 
 const totalPrice = getTotalPrice()
 
-
+const flashSavings = items.reduce((sum, item) => {
+  if (!item.flashSale || !item.discountPrice) return sum
+  return sum + (item.price - item.discountPrice) * item.quantity
+}, 0)
 
 const handleApplyCoupon = async () => {
   const code = couponInput.trim().toUpperCase()
@@ -458,20 +462,29 @@ const removeCoupon = () => {
 
       {/* Items */}
       {items.map((item) => (
-        <div key={item.productId} className="text-sm border-b border-[--color-border] pb-3 last:border-b-0">
-          <div className="flex justify-between">
-            <span className="text-[--color-text-body]">{item.name} x {item.quantity}</span>
-            <span className="font-semibold text-[--color-text-heading]">
-              ₹{((item.discountPrice || item.price) * item.quantity).toFixed(2)}
-            </span>
-          </div>
-          {item.selectedSize && (
-            <div className="text-xs text-[--color-text-muted] mt-1">
-              Size: {item.selectedSize.size} ({item.selectedSize.quantity}{item.selectedSize.unit})
-            </div>
-          )}
-        </div>
-      ))}
+  <div key={item.productId} className="text-sm border-b border-[--color-border] pb-3 last:border-b-0">
+    <div className="flex justify-between">
+      <span className="text-[--color-text-body]">{item.name} x {item.quantity}</span>
+      <span className="font-semibold text-[--color-text-heading]">
+        ₹{((item.discountPrice || item.price) * item.quantity).toFixed(2)}
+      </span>
+    </div>
+    {item.selectedSize && (
+      <div className="text-xs text-[--color-text-muted] mt-1">
+        Size: {item.selectedSize.size} ({item.selectedSize.quantity}{item.selectedSize.unit})
+      </div>
+    )}
+    {item.flashSale && item.discountPrice && (
+      <div
+        className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full mt-1.5"
+        style={{ backgroundColor: "#E4432B", color: "#ffffff" }}
+      >
+        <Zap className="w-2.5 h-2.5 fill-current" />
+        {item.flashSale.discountPercent}% Flash Sale
+      </div>
+    )}
+  </div>
+))}
 
       {/* Coupon input */}
       <div className="border-t border-[--color-border] pt-4">
@@ -528,28 +541,40 @@ const removeCoupon = () => {
       </div>
 
       {/* Price breakdown */}
-      <div className="border-t border-[--color-border] pt-4 space-y-2">
-        <div className="flex justify-between text-sm">
-          <span className="text-[--color-text-muted]">Subtotal</span>
-          <span className="font-semibold text-[--color-text-heading]">₹{totalPrice.toFixed(2)}</span>
-        </div>
+<div className="border-t border-[--color-border] pt-4 space-y-2">
+  <div className="flex justify-between text-sm">
+    <span className="text-[--color-text-muted]">Subtotal</span>
+    <span className="font-semibold text-[--color-text-heading]">₹{totalPrice.toFixed(2)}</span>
+  </div>
 
-        {couponData && (
-          <div className="flex justify-between text-sm">
-            <span className="text-green-600 font-medium">
-              Coupon ({couponData.code})
-            </span>
-            <span className="font-semibold text-green-600">
-              −₹{discountAmount.toFixed(2)}
-            </span>
-          </div>
-        )}
+  {flashSavings > 0 && (
+    <div className="flex justify-between text-sm">
+      <span className="flex items-center gap-1" style={{ color: "#E4432B" }}>
+        <Zap className="w-3.5 h-3.5 fill-current" />
+        Flash Sale Savings
+      </span>
+      <span className="font-semibold" style={{ color: "#E4432B" }}>
+        − ₹{flashSavings.toFixed(2)}
+      </span>
+    </div>
+  )}
 
-        <div className="flex justify-between text-sm">
-          <span className="text-[--color-text-muted]">Shipping</span>
-          <span className="font-semibold text-[--color-brand-primary]">Free</span>
-        </div>
-      </div>
+  {couponData && (
+    <div className="flex justify-between text-sm">
+      <span className="text-green-600 font-medium">
+        Coupon ({couponData.code})
+      </span>
+      <span className="font-semibold text-green-600">
+        −₹{discountAmount.toFixed(2)}
+      </span>
+    </div>
+  )}
+
+  <div className="flex justify-between text-sm">
+    <span className="text-[--color-text-muted]">Shipping</span>
+    <span className="font-semibold text-[--color-brand-primary]">Free</span>
+  </div>
+</div>
 
       {/* Final total */}
       <div className="border-t border-[--color-border] pt-4 flex justify-between text-lg font-bold">

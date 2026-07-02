@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { connectDB } from "@/lib/db"
 import { Concern } from "@/lib/models/concern"
+import { getActiveFlashSaleMap, applyFlashSaleToList } from "@/lib/flashSale"
 
 export async function GET(
   req: NextRequest,
@@ -37,7 +38,15 @@ export async function GET(
       return NextResponse.json({ error: "Concern not found" }, { status: 404 })
     }
 
-    return NextResponse.json({ concern })
+    // ── Merge in flash-sale pricing so concern-page listings match
+    //    every other surface (shop grid, home, etc.) ──────────────────
+    const flashSaleMap = await getActiveFlashSaleMap()
+    const concernWithSales = {
+      ...concern,
+      products: applyFlashSaleToList((concern as any).products ?? [], flashSaleMap),
+    }
+
+    return NextResponse.json({ concern: concernWithSales })
   } catch (error) {
     console.error("[concerns/slug] GET error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

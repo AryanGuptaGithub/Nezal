@@ -5,6 +5,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import mongoose from "mongoose";
+import { getActiveFlashSaleMap, applyFlashSaleToList } from "@/lib/flashSale";
 
 // GET - Fetch New Arrivals with full product details
 export async function GET(
@@ -36,7 +37,13 @@ export async function GET(
     const newArrivalsList = company.newArrivals || [];
     const productIds = newArrivalsList.map((item: any) => item.productId);
 
-    const products = await Product.find({ _id: { $in: productIds } });
+    const productsRaw = await Product.find({ _id: { $in: productIds } }).lean();
+
+    // ── Merge in flash-sale pricing so New Arrivals shows the same
+    //    sale price / ribbon as the shop grid ──────────────────────
+    const flashSaleMap = await getActiveFlashSaleMap();
+    const products = applyFlashSaleToList(productsRaw, flashSaleMap);
+
     const productMap = new Map(products.map((p: any) => [p._id.toString(), p]));
 
     // Sort by position and limit

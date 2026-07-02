@@ -3,7 +3,7 @@
 
 import { Heart } from "lucide-react";
 import { useWishlistStore } from "@/lib/store/wishlist-store";
-import { useSession } from "next-auth/react";
+import { useSession } from "next-auth/react"; 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 

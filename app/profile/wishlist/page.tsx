@@ -20,6 +20,8 @@ interface Product {
   slug: string
   image?: string
   images?: string[]
+  price?: number
+  discountPrice?: number
   company?: { name: string; slug: string }
   sizes?: Array<{
     size: string
@@ -29,6 +31,12 @@ interface Product {
     discountPrice?: number
   }>
   category?: string
+  flashSale?: {
+    saleId: string
+    saleName: string
+    discountPercent: number
+    endsAt: string
+  } | null
 }
 
 export default function WishlistPage() {
@@ -108,22 +116,31 @@ export default function WishlistPage() {
     }
   }
 
-  function handleAddToCart(product: Product) {
-    const size = product.sizes?.[0]
-    if (!size) {
-      toast({ title: "No size available", variant: "destructive" })
-      return
-    }
+function handleAddToCart(product: Product) {
+  const size = product.sizes?.[0]
+  if (!size) {
     addToCart({
       productId: product._id,
       name: product.name,
       image: product.image || product.images?.[0] || "",
-      selectedSize: size,
+      price: product.price ?? 0,
+      discountPrice: product.discountPrice,
       quantity: 1,
-      slug: product.slug,
     })
     toast({ title: "Added to cart", description: product.name })
+    return
   }
+  addToCart({
+    productId: product._id,
+    name: product.name,
+    price: size.price,
+    discountPrice: size.discountPrice,
+    image: product.image || product.images?.[0] || "",
+    selectedSize: size,
+    quantity: 1,
+  })
+  toast({ title: "Added to cart", description: product.name })
+}
 
   if (status === "loading" || loading) {
     return (
@@ -167,8 +184,10 @@ export default function WishlistPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
             {products.map((product) => {
               const size = product.sizes?.[0]
-              const price = size?.discountPrice ?? size?.price
-              const originalPrice = size?.discountPrice ? size.price : undefined
+              const price = size ? (size.discountPrice ?? size.price) : (product.discountPrice ?? product.price)
+              const originalPrice = size
+                ? (size.discountPrice ? size.price : undefined)
+                : (product.discountPrice ? product.price : undefined)
               const discount = originalPrice && price
                 ? Math.round(((originalPrice - price) / originalPrice) * 100)
                 : null
@@ -193,6 +212,14 @@ export default function WishlistPage() {
                     {discount && (
                       <Badge className="absolute top-2 left-2 bg-green-600 text-white text-xs">
                         {discount}% off
+                      </Badge>
+                    )}
+                    {product.flashSale && !size && (
+                      <Badge
+                        className="absolute top-2 left-2 text-white text-xs"
+                        style={{ backgroundColor: "#E4432B", marginTop: discount ? "1.75rem" : 0 }}
+                      >
+                        ⚡ Flash Sale
                       </Badge>
                     )}
                     {/* Remove button */}

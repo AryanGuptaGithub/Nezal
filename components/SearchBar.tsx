@@ -15,7 +15,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { Search, X, Loader2, Sparkles, FlaskConical } from "lucide-react"
+import { Search, X, Loader2, Sparkles, FlaskConical, Zap } from "lucide-react"
 
 interface SearchResultProduct {
   _id: string
@@ -24,6 +24,9 @@ interface SearchResultProduct {
   discountPrice?: number
   image: string
   company?: { slug: string; name?: string }
+  // Present when the product is currently part of an active flash sale —
+  // see lib/flashSale.ts. Only used here to show the small "Sale" tag.
+  flashSale?: { saleId: string; saleName: string; discountPercent: number; endsAt: string } | null
 }
 
 interface SearchResultConcern {
@@ -256,7 +259,19 @@ export function SearchBar() {
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-[var(--color-text-heading)]">{product.name}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="truncate text-sm font-medium text-[var(--color-text-heading)]">{product.name}</p>
+                          {/* Small inline tag — a full ribbon is too heavy for a compact dropdown row */}
+                          {product.flashSale && (
+                            <span
+                              className="flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-[1px] text-[9px] font-bold uppercase tracking-wide text-white"
+                              style={{ backgroundColor: "#E4432B" }}
+                            >
+                              <Zap className="h-2.5 w-2.5 fill-current" />
+                              Sale
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-sm font-bold" style={{ color: "#1e3a28" }}>₹{displayPrice}</span>
                           {product.discountPrice && (

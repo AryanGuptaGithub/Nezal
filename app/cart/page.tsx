@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 import Image from "next/image"
-import { Trash2, Phone } from "lucide-react"
+import { Trash2, Phone, Zap } from "lucide-react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import {
@@ -22,6 +22,12 @@ export default function CartPage() {
   const totalPrice = getTotalPrice()
   const router = useRouter()
   const [showBulkOrderModal, setShowBulkOrderModal] = useState(false)
+
+  const totalSavings = items.reduce((sum, item) => {
+  if (!item.discountPrice) return sum
+  return sum + (item.price - item.discountPrice) * item.quantity
+}, 0)
+
 
   // ===== Empty cart state =====
   if (items.length === 0) {
@@ -83,10 +89,20 @@ export default function CartPage() {
                       <p className="text-sm text-muted-foreground">{item.company?.name ?? ""}</p>
 
                       {item.selectedSize && (
-                        <p className="text-sm text-foreground/80 mt-1">
-                          <span className="font-medium">Size:</span> {item.selectedSize.size} ({item.selectedSize.quantity}{item.selectedSize.unit})
-                        </p>
-                      )}
+  <p className="text-sm text-foreground/80 mt-1">
+    <span className="font-medium">Size:</span> {item.selectedSize.size} ({item.selectedSize.quantity}{item.selectedSize.unit})
+  </p>
+)}
+
+{item.flashSale && item.discountPrice && (
+  <div
+    className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full mt-2"
+    style={{ backgroundColor: "#E4432B", color: "#ffffff" }}
+  >
+    <Zap className="w-3 h-3 fill-current" />
+    You're saving ₹{((item.price - item.discountPrice) * item.quantity).toFixed(0)} — {item.flashSale.discountPercent}% Flash Sale
+  </div>
+)}
 
                       <div className="flex items-center justify-between mt-4">
                         {/* Quantity controls */}
@@ -147,20 +163,31 @@ export default function CartPage() {
                 <CardTitle className="text-xl font-bold text-foreground">Order Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2 border-b border-border pb-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-semibold text-foreground">₹{totalPrice.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Shipping</span>
-                    <span className="font-semibold text-primary">Free</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tax</span>
-                    <span className="font-semibold text-foreground">₹0</span>
-                  </div>
-                </div>
+               <div className="space-y-2 border-b border-border pb-4">
+  <div className="flex justify-between text-sm">
+    <span className="text-muted-foreground">Subtotal</span>
+    <span className="font-semibold text-foreground">₹{totalPrice.toFixed(2)}</span>
+  </div>
+  {totalSavings > 0 && (
+    <div className="flex justify-between text-sm border p-2 rounded-lg border-[#E4432B] ">
+      <span className="flex items-center gap-1 " style={{ color: "#E4432B" }}>
+        <Zap className="w-3.5 h-3.5 fill-current" />
+        Flash Sale Savings
+      </span>
+      <span className="font-semibold" style={{ color: "#E4432B" }}>
+        − ₹{totalSavings.toFixed(2)}
+      </span>
+    </div>
+  )}
+  <div className="flex justify-between text-sm">
+    <span className="text-muted-foreground">Shipping</span>
+    <span className="font-semibold text-primary">Free</span>
+  </div>
+  <div className="flex justify-between text-sm">
+    <span className="text-muted-foreground">Tax</span>
+    <span className="font-semibold text-foreground">₹0</span>
+  </div>
+</div>
 
                 <div className="flex justify-between text-lg font-bold">
                   <span className="text-foreground">Total</span>

@@ -6,7 +6,7 @@ import { FormEvent, useCallback, useEffect, useRef, useState, useMemo, memo } fr
 import { useParams } from "next/navigation"
 import Image from "next/image"
 import { useSession } from "next-auth/react"
-import { Star, ShoppingCart, Zap, Heart, Truck, RotateCcw, Leaf, Tag, ChevronLeft, ChevronRight, BadgeCheck } from "lucide-react"
+import { Star, ShoppingCart, Zap, Heart, Truck, RotateCcw, Leaf, Tag, ChevronLeft, ChevronRight, BadgeCheck, Clock } from "lucide-react"
 import { useCartStore } from "@/lib/store/cart-store"
 import ProductCard from "@/components/product-card"
 import FAQ from "@/components/FAQ"
@@ -28,6 +28,21 @@ function productCacheKey(id: string) { return `product:${id}` }
 function productReviewsCacheKey(id: string) { return `product:reviews:${id}` }
 function suggestedProductsCacheKey(companySlug: string, productId: string) {
   return `suggested:products:${companySlug}:${productId}`
+}
+
+// ── Countdown helper ───────────────────────────────────────
+function getTimeRemaining(endsAt: string) {
+  const total = new Date(endsAt).getTime() - Date.now()
+  if (total <= 0) return null
+  const hours = Math.floor(total / (1000 * 60 * 60))
+  const minutes = Math.floor((total % (1000 * 60 * 60)) / (1000 * 60))
+  const seconds = Math.floor((total % (1000 * 60)) / 1000)
+  return { hours, minutes, seconds, total }
+}
+
+function getFlashPrice(basePrice: number, flashSale?: Product["flashSale"] | null) {
+  if (!flashSale) return undefined
+  return Math.round(basePrice - (basePrice * flashSale.discountPercent) / 100)
 }
 
 // ── API helpers ───────────────────────────────────────────
@@ -102,14 +117,19 @@ interface Product {
   company?: { name: string; slug: string }
   category?: { name: string }
   sizes?: Size[]
-  updatedAt?: string                                       // ← new (for image cache-busting)
-  // ── Structured sections ──────────────────────────────
-  whyYoullLoveIt?: string[]                               // ← new
-  fragranceExp?: string[]                                 // ← new
-  whoIsItFor?: string                                     // ← new
-  skinHairConcern?: string                                // ← new
-  expectedResults?: string                               // ← new
-  keyIngredients?: { name: string; benefit: string }[]   // ← new
+  updatedAt?: string
+  whyYoullLoveIt?: string[]
+  fragranceExp?: string[]
+  whoIsItFor?: string
+  skinHairConcern?: string
+  expectedResults?: string
+  keyIngredients?: { name: string; benefit: string }[]
+  flashSale?: {
+    saleId: string
+    saleName: string
+    discountPercent: number
+    endsAt: string
+  } | null
 }
 
 interface SuggestedProduct {
@@ -119,6 +139,12 @@ interface SuggestedProduct {
   discountPrice?: number
   image: string
   company: { name: string; slug: string }
+  flashSale?: {
+    saleId: string
+    saleName: string
+    discountPercent: number
+    endsAt: string
+  } | null
 }
 
 type RatingKey = 1 | 2 | 3 | 4 | 5
@@ -268,8 +294,23 @@ const initialReviews = null
   const [activeTab, setActiveTab] = useState<"description" | "ingredients" | "benefits" | "usage">("description")
   const [showBulkOrderModal, setShowBulkOrderModal] = useState(false)
   const [wishlist, setWishlist] = useState(false)
+  const [timeLeft, setTimeLeft] = useState<{ hours: number; minutes: number; seconds: number } | null>(null)
 
   const reviewsFetchRef = useRef(false)
+
+
+      // ── Flash sale countdown ticker ─────────────────────────
+      useEffect(() => {
+        if (!product?.flashSale?.endsAt) {
+          setTimeLeft(null)
+          return
+        }
+        const tick = () => setTimeLeft(getTimeRemaining(product.flashSale!.endsAt))
+        tick()
+        const interval = setInterval(tick, 1000)
+        return () => clearInterval(interval)
+      }, [product?.flashSale?.endsAt])
+
 
   // ── Effects ────────────────────────────────────────────
   useEffect(() => {
@@ -371,18 +412,22 @@ const initialReviews = null
       toast({ title: "Out of stock", description: "This item is currently out of stock.", variant: "destructive" })
       return
     }
-    addItem({
-      productId: product._id,
-      name: product.name,
-      price: selectedSize ? selectedSize.price : product.price,
-      discountPrice: selectedSize ? selectedSize.discountPrice : product.discountPrice,
-      image: product.image,
-      quantity,
-      company: product.company || { name: "Unknown", slug: "unknown" },
-      selectedSize: selectedSize || undefined,
-    })
-    const itemPrice = selectedSize ? selectedSize.price : product.price
-    const itemDiscountPrice = selectedSize ? selectedSize.discountPrice : product.discountPrice
+ addItem({
+  productId: product._id,
+  name: product.name,
+  price: currentPrice,
+  discountPrice: currentDiscountPrice,
+  image: product.image,
+  quantity,
+  company: product.company || { name: "Unknown", slug: "unknown" },
+  selectedSize: selectedSize
+    ? { ...selectedSize, discountPrice: currentDiscountPrice }
+    : undefined,
+  flashSale: product.flashSale,
+})
+const itemPrice = currentPrice
+const itemDiscountPrice = currentDiscountPrice
+    
     trackAddToCart(product._id, product.name, itemDiscountPrice || itemPrice, quantity)
     toast({ title: "Added to cart!", description: `${quantity} × ${product.name}${selectedSize ? ` (${selectedSize.size}${selectedSize.unit})` : ""} added.` })
     setQuantity(1)
@@ -404,18 +449,21 @@ const initialReviews = null
 
   if (isOutOfStock) return
 
-  addItem({
-    productId: product._id,
-    name: product.name,
-    price: selectedSize ? selectedSize.price : product.price,
-    discountPrice: selectedSize ? selectedSize.discountPrice : product.discountPrice,
-    image: product.image,
-    quantity,
-    company: product.company || { name: "Unknown", slug: "unknown" },
-    selectedSize: selectedSize || undefined,
-  })
+addItem({
+  productId: product._id,
+  name: product.name,
+  price: currentPrice,
+  discountPrice: currentDiscountPrice,
+  image: product.image,
+  quantity,
+  company: product.company || { name: "Unknown", slug: "unknown" },
+  selectedSize: selectedSize
+    ? { ...selectedSize, discountPrice: currentDiscountPrice }
+    : undefined,
+  flashSale: product.flashSale,
+})
 
-  router.push("/checkout")
+router.push("/checkout")
 }
 
   const handleSubmitReview = async (event: FormEvent<HTMLFormElement>) => {
@@ -476,12 +524,14 @@ const initialReviews = null
   )
 
   // ── Derived ────────────────────────────────────────────
-  const currentPrice = selectedSize ? selectedSize.price : (product?.price ?? 0)
-  const currentDiscountPrice = selectedSize ? selectedSize.discountPrice : product?.discountPrice
-  const displayPrice = currentDiscountPrice || currentPrice
-  const discount = currentDiscountPrice ? Math.round(((currentPrice - currentDiscountPrice) / currentPrice) * 100) : 0
-  const hasSizes = product?.sizes && product.sizes.length > 0
-  const isOutOfStock = hasSizes ? !selectedSize || selectedSize.stock <= 0 : (product?.stock ?? 0) <= 0
+      const currentPrice = selectedSize ? selectedSize.price : (product?.price ?? 0)
+      const currentDiscountPrice = product?.flashSale
+        ? getFlashPrice(currentPrice, product.flashSale)
+        : (selectedSize ? selectedSize.discountPrice : product?.discountPrice)
+      const displayPrice = currentDiscountPrice || currentPrice
+      const discount = currentDiscountPrice ? Math.round(((currentPrice - currentDiscountPrice) / currentPrice) * 100) : 0
+      const hasSizes = product?.sizes && product.sizes.length > 0
+      const isOutOfStock = hasSizes ? !selectedSize || selectedSize.stock <= 0 : (product?.stock ?? 0) <= 0
 
   // ── Loading ────────────────────────────────────────────
   if (loading) {
@@ -574,13 +624,15 @@ const currentImage =
               }}
             >
               {discount > 0 && (
-                <div
-                  className="absolute top-4 left-4 z-10 text-xs font-bold px-3 py-1.5 rounded-full"
-                  style={{ backgroundColor: "#1e3a28", color: "#ffffff" }}
-                >
-                  {discount}% OFF
-                </div>
-              )}
+  <div
+    className="absolute top-4 left-4 z-10 text-xs font-bold px-3 py-1.5 rounded-full"
+    style={{ backgroundColor: "#1e3a28", color: "#ffffff" }}
+  >
+    {discount}% OFF
+  </div>
+)}
+
+
 
            {currentImage ? (
   <Image
@@ -711,31 +763,96 @@ const currentImage =
               </span>
             </div>
 
-            {/* Price */}
-            <div
-              className="rounded-2xl border p-5 space-y-1"
-              style={{ backgroundColor: "#ffffff", borderColor: "#dde8de" }}
-            >
-              <div className="flex items-baseline gap-3 flex-wrap">
-                <span className="text-4xl font-extrabold" style={{ color: "#1e3a28" }}>
-                  ₹{displayPrice}
+{/* Price */}
+<div
+  className="rounded-2xl border p-5 space-y-1"
+  style={{ backgroundColor: "#ffffff", borderColor: "#dde8de" }}
+>
+  {product.flashSale && timeLeft && (
+    <div
+      className="relative overflow-hidden rounded-2xl mb-4 p-4"
+      style={{
+        background: "linear-gradient(135deg, #E4432B 0%, #c0301c 100%)",
+        boxShadow: "0 8px 24px rgba(228,67,43,0.35)",
+      }}
+    >
+      <div
+        className="absolute inset-0 opacity-30"
+        style={{
+          background: "linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.5) 50%, transparent 70%)",
+          backgroundSize: "200% 100%",
+          animation: "shine 2.5s linear infinite",
+        }}
+      />
+      <style>{`
+        @keyframes shine {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+      `}</style>
+
+      <div className="relative flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 animate-pulse"
+            style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
+          >
+            <Zap className="w-5 h-5 text-white fill-white" />
+          </div>
+          <div>
+            <p className="text-white font-extrabold text-sm leading-tight">
+              {product.flashSale.saleName || "Flash Sale"}
+            </p>
+            <p className="text-white/80 text-xs font-medium">
+              {product.flashSale.discountPercent}% off — limited time only
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <Clock className="w-3.5 h-3.5 text-white/70 mr-0.5" />
+          {[
+            { value: timeLeft.hours, label: "h" },
+            { value: timeLeft.minutes, label: "m" },
+            { value: timeLeft.seconds, label: "s" },
+          ].map((unit, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <div
+                className="rounded-lg px-2.5 py-1.5 min-w-[42px] text-center"
+                style={{ backgroundColor: "rgba(0,0,0,0.25)" }}
+              >
+                <span className="text-white font-mono font-extrabold text-base tabular-nums">
+                  {String(unit.value).padStart(2, "0")}
                 </span>
-                {currentDiscountPrice && (
-                  <span className="text-xl line-through" style={{ color: "#9cad9e" }}>
-                    ₹{currentPrice}
-                  </span>
-                )}
-                {discount > 0 && (
-                  <span
-                    className="text-sm font-semibold px-2.5 py-1 rounded-full"
-                    style={{ backgroundColor: "#fff7e6", color: "#b45309", border: "1px solid #fcd9a0" }}
-                  >
-                    {discount}% off
-                  </span>
-                )}
+                <span className="text-white/70 text-[10px] font-semibold ml-0.5">{unit.label}</span>
               </div>
-              <p className="text-xs" style={{ color: "#6b7c70" }}>Inclusive of all taxes</p>
             </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )}
+
+  <div className="flex items-baseline gap-3 flex-wrap">
+    <span className="text-4xl font-extrabold" style={{ color: "#1e3a28" }}>
+      ₹{displayPrice}
+    </span>
+    {currentDiscountPrice && (
+      <span className="text-xl line-through" style={{ color: "#9cad9e" }}>
+        ₹{currentPrice}
+      </span>
+    )}
+    {discount > 0 && (
+      <span
+        className="text-sm font-semibold px-2.5 py-1 rounded-full"
+        style={{ backgroundColor: "#fff7e6", color: "#b45309", border: "1px solid #fcd9a0" }}
+      >
+        {discount}% off
+      </span>
+    )}
+  </div>
+  <p className="text-xs" style={{ color: "#6b7c70" }}>Inclusive of all taxes</p>
+</div>
 
             {/* Size selector */}
             {hasSizes && (
@@ -765,7 +882,9 @@ const currentImage =
                         }}
                       >
                        {size.size.replace(/[a-zA-Z]+$/, "").trim()}{size.unit}
-{size.discountPrice ? ` – ₹${size.discountPrice}` : ` – ₹${size.price}`}
+                        {product.flashSale
+                          ? ` – ₹${getFlashPrice(size.price, product.flashSale)}`
+                          : size.discountPrice ? ` – ₹${size.discountPrice}` : ` – ₹${size.price}`}
                       </button>
                     )
                   })}
@@ -1171,14 +1290,15 @@ const currentImage =
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
       {suggestedProducts.map((p) => (
         <ProductCard
-          key={p._id}
-          id={p._id}
-          name={p.name}
-          price={p.price}
-          discountPrice={p.discountPrice}
-          image={p.image}
-          company={p.company}
-        />
+        key={p._id}
+        id={p._id}
+        name={p.name}
+        price={p.price}
+        discountPrice={p.discountPrice}
+        image={p.image}
+        company={p.company}
+        flashSale={p.flashSale}
+      />
       ))}
     </div>
   </section>

@@ -8,7 +8,18 @@ import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react"
 
 interface NewArrivalProduct {
   _id: string
-  productId: { _id: string; name: string; price: number; discountPrice?: number }
+  productId: {
+    _id: string
+    name: string
+    price: number
+    discountPrice?: number
+    flashSale?: {
+      saleId: string
+      saleName: string
+      discountPercent: number
+      endsAt: string
+    } | null
+  }
   title: string
   image: string
   description?: string
@@ -76,7 +87,13 @@ export function NewArrivals({ companyId, companySlug, companyName }: NewArrivals
               if (!product) return null
               return {
                 _id: arrival._id || `${companyId}-${product._id}`,
-                productId: { _id: product._id, name: product.name || "Product", price: product.price ?? 0, discountPrice: product.discountPrice },
+                productId: {
+  _id: product._id,
+  name: product.name || "Product",
+  price: product.price ?? 0,
+  discountPrice: product.discountPrice,
+  flashSale: product.flashSale ?? null,
+},
                 title: arrival.title || product.name || "New Arrival",
                 image: arrival.image || product.image || "/nezallogo.jpg",
                 description: arrival.description || "",
@@ -251,12 +268,29 @@ export function NewArrivals({ companyId, companySlug, companyName }: NewArrivals
                         />
 
                         {/* NEW badge */}
-                        <div
-                          className="absolute top-3 left-3 text-white text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full"
-                          style={{ background: "#2d6a4f" }}
-                        >
-                          NEW
-                        </div>
+<div
+  className="absolute top-3 left-3 text-white text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full"
+  style={{ background: "#2d6a4f" }}
+>
+  NEW
+</div>
+
+{/* Flash sale badge takes priority over the plain discount badge */}
+{product.productId.flashSale ? (
+  <div
+    className="absolute top-3 right-3 text-white text-[10px] font-bold px-2 py-1 rounded-full"
+    style={{ background: "#E4432B" }}
+  >
+    ⚡ Sale
+  </div>
+) : disc ? (
+  <div
+    className="absolute top-3 right-3 text-white text-[10px] font-bold px-2 py-1 rounded-full"
+    style={{ background: "#c8a96e" }}
+  >
+    -{disc}%
+  </div>
+) : null}
 
                         {/* Discount badge */}
                         {disc && (

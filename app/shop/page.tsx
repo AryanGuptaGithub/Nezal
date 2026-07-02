@@ -28,6 +28,12 @@ interface Product {
   concerns?: string[];
   skinTypes?: string[];
   category?: { slug: string };
+  flashSale?: {
+    saleId: string;
+    saleName: string;
+    discountPercent: number;
+    endsAt: string;
+  } | null;
 }
 
 interface Company {
@@ -317,14 +323,15 @@ export default function ShopPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.04 }}
                       >
-                        <ProductCard
-                          id={product._id}
-                          name={product.name}
-                          price={product.price}
-                          discountPrice={product.discountPrice}
-                          image={product.image}
-                          company={product.company}
-                        />
+                      <ProductCard
+                        id={product._id}
+                        name={product.name}
+                        price={product.price}
+                        discountPrice={product.discountPrice}
+                        image={product.image}
+                        company={product.company}
+                        flashSale={product.flashSale}
+                      />
                       </motion.div>
                     ))}
                   </motion.div>

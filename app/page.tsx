@@ -14,6 +14,7 @@ import { BRAND } from "@/lib/config"
 import { connectDB } from "@/lib/db"
 import HomeClient from "@/components/HomeClient"
 import FlashDeal from "@/components/FlashDeal"
+import { getActiveFlashSaleMap, applyFlashSaleToList } from "@/lib/flashSale"
 
 // ── Server-side data fetching ─────────────────────────────────────────────────
 // All fetches run in PARALLEL on the server. The page HTML arrives
@@ -62,9 +63,14 @@ async function getHomeData() {
     const s = (obj: any) => JSON.parse(JSON.stringify(obj))
 
     const companies  = s(companiesRaw)
-    const products   = s(productsRaw)
     const reviews    = s(reviewsRaw)
     const flashSales = s(flashSalesRaw)
+
+    // ── Merge in flash-sale pricing so these 8 products carry the same
+    //    discountPrice / flashSale data as every other listing, in case
+    //    they get rendered (see note in chat — they currently aren't). ──
+    const flashSaleMap = await getActiveFlashSaleMap()
+    const products = applyFlashSaleToList(s(productsRaw), flashSaleMap)
 
     const nezalCompany =
       companies.find((c: any) => c.slug === "nezal" || c.name?.toLowerCase() === "nezal") ??

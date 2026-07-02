@@ -21,6 +21,12 @@ export interface CartItem {
   quantity: number
   company?: { name: string; slug: string }
   selectedSize?: Size
+  flashSale?: {
+    saleId: string
+    saleName: string
+    discountPercent: number
+    endsAt: string
+  } | null
 }
 
 interface CartStore {
@@ -60,23 +66,29 @@ export const useCartStore = create<CartStore>()(
     (set, get) => ({
       items: [],
 
-      addItem: (item: CartItem) => {
-        set((state) => {
-          const existingItem = state.items.find((i) => matchItem(i, item.productId, item.selectedSize))
+     addItem: (item: CartItem) => {
+  set((state) => {
+    const existingItem = state.items.find((i) => matchItem(i, item.productId, item.selectedSize))
 
-          if (existingItem) {
-            return {
-              items: state.items.map((i) =>
-                matchItem(i, item.productId, item.selectedSize)
-                  ? { ...i, quantity: i.quantity + item.quantity }
-                  : i,
-              ),
-            }
-          }
+    if (existingItem) {
+      return {
+        items: state.items.map((i) =>
+          matchItem(i, item.productId, item.selectedSize)
+            ? {
+                ...i,
+                quantity: i.quantity + item.quantity,
+                price: item.price,
+                discountPrice: item.discountPrice,
+                flashSale: item.flashSale,
+              }
+            : i,
+        ),
+      }
+    }
 
-          return { items: [...state.items, { ...item, selectedSize: cloneSize(item.selectedSize) }] }
-        })
-      },
+    return { items: [...state.items, { ...item, selectedSize: cloneSize(item.selectedSize) }] }
+  })
+},
 
       removeItem: (productId: string, selectedSize?: Size) => {
         set((state) => ({

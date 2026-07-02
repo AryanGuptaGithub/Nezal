@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { connectDB } from "@/lib/db"
 import { Collection } from "@/lib/models/collection"
 import { Product } from "@/lib/models/product"
+import { getActiveFlashSaleMap, applyFlashSaleToList } from "@/lib/flashSale"
 
 export async function GET(
   _req: NextRequest,
@@ -44,6 +45,11 @@ export async function GET(
       .populate("company", "name slug")
       .lean()
 
+    // ── Merge in flash-sale pricing so collection pages match every
+    //    other product surface (shop, concerns, home, etc.) ──────────
+    const flashSaleMap = await getActiveFlashSaleMap()
+    const productsWithSales = applyFlashSaleToList(products, flashSaleMap)
+
     // Fetch related collections (for "Complete Your Ritual" section)
     const relatedSlugs: string[] = (collection as any).relatedCollections ?? []
     const relatedCollections = await Collection.find(
@@ -53,7 +59,7 @@ export async function GET(
 
     return NextResponse.json({
       collection,
-      products,
+      products: productsWithSales,
       relatedCollections,
     })
   } catch (error) {

@@ -7,6 +7,7 @@ import { Category } from "@/lib/models/category";
 import { type NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getActiveFlashSaleMap, applyFlashSaleToList } from "@/lib/flashSale";
 
 // Simple in-memory cache for API responses
 const apiCache = new Map<string, { data: any; timestamp: number }>();
@@ -65,10 +66,14 @@ export async function GET(request: NextRequest) {
       const products = await Product.find({ _id: { $in: idList } })
         .populate("company", "name slug")
         .populate("category", "name slug")
-        .select("name slug image images sizes company category stock")
+        .select("name slug image images sizes company category stock price discountPrice")
         .lean();
 
-      return NextResponse.json({ products });
+      // Flash-sale pricing shows up in the wishlist too, not just the shop grid
+      const flashSaleMap = await getActiveFlashSaleMap();
+      const productsWithSales = applyFlashSaleToList(products, flashSaleMap);
+
+      return NextResponse.json({ products: productsWithSales });
     }
     // ─────────────────────────────────────────────────────
 
@@ -142,8 +147,13 @@ export async function GET(request: NextRequest) {
       Product.countDocuments(query),
     ]);
 
+    // ── Merge in flash-sale pricing so every listing (shop, search, home, etc.)
+    //    reflects an active sale automatically ──────────────────────────────
+    const flashSaleMap = await getActiveFlashSaleMap();
+    const productsWithSales = applyFlashSaleToList(products, flashSaleMap);
+
     const responseData = {
-      products,
+      products: productsWithSales,
       pagination: {
         total,
         page,
@@ -152,6 +162,10 @@ export async function GET(request: NextRequest) {
       },
     };
 
+    // Note: flash sales are time-boxed to the minute, so caching this for
+    // the full 2-minute TTL is fine — worst case a sale's start/end is off
+    // by up to CACHE_TTL. If that's too loose, drop the cache write when
+    // flashSaleMap.size > 0, or shorten CACHE_TTL.
     setCachedResponse(cacheKey, responseData);
 
     return NextResponse.json(responseData);

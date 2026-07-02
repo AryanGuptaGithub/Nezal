@@ -32,6 +32,12 @@ interface Product {
   discountPrice?: number
   image: string
   company: { name: string; slug: string }
+  flashSale?: {
+    saleId: string
+    saleName: string
+    discountPercent: number
+    endsAt: string
+  } | null
 }
 
 interface Company {
@@ -466,6 +472,7 @@ export default function CompanyShopPage() {
                       discountPrice={product.discountPrice}
                       image={product.image}
                       company={product.company}
+                      flashSale={product.flashSale}
                     />
                   ))}
                 </div>

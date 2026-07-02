@@ -66,6 +66,12 @@ interface Product {
   }[]
   stock?: number
   company: { name: string; slug: string }
+  flashSale?: {
+    saleId: string
+    saleName: string
+    discountPercent: number
+    endsAt: string
+  } | null
 }
 
 interface RelatedCollection {
@@ -387,6 +393,7 @@ function VariantGrid({ products }: { products: Product[] }) {
                   hasMultipleSizes={!!product.sizes?.length}
                   sizes={product.sizes as any}
                   stock={product.stock}
+                  flashSale={product.flashSale}
                 />
               </div>
             ))}
