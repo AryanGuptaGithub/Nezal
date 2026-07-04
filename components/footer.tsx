@@ -88,14 +88,14 @@ export default function Footer() {
             >
              Policies
             </h4>
-           {/* Policies */}
+{/* Policies */}
 <ul className="space-y-2 mt-5">
   {[
-     { label: "Terms of Service", href: "/termsofservice" },
+    { label: "Terms of Service", href: "/termsofservice" },
     { label: "Privacy Policy", href: "/privacy-policy" },
     { label: "Refund Policy", href: "/refund-policy" },
-    { label: "Orders & Returns Policy", href: "/orders-returns" }, 
-      { label: "Shipping Policy", href: "/shipping-poilicy" }, 
+    { label: "Orders & Returns Policy", href: "/orders-returns" },
+    { label: "Shipping Policy", href: "/shipping-policy" },
   ].map((item) => (
     <li key={item.label}>
       <Link

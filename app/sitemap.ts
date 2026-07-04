@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic"; // 👈 prevents static export error
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   await connectDB();
 
-  const baseUrl = "https://nezal.com/";
+  const baseUrl = "https://nezal.com"; // 👈 no trailing slash — routes below add their own leading slash
 
   const staticRoutes = [
     {
@@ -28,6 +28,60 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: "weekly" as const,
       priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/rituals`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/concerns`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/about-us`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.5,
+    },
+    {
+      url: `${baseUrl}/contact-us`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.5,
+    },
+    {
+      url: `${baseUrl}/privacy-policy`,
+      lastModified: new Date("2026-07-01"),
+      changeFrequency: "yearly" as const,
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/refund-policy`,
+      lastModified: new Date("2026-07-01"),
+      changeFrequency: "yearly" as const,
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/shipping-policy`,
+      lastModified: new Date("2026-07-01"),
+      changeFrequency: "yearly" as const,
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/orders-returns`,
+      lastModified: new Date("2026-07-01"),
+      changeFrequency: "yearly" as const,
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/termsofservice`,
+      lastModified: new Date("2026-07-01"),
+      changeFrequency: "yearly" as const,
+      priority: 0.3,
     },
   ];
 
