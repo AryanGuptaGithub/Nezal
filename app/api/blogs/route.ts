@@ -1,3 +1,4 @@
+// api/blogs/route.ts
 import { connectDB } from "@/lib/db"
 import { Blog } from "@/lib/models/blog"
 import { User } from "@/lib/models/user"
