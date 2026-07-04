@@ -18,16 +18,18 @@ interface HomeCarouselProps {
 }
 
 const staticImages: CarouselImage[] = [
-  { _id: "1", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990596/image1_swy5gk.jpg" },
-  { _id: "2", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990596/image3_bowocl.jpg" },
-  { _id: "3", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990596/image2_fnjx38.jpg" },
-  { _id: "4", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990596/image5_isz79x.jpg" },
-    { _id: "5", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990597/image6_ruw59f.jpg" },
-     { _id: "6", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990597/image4_xuqvtf.jpg" },
-      { _id: "7", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990598/image8_cqm0fb.png" },
-     { _id: "8", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990599/image9_a1avzr.png" },
-     { _id: "9", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990599/image7_wfgoej.png" },
-     { _id: "10", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990692/image10_escelc.png" },
+ 
+    { _id: "8", url: "/14.jpeg" },
+     { _id: "2", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990599/image9_a1avzr.png" },
+          { _id: "3", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990599/image7_wfgoej.png" },
+      { _id: "1", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990598/image8_cqm0fb.png" },
+    { _id: "7", url: "/13.jpeg" },
+     { _id: "4", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990692/image10_escelc.png" },
+      { _id: "6", url: "/12.jpeg" },
+    { _id: "5", url: "/11.jpeg" },
+   
+    
+  
 ]
 
 export function HomeCarousel({ images }: HomeCarouselProps) {

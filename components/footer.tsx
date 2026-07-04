@@ -236,11 +236,11 @@ export default function Footer() {
             </span>
           </div>
           <div className="flex items-center gap-4 text-[12px]" style={{ color: "rgba(255,255,255,0.35)" }}>
-            <span>100% Natural</span>
+            
             <span>·</span>
             <span>Made in India</span>
             <span>·</span>
-            <span>USFDA Guidelines</span>
+          
           </div>
         </div>
       </div>
