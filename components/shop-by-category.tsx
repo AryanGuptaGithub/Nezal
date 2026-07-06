@@ -16,6 +16,7 @@ import {
   CalendarCheck,
   Lock,
   Factory,
+  ArrowRight,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────
@@ -468,6 +469,21 @@ function handlePointerUp() {
       );
     })}
   </div>
+</div>
+
+    {/* Explore All Categories Button */}
+<div className="mt-12 flex justify-center">
+  <Link
+    href="/collections"
+    className="inline-flex items-center gap-2 rounded-full px-8 py-3 text-sm font-semibold transition-all duration-300 hover:gap-3 hover:shadow-lg"
+    style={{
+      backgroundColor: "#1e3a28",
+      color: "#fdfaf5",
+    }}
+  >
+    See All Categories
+    <ArrowRight className="h-4 w-4" />
+  </Link>
 </div>
 
   </div>

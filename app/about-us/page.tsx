@@ -471,13 +471,42 @@ export default function AboutUs() {
       </motion.p>
     </motion.div>
 
-    {/* Logo comparison */}
+  
+
+    {/* Explanation card */}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.6 }}
+      className="rounded-2xl border p-7 md:p-9 space-y-4"
+      style={{ backgroundColor: "#f4f9f4", borderColor: "#d4e8d0" }}
+    >
+      <p className="text-base leading-relaxed" style={{ color: "#3d5c45" }}>
+        Over the coming months, you may notice products carrying either of our two logos. This is part
+        of a planned transition as we responsibly use our existing packaging materials rather than
+        discarding them unnecessarily.
+      </p>
+      <p className="text-base leading-relaxed" style={{ color: "#3d5c45" }}>
+        Our formulations, manufacturing standards, ingredients, and commitment to quality remain
+        exactly the same.
+      </p>
+      <p className="text-base leading-relaxed" style={{ color: "#3d5c45" }}>
+        To us, sustainability isn't only about what's inside the bottle — it also means making
+        thoughtful choices about the resources we use.
+      </p>
+      <p className="text-base font-medium pt-2" style={{ color: "#1a3a2a" }}>
+        Thank you for supporting us as {BRAND.name} grows.
+      </p>
+    </motion.div>
+
+              {/* Logo comparison */}
     <motion.div
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true }}
       variants={stagger}
-      className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 mb-12"
+      className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 mb-12 mt-4"
     >
       {/* Old logo */}
       <motion.div variants={fadeUp} className="flex flex-col items-center">
@@ -517,33 +546,6 @@ export default function AboutUs() {
           New Logo
         </span>
       </motion.div>
-    </motion.div>
-
-    {/* Explanation card */}
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.6 }}
-      className="rounded-2xl border p-7 md:p-9 space-y-4"
-      style={{ backgroundColor: "#f4f9f4", borderColor: "#d4e8d0" }}
-    >
-      <p className="text-base leading-relaxed" style={{ color: "#3d5c45" }}>
-        Over the coming months, you may notice products carrying either of our two logos. This is part
-        of a planned transition as we responsibly use our existing packaging materials rather than
-        discarding them unnecessarily.
-      </p>
-      <p className="text-base leading-relaxed" style={{ color: "#3d5c45" }}>
-        Our formulations, manufacturing standards, ingredients, and commitment to quality remain
-        exactly the same.
-      </p>
-      <p className="text-base leading-relaxed" style={{ color: "#3d5c45" }}>
-        To us, sustainability isn't only about what's inside the bottle — it also means making
-        thoughtful choices about the resources we use.
-      </p>
-      <p className="text-base font-medium pt-2" style={{ color: "#1a3a2a" }}>
-        Thank you for supporting us as {BRAND.name} grows.
-      </p>
     </motion.div>
 
     {/* Tagline */}

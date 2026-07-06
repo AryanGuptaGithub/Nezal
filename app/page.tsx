@@ -103,7 +103,7 @@ function PromoBannerGrid() {
       <div className="container-nezal">
         <div className="text-center mb-10">
           <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-brand-primary)]">
-            Our Collections
+            Our Collection
           </span>
           <h2 className="mt-2 text-[28px] md:text-[32px] font-bold text-[var(--color-text-heading)]">
             Shop by Product
@@ -178,14 +178,16 @@ const testimonials = reviews.slice(0, 8).map((r: any) => ({
         <ShopByCategory companyId={nezalCompany._id} companySlug={nezalCompany.slug} />
       )}
 
-         {/* Flash Deal — products pre-rendered, no skeleton */}
-      {activeSale && <FlashDeal sale={activeSale} />}
+
 
       {/* Discover Rituals */}
       <DiscoverRituals />
 
       {/* Shop By Concern */}
       <ShopByConcern />
+
+               {/* Flash Deal — products pre-rendered, no skeleton */}
+      {activeSale && <FlashDeal sale={activeSale} />}
 
       {/* Promo Banner Grid */}
       <PromoBannerGrid />

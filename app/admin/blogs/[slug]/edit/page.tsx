@@ -1,3 +1,4 @@
+// app/admin/blogs/[slug]/edit/page.tsx
 "use client"
 
 import type React from "react"

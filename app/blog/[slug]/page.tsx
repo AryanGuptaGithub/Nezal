@@ -1,13 +1,9 @@
-// app/blog/[slug]/page.tsx
 "use client"
 
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
-import Image from "next/image"
 import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Share2, ArrowLeft, Calendar, User, Tag } from "lucide-react"
+import { Share2, ArrowLeft, Calendar, User } from "lucide-react"
 
 interface Blog {
   _id: string
@@ -42,17 +38,12 @@ export default function BlogDetailPage() {
         setLoading(false)
       }
     }
-
     fetchBlog()
   }, [slug])
 
   const handleShare = () => {
     if (navigator.share) {
-      navigator.share({
-        title: blog?.title,
-        text: blog?.excerpt,
-        url: window.location.href,
-      })
+      navigator.share({ title: blog?.title, text: blog?.excerpt, url: window.location.href })
     } else {
       navigator.clipboard.writeText(window.location.href)
       alert("Link copied to clipboard!")
@@ -61,21 +52,23 @@ export default function BlogDetailPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[--color-bg-page] flex items-center justify-center">
-        <p className="text-[--color-text-muted] text-lg">Loading blog...</p>
+      <main className="min-h-screen flex items-center justify-center" style={{ background: "#f4f9f4" }}>
+        <p style={{ color: "#6b7c6b" }}>Loading blog...</p>
       </main>
     )
   }
 
   if (!blog) {
     return (
-      <main className="min-h-screen bg-[--color-bg-page] flex items-center justify-center">
+      <main className="min-h-screen flex items-center justify-center" style={{ background: "#f4f9f4" }}>
         <div className="text-center">
-          <p className="text-[--color-text-muted] mb-4">Blog not found</p>
-          <Link href="/blog">
-            <Button className="bg-[--color-brand-primary] hover:bg-[--color-brand-primary-dark] text-white">
-              Back to Blogs
-            </Button>
+          <p className="mb-4" style={{ color: "#6b7c6b" }}>Blog not found</p>
+          <Link
+            href="/blog"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white"
+            style={{ background: "#1a3a2a" }}
+          >
+            Back to Blogs
           </Link>
         </div>
       </main>
@@ -83,101 +76,137 @@ export default function BlogDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[--color-bg-page]">
-      <div className="container-nezal py-8 md:py-10">
-        {/* Back navigation */}
-        <Link href="/blog" className="inline-flex items-center gap-2 text-[--color-brand-primary] hover:text-[--color-brand-primary-dark] font-medium mb-8">
+    <main className="min-h-screen" style={{ background: "#f4f9f4" }}>
+      <div className="max-w-3xl mx-auto px-6 py-10 md:py-14">
+        <Link
+          href="/blog"
+          className="inline-flex items-center gap-2 text-sm font-semibold mb-8 transition-colors hover:opacity-70"
+          style={{ color: "#2d6a4f" }}
+        >
           <ArrowLeft className="w-4 h-4" />
           Back to Blogs
         </Link>
 
-        <article className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 text-sm text-[--color-text-muted] mb-4 flex-wrap">
-              <span className="flex items-center gap-1">
-                <User className="w-4 h-4" />
-                {blog.author?.name}
-              </span>
-              <span className="flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
-                {new Date(blog.createdAt).toLocaleDateString("en-IN", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </span>
-              <span className="font-medium text-[--color-brand-primary]">{blog.company.name}</span>
-            </div>
-
-            <h1 className="text-3xl md:text-5xl font-bold text-[--color-text-heading] mb-4 leading-tight">
-              {blog.title}
-            </h1>
-
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              {blog.tags && blog.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {blog.tags.map((tag) => (
-                    <Link key={tag} href={`/blog?tag=${tag}`}>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full border-[--color-border] text-[--color-text-body] hover:text-[--color-brand-primary] hover:border-[--color-brand-primary] text-xs"
-                      >
-                        <Tag className="w-3 h-3 mr-1" />
-                        {tag}
-                      </Button>
-                    </Link>
-                  ))}
-                </div>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleShare}
-                className="border-[--color-border] text-[--color-text-heading] hover:bg-[--color-bg-cream] rounded-full"
-              >
-                <Share2 className="w-4 h-4 mr-2" />
-                Share
-              </Button>
-            </div>
+        <article>
+          {/* Meta row */}
+          <div className="flex items-center gap-4 text-xs mb-5 flex-wrap" style={{ color: "#9aaa9a" }}>
+            <span className="flex items-center gap-1.5 font-medium" style={{ color: "#3d5c45" }}>
+              <User className="w-3.5 h-3.5" />
+              {blog.author?.name}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5" />
+              {new Date(blog.createdAt).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" })}
+            </span>
+            <span
+              className="text-[11px] font-semibold tracking-wide uppercase px-2.5 py-1 rounded-full"
+              style={{ background: "#e8f4ec", color: "#2d6a4f" }}
+            >
+              {blog.company?.name}
+            </span>
           </div>
 
-          {/* Featured Image */}
+          {/* Title */}
+          <h1
+            className="text-3xl md:text-5xl font-bold mb-6 leading-tight"
+            style={{ color: "#1a3a2a", letterSpacing: "-0.02em" }}
+          >
+            {blog.title}
+          </h1>
+
+          {/* Tags + share */}
+          <div className="flex items-center justify-between flex-wrap gap-3 mb-8 pb-8" style={{ borderBottom: "1px solid #d4e8d0" }}>
+            {blog.tags && blog.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {blog.tags.map((tag) => (
+                  <Link
+                    key={tag}
+                    href={`/blog?tag=${tag}`}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-full transition-colors hover:opacity-80"
+                    style={{ background: "#fff", color: "#3d5c45", border: "1px solid #d4e8d0" }}
+                  >
+                    {tag}
+                  </Link>
+                ))}
+              </div>
+            )}
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-full transition-colors hover:opacity-80"
+              style={{ background: "#fff", color: "#1a3a2a", border: "1px solid #d4e8d0" }}
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              Share
+            </button>
+          </div>
+
+          {/* Featured image */}
           {blog.image && !imageError ? (
-            <div className="relative w-full aspect-video rounded-2xl overflow-hidden mb-10 bg-[--color-bg-cream]">
-              <Image
+            <div className="relative w-full aspect-video rounded-2xl overflow-hidden mb-10" style={{ background: "#e8f2e4" }}>
+              <img
                 src={blog.image}
                 alt={blog.title}
-                fill
-                className="object-cover"
+                className="w-full h-full object-cover"
                 onError={() => setImageError(true)}
-                unoptimized
               />
-            </div>
-          ) : blog.image ? (
-            <div className="relative w-full aspect-video rounded-2xl overflow-hidden mb-10 bg-[--color-bg-cream] flex items-center justify-center">
-              <p className="text-[--color-text-muted]">Image failed to load</p>
             </div>
           ) : null}
 
-          {/* Content */}
-          <div className="prose prose-lg max-w-none mb-12 text-[--color-text-body] leading-relaxed whitespace-pre-wrap">
-            {blog.content}
-          </div>
+          {/* Content — rendered as HTML, not literal text */}
+          <div
+            className="blog-content mb-12"
+            style={{ color: "#3d5c45", fontSize: "1.05rem", lineHeight: 1.8 }}
+            dangerouslySetInnerHTML={{ __html: blog.content }}
+          />
+          <style jsx global>{`
+            .blog-content h2 {
+              font-size: 1.5rem;
+              font-weight: 700;
+              color: #1a3a2a;
+              margin-top: 2rem;
+              margin-bottom: 0.75rem;
+              letter-spacing: -0.01em;
+            }
+            .blog-content p {
+              margin-bottom: 1.25rem;
+            }
+            .blog-content ul,
+            .blog-content ol {
+              margin-bottom: 1.25rem;
+              padding-left: 1.5rem;
+            }
+            .blog-content li {
+              margin-bottom: 0.5rem;
+            }
+            .blog-content a {
+              color: #2d6a4f;
+              text-decoration: underline;
+            }
+          `}</style>
 
-          {/* Author Card */}
-          <Card className="mt-12 border border-[--color-border] rounded-2xl shadow-sm bg-[--color-bg-cream]">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg font-bold text-[--color-text-heading]">About the Author</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <p className="text-[--color-text-heading] font-semibold">{blog.author?.name}</p>
-              <p className="text-sm text-[--color-text-muted]">
-                Expert contributor at <span className="text-[--color-brand-primary] font-medium">{blog.company.name}</span>
+          {/* Author card */}
+          <div
+            className="rounded-2xl p-6 flex items-center gap-4"
+            style={{ background: "#fff", border: "1px solid #d4e8d0" }}
+          >
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0"
+              style={{ background: "#1a3a2a", color: "#fff" }}
+            >
+              {blog.author?.name?.[0]?.toUpperCase() || "N"}
+            </div>
+            <div>
+              <p className="text-xs font-semibold tracking-wide uppercase mb-0.5" style={{ color: "#9aaa9a" }}>
+                Written by
               </p>
-            </CardContent>
-          </Card>
+              <p className="font-bold" style={{ color: "#1a3a2a" }}>
+                {blog.author?.name}
+              </p>
+              <p className="text-sm" style={{ color: "#6b7c6b" }}>
+                Contributor at <span className="font-semibold" style={{ color: "#2d6a4f" }}>{blog.company?.name}</span>
+              </p>
+            </div>
+          </div>
         </article>
       </div>
     </main>

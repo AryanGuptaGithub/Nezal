@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Image, { StaticImageData } from "next/image";
-
+import Link from "next/link";
 // Keep all local image imports unchanged
 import bestPrice from "./assets/bestprice.png";
 import fastDelivery from "./assets/fastdelivery.png";
@@ -242,15 +242,19 @@ export default function WhyChoose() {
               <p className="text-[13px]" style={{ color: "var(--color-text-muted)" }}>
                 Our team is here to help you 7 days a week
               </p>
-              <a
-                href="tel:9819079079"
-                className="inline-flex items-center justify-center h-10 px-7 rounded-full text-[14px] font-semibold text-white transition-colors"
-                style={{ background: "var(--color-brand-primary)" }}
-                onMouseOver={(e) => (e.currentTarget.style.background = "var(--color-brand-primary-dark)")}
-                onMouseOut={(e) => (e.currentTarget.style.background = "var(--color-brand-primary)")}
-              >
-                Contact Us
-              </a>
+              <Link
+  href="/contact-us" // change this to your actual contact page route
+  className="inline-flex items-center justify-center h-10 px-7 rounded-full text-[14px] font-semibold text-white transition-colors"
+  style={{ background: "var(--color-brand-primary)" }}
+  onMouseOver={(e) =>
+    (e.currentTarget.style.background = "var(--color-brand-primary-dark)")
+  }
+  onMouseOut={(e) =>
+    (e.currentTarget.style.background = "var(--color-brand-primary)")
+  }
+>
+  Contact Us
+</Link>
             </div>
           </div>
         </div>
