@@ -8,6 +8,8 @@ import { sendEmail, getOrderConfirmationEmail, getAdminOrderNotificationEmail } 
 import "@/lib/models/product"
 import "@/lib/models/user"
 
+import { autoCreateShiprocketOrder } from "@/lib/shiprocket";
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession();
@@ -69,6 +71,7 @@ export async function POST(request: NextRequest) {
     // immediately (COD). Razorpay and CCAvenue send their own confirmation
     // emails once payment is verified, in their respective callback routes.
     if (paymentMethod === "cod") {
+       await autoCreateShiprocketOrder(order._id.toString());
       try {
         const populatedOrder = await Order.findById(order._id)
           .populate("items.product")

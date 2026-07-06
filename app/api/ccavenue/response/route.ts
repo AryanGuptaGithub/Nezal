@@ -18,6 +18,7 @@ import { connectDB } from "@/lib/db";
 import { Order } from "@/lib/models/order";
 import { sendEmail, getOrderConfirmationEmail, getAdminOrderNotificationEmail } from "@/lib/email";
 import "@/lib/models/product";
+import { autoCreateShiprocketOrder } from "@/lib/shiprocket";
 
 export async function POST(req: NextRequest) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -59,6 +60,7 @@ export async function POST(req: NextRequest) {
 
       if (updatedOrder) {
         // Send confirmation emails, same pattern as COD path in /api/orders
+         await autoCreateShiprocketOrder(order_id);
         try {
           const populatedOrder = await Order.findById(updatedOrder._id)
             .populate("items.product")

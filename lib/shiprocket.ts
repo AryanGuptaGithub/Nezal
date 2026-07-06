@@ -6,6 +6,69 @@
  * - Exposes createShiprocketOrder()
  */
 
+import { Order } from "@/lib/models/order";
+import "@/lib/models/product";
+
+
+export async function autoCreateShiprocketOrder(orderId: string) {
+  const order = await Order.findById(orderId).populate("items.product");
+  if (!order) {
+    console.error(`Auto Shiprocket: order ${orderId} not found`);
+    return;
+  }
+  if (order.shiprocketOrderId) return; // already created, avoid dupes
+
+  const addr = order.shippingAddress;
+  const items = order.items.map((item: any) => ({
+    name: item.product?.name ?? "Product",
+    sku: item.product?.sku ?? "SKU",
+    units: item.quantity,
+    selling_price: item.price,
+    weight: item.product?.weight ?? 0.3,
+  }));
+
+  const shippingAddress = {
+    name: addr?.name ?? order.guestName ?? "Customer",
+    phone: addr?.phone ?? order.guestPhone ?? "",
+    email: order.guestEmail ?? addr?.email ?? "",
+    address: addr?.address ?? addr?.street ?? "",
+    city: addr?.city ?? "",
+    state: addr?.state ?? "",
+    pincode: String(addr?.pincode ?? addr?.zipCode ?? ""),
+    country: addr?.country ?? "India",
+  };
+
+  try {
+    const result = await createShiprocketOrder({
+      orderId: order._id.toString(),
+      orderDate: new Date(order.createdAt).toISOString().split("T")[0],
+      items,
+      shipping: shippingAddress,
+      billing: shippingAddress,
+      paymentMethod: order.paymentMethod === "cod" ? "COD" : "Prepaid",
+      subTotal: order.totalAmount,
+      shippingCharges: 0,
+      totalDiscount: order.discountAmount ?? 0,
+    });
+
+    await Order.findByIdAndUpdate(order._id, {
+      shiprocketOrderId: result.shiprocketOrderId,
+      shiprocketShipmentId: result.shiprocketShipmentId,
+      awbCode: result.awbCode ?? null,
+      courierName: result.courierName ?? null,
+      shippingStatus: "processing",
+      ...(result.awbCode && {
+        trackingUrl: `https://shiprocket.co/tracking/${result.awbCode}`,
+      }),
+    });
+  } catch (err) {
+    // Don't let a Shiprocket hiccup block the customer's order confirmation —
+    // just log it so admin can retry manually via the existing ship button.
+    console.error(`Auto Shiprocket creation failed for order ${order._id}:`, err);
+  }
+}
+
+
 const SHIPROCKET_API = "https://apiv2.shiprocket.in/v1/external";
 
 interface TokenCache {

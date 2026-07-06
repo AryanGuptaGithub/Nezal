@@ -1,6 +1,6 @@
 export const BRAND = {
   name: 'Nezal',
-  domain: 'https://nezalherobocare.com',
+  domain: 'https://nezalherbocare.com',
   supportEmail: 'info@nezalherbocare.com',
   phone: '+917710076400',
   whatsapp: {

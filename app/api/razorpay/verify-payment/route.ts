@@ -7,6 +7,7 @@ import { getServerSession } from "next-auth"
 import { type NextRequest, NextResponse } from "next/server"
 import crypto from "crypto"
 import { sendEmail, getOrderConfirmationEmail, getAdminOrderNotificationEmail } from "@/lib/email"
+import { autoCreateShiprocketOrder } from "@/lib/shiprocket"
 
 export async function POST(request: NextRequest) {
   try {
@@ -94,6 +95,8 @@ export async function POST(request: NextRequest) {
         razorpayPaymentId,
       })
     }
+
+    await autoCreateShiprocketOrder(order._id.toString()) 
 
     await Promise.all(
       items.map(async (item: any) => {

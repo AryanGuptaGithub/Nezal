@@ -1,4 +1,4 @@
-// app/api/webhooks/shiprocket/route.ts
+// app/api/webhooks/shipment-updates/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
