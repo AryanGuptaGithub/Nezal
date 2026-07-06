@@ -88,8 +88,8 @@ async function getHomeData() {
 // ── Promo banners (static, no fetch needed) ───────────────────────────────────
 const PROMO_BANNERS = [
   { image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779278431/nezal/uploads/rwzzisquhzzalhdngf9z.jpg", label: "Face Wash", sub: "From ₹199", href: "/collections/foaming-face-wash" },
-  { image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779342398/nezal/uploads/wiutayfpcujdko7zdyt4.jpg", label: "Hair Serum", sub: "Reduce Hair Fall", href: "/collections/hair-serum" },
-  { image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779342041/nezal/uploads/vhoi1owzq0cun9zyxq70.jpg", label: "Body Lotion", sub: "All-Day Hydration", href: "/collections/body-lotion" },
+  { image: "https://res.cloudinary.com/douyptcm1/image/upload/v1783319156/hair_serum_i7llmw.jpg", label: "Hair Serum", sub: "Reduce Hair Fall", href: "/collections/hair-serum" },
+  { image: "https://res.cloudinary.com/douyptcm1/image/upload/v1783319156/lotion_wrjr9l.jpg", label: "Body Lotion", sub: "All-Day Hydration", href: "/collections/body-lotion" },
   { image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779278227/nezal/uploads/db5xjbpwpnmb6uf6yep6.jpg", label: "Massage Oil", sub: "Relax & Restore", href: "/collections/body-massage-oil" },
   { image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779341640/nezal/uploads/klcvgxsephlxhm6n4xib.jpg", label: "Face Cream", sub: "Deep Nourishment", href: "/collections/face-serum" },
   { image: "https://res.cloudinary.com/douyptcm1/image/upload/v1779341557/nezal/uploads/vz9jkgrr5tdccprgfl5a.jpg", label: "Bath Salts", sub: "Turn Bath Into Ritual", href: "/collections/bath-salt" },
