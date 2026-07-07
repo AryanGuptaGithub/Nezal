@@ -11,7 +11,7 @@ import { autoCreateShiprocketOrder } from "@/lib/shiprocket"
 
 export async function POST(request: NextRequest) {
   try {
-    const { razorpayOrderId, razorpayPaymentId, razorpaySignature, items, shippingAddress, totalAmount } = await request.json()
+    const { razorpayOrderId, razorpayPaymentId, razorpaySignature, items, shippingAddress, totalAmount, shippingAmount } = await request.json()
 
     const body = razorpayOrderId + "|" + razorpayPaymentId
     const expectedSignature = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!).update(body).digest("hex")
@@ -66,35 +66,37 @@ export async function POST(request: NextRequest) {
     }
 
     if (existingOrder) {
-      order = await Order.findByIdAndUpdate(
-        existingOrder._id,
-        {
-          razorpayOrderId,
-          razorpayPaymentId,
-          paymentStatus: "completed",
-          orderStatus: "processing",
-        },
-        { new: true }
-      )
-    } else {
-      const orderNumber = `ORD-${Date.now()}`
+  order = await Order.findByIdAndUpdate(
+    existingOrder._id,
+    {
+      razorpayOrderId,
+      razorpayPaymentId,
+      shippingAmount: shippingAmount ?? existingOrder.shippingAmount ?? 0,   // ← add this
+      paymentStatus: "completed",
+      orderStatus: "processing",
+    },
+    { new: true }
+  )
+} else {
+  const orderNumber = `ORD-${Date.now()}`
 
-      order = await Order.create({
-        orderNumber,
-        user: user?._id,
-        guestEmail: user ? undefined : shippingAddress.email,
-        guestName: user ? undefined : shippingAddress.name,
-        guestPhone: user ? undefined : shippingAddress.phone,
-        items,
-        totalAmount,
-        shippingAddress: mappedAddress,
-        paymentMethod: "razorpay",
-        paymentStatus: "completed",
-        orderStatus: "processing",
-        razorpayOrderId,
-        razorpayPaymentId,
-      })
-    }
+  order = await Order.create({
+    orderNumber,
+    user: user?._id,
+    guestEmail: user ? undefined : shippingAddress.email,
+    guestName: user ? undefined : shippingAddress.name,
+    guestPhone: user ? undefined : shippingAddress.phone,
+    items,
+    totalAmount,
+    shippingAmount: shippingAmount ?? 0,   // ← add this
+    shippingAddress: mappedAddress,
+    paymentMethod: "razorpay",
+    paymentStatus: "completed",
+    orderStatus: "processing",
+    razorpayOrderId,
+    razorpayPaymentId,
+  })
+}
 
     await autoCreateShiprocketOrder(order._id.toString()) 
 

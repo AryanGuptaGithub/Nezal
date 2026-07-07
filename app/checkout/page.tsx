@@ -81,21 +81,20 @@ function CheckoutPageInner() {
   const [loading, setLoading] = useState(true)
   const [userData, setUserData] = useState<any>(null)
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
+  const [shippingRate, setShippingRate] = useState<number | null>(null)
+  const [shippingLoading, setShippingLoading] = useState(false)
+  const [shippingError, setShippingError] = useState<string | null>(null)
 
-
-const [couponCode, setCouponCode]       = useState("")
-const [couponInput, setCouponInput]     = useState("")
-const [couponLoading, setCouponLoading] = useState(false)
-const [couponError, setCouponError]     = useState("")
-const [couponData, setCouponData]       = useState<{
-  code: string
-  discountType: "percentage" | "flat"
-  discountValue: number
-  discountAmount: number
-} | null>(null)
-
-  // ===== ALL LOGIC UNCHANGED =====
-
+  const [couponCode, setCouponCode] = useState("")
+  const [couponInput, setCouponInput] = useState("")
+  const [couponLoading, setCouponLoading] = useState(false)
+  const [couponError, setCouponError] = useState("")
+  const [couponData, setCouponData] = useState<{
+    code: string
+    discountType: "percentage" | "flat"
+    discountValue: number
+    discountAmount: number
+  } | null>(null)
 
   useEffect(() => {
     if (items.length > 0) {
@@ -112,13 +111,11 @@ const [couponData, setCouponData]       = useState<{
     }
   }, [searchParams])
 
-  // Add this as the first useEffect:
- useEffect(() => {
-  if (status === "unauthenticated") {
-    router.replace("/auth/login?redirect=/checkout")
-  }
-}, [status, router])
-
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/auth/login?redirect=/checkout")
+    }
+  }, [status, router])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -160,52 +157,81 @@ const [couponData, setCouponData]       = useState<{
     }
   }, [])
 
-
-const totalPrice = getTotalPrice()
-
-const flashSavings = items.reduce((sum, item) => {
-  if (!item.flashSale || !item.discountPrice) return sum
-  return sum + (item.price - item.discountPrice) * item.quantity
-}, 0)
-
-const handleApplyCoupon = async () => {
-  const code = couponInput.trim().toUpperCase()
-  if (!code) { setCouponError("Enter a coupon code."); return }
-  setCouponLoading(true); setCouponError("")
-  try {
-    const res = await fetch("/api/coupons/validate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, cartTotal: totalPrice }),
-    })
-    const data = await res.json()
-    if (!res.ok || !data.valid) {
-      setCouponError(data.error || "Invalid coupon.")
-      setCouponData(null)
-      return
+  const fetchShippingRate = async (pincode: string) => {
+    if (items.length === 0) return
+    setShippingLoading(true)
+    setShippingError(null)
+    try {
+      const res = await fetch("/api/shipping-rate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pincode,
+          items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+        }),
+      })
+      const data = await res.json()
+      if (!data.serviceable) {
+        setShippingRate(null)
+        setShippingError(data.error || "This pincode isn't serviceable.")
+      } else {
+        setShippingRate(data.rate)
+      }
+    } catch {
+      setShippingError("Couldn't fetch shipping rate.")
+    } finally {
+      setShippingLoading(false)
     }
-    setCouponData({
-      code:          data.code,
-      discountType:  data.discountType,
-      discountValue: data.discountValue,
-      discountAmount: data.discountAmount,
-    })
-    setCouponCode(data.code)
+  }
+
+  const totalPrice = getTotalPrice()
+
+  const flashSavings = items.reduce((sum, item) => {
+    if (!item.flashSale || !item.discountPrice) return sum
+    return sum + (item.price - item.discountPrice) * item.quantity
+  }, 0)
+
+  const handleApplyCoupon = async () => {
+    const code = couponInput.trim().toUpperCase()
+    if (!code) { setCouponError("Enter a coupon code."); return }
+    setCouponLoading(true); setCouponError("")
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, cartTotal: totalPrice }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.valid) {
+        setCouponError(data.error || "Invalid coupon.")
+        setCouponData(null)
+        return
+      }
+      setCouponData({
+        code: data.code,
+        discountType: data.discountType,
+        discountValue: data.discountValue,
+        discountAmount: data.discountAmount,
+      })
+      setCouponCode(data.code)
+      setCouponError("")
+    } catch {
+      setCouponError("Could not validate coupon. Try again.")
+    } finally {
+      setCouponLoading(false)
+    }
+  }
+
+  const removeCoupon = () => {
+    setCouponData(null)
+    setCouponCode("")
+    setCouponInput("")
     setCouponError("")
-  } catch {
-    setCouponError("Could not validate coupon. Try again.")
-  } finally {
-    setCouponLoading(false) }
-}
+  }
 
-const removeCoupon = () => {
-  setCouponData(null)
-  setCouponCode("")
-  setCouponInput("")
-  setCouponError("")
-}
-
-
+  const discountAmount = couponData?.discountAmount ?? 0
+  const shippingCharge = shippingRate ?? 0
+  const finalTotal = Math.max(0, totalPrice - discountAmount) + shippingCharge
 
   const handleCheckout = async (shippingAddress: any, paymentMethod: string) => {
     setIsLoading(true)
@@ -213,37 +239,6 @@ const removeCoupon = () => {
 
     try {
       if (paymentMethod === "cod") {
-        const orderResponse = await fetch("/api/orders", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-  items: items.map((item) => ({
-    product: item.productId,
-    quantity: item.quantity,
-    price: item.discountPrice || item.price,
-    selectedSize: item.selectedSize,
-  })),
-  shippingAddress,
-  totalAmount: finalTotal,          // ← was getTotalPrice()
-  couponCode: couponCode || undefined, // ← new
-  paymentMethod: "cod",
-  paymentStatus: "pending",
-}),
-
-        })
-
-        const orderData = await orderResponse.json()
-        if (!orderResponse.ok) throw new Error(orderData.error)
-
-        clearCart()
-        setIsLoading(false)
-        router.push(`/order-success/${orderData.orderId}`)
-        return
-      }
-
-      if (paymentMethod === "ccavenue") {
-        // Step 1: create the order as "pending" — same as COD does —
-        // so CCAvenue's callback has an existing order to update.
         const orderResponse = await fetch("/api/orders", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -256,6 +251,36 @@ const removeCoupon = () => {
             })),
             shippingAddress,
             totalAmount: finalTotal,
+            shippingAmount: shippingCharge,
+            couponCode: couponCode || undefined,
+            paymentMethod: "cod",
+            paymentStatus: "pending",
+          }),
+        })
+
+        const orderData = await orderResponse.json()
+        if (!orderResponse.ok) throw new Error(orderData.error)
+
+        clearCart()
+        setIsLoading(false)
+        router.push(`/order-success/${orderData.orderId}`)
+        return
+      }
+
+      if (paymentMethod === "ccavenue") {
+        const orderResponse = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items: items.map((item) => ({
+              product: item.productId,
+              quantity: item.quantity,
+              price: item.discountPrice || item.price,
+              selectedSize: item.selectedSize,
+            })),
+            shippingAddress,
+            totalAmount: finalTotal,
+            shippingAmount: shippingCharge,
             couponCode: couponCode || undefined,
             paymentMethod: "ccavenue",
             paymentStatus: "pending",
@@ -265,7 +290,6 @@ const removeCoupon = () => {
         const orderData = await orderResponse.json()
         if (!orderResponse.ok) throw new Error(orderData.error || "Failed to create order")
 
-        // Step 2: ask our server to build the encrypted CCAvenue request
         const initiateResponse = await fetch("/api/ccavenue/initiate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -286,8 +310,6 @@ const removeCoupon = () => {
         const initiateData = await initiateResponse.json()
         if (!initiateResponse.ok) throw new Error(initiateData.error || "Failed to initiate payment")
 
-        // Step 3: clear cart now (order already exists), then auto-submit
-        // a hidden form that POSTs to CCAvenue's hosted payment page.
         clearCart()
 
         const form = document.createElement("form")
@@ -308,7 +330,6 @@ const removeCoupon = () => {
 
         document.body.appendChild(form)
         form.submit()
-        // Browser navigates away to CCAvenue here — no further code runs.
         return
       }
 
@@ -316,7 +337,7 @@ const removeCoupon = () => {
         const razorpayResponse = await fetch("/api/razorpay/create-order", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-         body: JSON.stringify({ amount: finalTotal }),
+          body: JSON.stringify({ amount: finalTotal }),
         })
 
         const razorpayOrder = await razorpayResponse.json()
@@ -345,8 +366,9 @@ const removeCoupon = () => {
                     selectedSize: item.selectedSize,
                   })),
                   shippingAddress,
-                    totalAmount: finalTotal,             
-                    couponCode: couponCode || undefined,
+                  totalAmount: finalTotal,
+                  shippingAmount: shippingCharge,
+                  couponCode: couponCode || undefined,
                 }),
               })
 
@@ -372,9 +394,9 @@ const removeCoupon = () => {
             },
           },
           prefill: {
-  email: session?.user?.email || shippingAddress?.email,
-  name: session?.user?.name || shippingAddress?.name,
-},
+            email: session?.user?.email || shippingAddress?.email,
+            name: session?.user?.name || shippingAddress?.name,
+          },
         }
 
         const razorpay = new window.Razorpay(options)
@@ -391,7 +413,6 @@ const removeCoupon = () => {
     if (!paymentSettings) return ["ccavenue", "cod"]
     const methods: string[] = []
     if (paymentSettings.enableCCAvenue) methods.push("ccavenue")
-    // Razorpay kept available only if explicitly re-enabled via admin settings
     if (paymentSettings.enableRazorpay) methods.push("razorpay")
     if (paymentSettings.enableCOD) methods.push("cod")
     return methods.length > 0 ? methods : ["ccavenue"]
@@ -408,12 +429,6 @@ const removeCoupon = () => {
       </main>
     )
   }
-
-  
-
-
-  const discountAmount = couponData?.discountAmount ?? 0
-  const finalTotal   = Math.max(0, totalPrice - discountAmount)
 
   const availablePaymentMethods = getAvailablePaymentMethods()
 
@@ -433,173 +448,175 @@ const removeCoupon = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Checkout Form – 2/3 */}
           <div className="lg:col-span-2">
-           <CheckoutForm
-  totalAmount={finalTotal}
-  onSubmit={handleCheckout}
-  availablePaymentMethods={availablePaymentMethods}
-  initialData={{
-    name: userData?.name || session?.user?.name || "",
-    email: userData?.email || session?.user?.email || "", // ← new
-    phone: userData?.phone || "",
-    street: userData?.address || "",
-    city: userData?.city || "",
-    state: userData?.state || "",
-    zipCode: userData?.pincode || "",
-    country: "India",
-  }}
-  isSubmitting={isLoading}
-/>
+            <CheckoutForm
+              totalAmount={finalTotal}
+              onSubmit={handleCheckout}
+              onZipCodeChange={fetchShippingRate}
+              availablePaymentMethods={availablePaymentMethods}
+              initialData={{
+                name: userData?.name || session?.user?.name || "",
+                email: userData?.email || session?.user?.email || "",
+                phone: userData?.phone || "",
+                street: userData?.address || "",
+                city: userData?.city || "",
+                state: userData?.state || "",
+                zipCode: userData?.pincode || "",
+                country: "India",
+              }}
+              isSubmitting={isLoading}
+            />
           </div>
 
           {/* Order Summary – 1/3 */}
-          {/* Order Summary – 1/3 */}
-<div className="lg:col-span-1">
-  <Card className="sticky top-20 border border-[--color-border] rounded-2xl shadow-sm">
-    <CardHeader className="pb-4">
-      <CardTitle className="text-xl font-bold text-[--color-text-heading]">Order Summary</CardTitle>
-    </CardHeader>
-    <CardContent className="space-y-4">
+          <div className="lg:col-span-1">
+            <Card className="sticky top-20 border border-[--color-border] rounded-2xl shadow-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl font-bold text-[--color-text-heading]">Order Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
 
-      {/* Items */}
-{items.map((item) => (
-  <div key={item.productId} className="text-sm border-b border-[--color-border] pb-3 last:border-b-0">
-    <div className="flex justify-between">
-      <span className="text-[--color-text-body]">{item.name} x {item.quantity}</span>
-      <span className="font-semibold text-[--color-text-heading]">
-        ₹{((item.discountPrice || item.price) * item.quantity).toFixed(2)}
-      </span>
-    </div>
-    {item.selectedSize && (
-      <div className="text-xs text-[--color-text-muted] mt-1">
-        Size: {item.selectedSize.size} ({item.selectedSize.quantity}{item.selectedSize.unit})
-      </div>
-    )}
-    {item.ritual && (
-      <div
-        className="inline-flex items-center gap-1 border text-[10px] bg-[#074d09] text-white font-semibold px-2 py-0.5 rounded-full mt-1.5"
-        
-      >
-        ✨ {item.ritual.name}
-      </div>
-    )}
-    {item.flashSale && item.discountPrice && (
-      <div
-        className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full mt-1.5"
-        style={{ backgroundColor: "#E4432B", color: "#ffffff" }}
-      >
-        <Zap className="w-2.5 h-2.5 fill-current" />
-        {item.flashSale.discountPercent}% Flash Sale
-      </div>
-    )}
-  </div>
-))}
+                {/* Items */}
+                {items.map((item) => (
+                  <div key={item.productId} className="text-sm border-b border-[--color-border] pb-3 last:border-b-0">
+                    <div className="flex justify-between">
+                      <span className="text-[--color-text-body]">{item.name} x {item.quantity}</span>
+                      <span className="font-semibold text-[--color-text-heading]">
+                        ₹{((item.discountPrice || item.price) * item.quantity).toFixed(2)}
+                      </span>
+                    </div>
+                    {item.selectedSize && (
+                      <div className="text-xs text-[--color-text-muted] mt-1">
+                        Size: {item.selectedSize.size} ({item.selectedSize.quantity}{item.selectedSize.unit})
+                      </div>
+                    )}
+                    {item.ritual && (
+                      <div className="inline-flex items-center gap-1 border text-[10px] bg-[#074d09] text-white font-semibold px-2 py-0.5 rounded-full mt-1.5">
+                        ✨ {item.ritual.name}
+                      </div>
+                    )}
+                    {item.flashSale && item.discountPrice && (
+                      <div
+                        className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full mt-1.5"
+                        style={{ backgroundColor: "#E4432B", color: "#ffffff" }}
+                      >
+                        <Zap className="w-2.5 h-2.5 fill-current" />
+                        {item.flashSale.discountPercent}% Flash Sale
+                      </div>
+                    )}
+                  </div>
+                ))}
 
-      {/* Coupon input */}
-      <div className="border-t border-[--color-border] pt-4">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-[--color-text-muted] mb-2">
-          Coupon Code
-        </p>
+                {/* Coupon input */}
+                <div className="border-t border-[--color-border] pt-4">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-[--color-text-muted] mb-2">
+                    Coupon Code
+                  </p>
 
-        {couponData ? (
-          /* Applied state */
-          <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-3 py-2.5">
-            <div>
-              <p className="text-sm font-bold text-green-700 font-mono">{couponData.code}</p>
-              <p className="text-xs text-green-600 mt-0.5">
-                {couponData.discountType === "percentage"
-                  ? `${couponData.discountValue}% off applied`
-                  : `₹${couponData.discountValue} off applied`}
-              </p>
-            </div>
-            <button
-              onClick={removeCoupon}
-              className="text-xs font-semibold text-red-500 hover:text-red-700 transition-colors ml-2"
-            >
-              Remove
-            </button>
+                  {couponData ? (
+                    <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-3 py-2.5">
+                      <div>
+                        <p className="text-sm font-bold text-green-700 font-mono">{couponData.code}</p>
+                        <p className="text-xs text-green-600 mt-0.5">
+                          {couponData.discountType === "percentage"
+                            ? `${couponData.discountValue}% off applied`
+                            : `₹${couponData.discountValue} off applied`}
+                        </p>
+                      </div>
+                      <button
+                        onClick={removeCoupon}
+                        className="text-xs font-semibold text-red-500 hover:text-red-700 transition-colors ml-2"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={couponInput}
+                          onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponError("") }}
+                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleApplyCoupon() } }}
+                          placeholder="Enter code e.g. NEZAL25"
+                          className="flex-1 h-10 px-3 text-sm font-mono uppercase rounded-xl border border-[--color-border] focus:outline-none focus:border-[--color-brand-primary] transition-colors bg-white"
+                        />
+                        <button
+                          onClick={handleApplyCoupon}
+                          disabled={couponLoading || !couponInput.trim()}
+                          className="px-4 h-10 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
+                          style={{ backgroundColor: "var(--color-brand-primary)" }}
+                        >
+                          {couponLoading ? "..." : "Apply"}
+                        </button>
+                      </div>
+                      {couponError && (
+                        <p className="text-xs text-red-500 flex items-center gap-1">
+                          <span>✕</span> {couponError}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Price breakdown */}
+                <div className="border-t border-[--color-border] pt-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[--color-text-muted]">Subtotal</span>
+                    <span className="font-semibold text-[--color-text-heading]">₹{totalPrice.toFixed(2)}</span>
+                  </div>
+
+                  {flashSavings > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="flex items-center gap-1" style={{ color: "#E4432B" }}>
+                        <Zap className="w-3.5 h-3.5 fill-current" />
+                        Flash Sale Savings
+                      </span>
+                      <span className="font-semibold" style={{ color: "#E4432B" }}>
+                        − ₹{flashSavings.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+
+                  {couponData && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-green-600 font-medium">
+                        Coupon ({couponData.code})
+                      </span>
+                      <span className="font-semibold text-green-600">
+                        −₹{discountAmount.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[--color-text-muted]">Shipping</span>
+                    {shippingLoading ? (
+                      <span className="text-xs text-[--color-text-muted]">Calculating…</span>
+                    ) : shippingRate !== null ? (
+                      <span className="font-semibold text-[--color-text-heading]">₹{shippingRate.toFixed(2)}</span>
+                    ) : (
+                      <span className="text-xs text-[--color-text-muted]">Enter pincode to calculate</span>
+                    )}
+                  </div>
+                  {shippingError && <p className="text-xs text-red-500 mt-1">{shippingError}</p>}
+                </div>
+
+                {/* Final total */}
+                <div className="border-t border-[--color-border] pt-4 flex justify-between text-lg font-bold">
+                  <span className="text-[--color-text-heading]">Total</span>
+                  <div className="text-right">
+                    {couponData && (
+                      <p className="text-sm line-through text-[--color-text-muted] font-normal">
+                        ₹{totalPrice.toFixed(2)}
+                      </p>
+                    )}
+                    <span className="text-[--color-text-heading]">₹{finalTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+
+              </CardContent>
+            </Card>
           </div>
-        ) : (
-          /* Input state */
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={couponInput}
-                onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponError("") }}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleApplyCoupon() } }}
-                placeholder="Enter code e.g. NEZAL25"
-                className="flex-1 h-10 px-3 text-sm font-mono uppercase rounded-xl border border-[--color-border] focus:outline-none focus:border-[--color-brand-primary] transition-colors bg-white"
-              />
-              <button
-                onClick={handleApplyCoupon}
-                disabled={couponLoading || !couponInput.trim()}
-                className="px-4 h-10 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
-                style={{ backgroundColor: "var(--color-brand-primary)" }}
-              >
-                {couponLoading ? "..." : "Apply"}
-              </button>
-            </div>
-            {couponError && (
-              <p className="text-xs text-red-500 flex items-center gap-1">
-                <span>✕</span> {couponError}
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Price breakdown */}
-<div className="border-t border-[--color-border] pt-4 space-y-2">
-  <div className="flex justify-between text-sm">
-    <span className="text-[--color-text-muted]">Subtotal</span>
-    <span className="font-semibold text-[--color-text-heading]">₹{totalPrice.toFixed(2)}</span>
-  </div>
-
-  {flashSavings > 0 && (
-    <div className="flex justify-between text-sm">
-      <span className="flex items-center gap-1" style={{ color: "#E4432B" }}>
-        <Zap className="w-3.5 h-3.5 fill-current" />
-        Flash Sale Savings
-      </span>
-      <span className="font-semibold" style={{ color: "#E4432B" }}>
-        − ₹{flashSavings.toFixed(2)}
-      </span>
-    </div>
-  )}
-
-  {couponData && (
-    <div className="flex justify-between text-sm">
-      <span className="text-green-600 font-medium">
-        Coupon ({couponData.code})
-      </span>
-      <span className="font-semibold text-green-600">
-        −₹{discountAmount.toFixed(2)}
-      </span>
-    </div>
-  )}
-
-  <div className="flex justify-between text-sm">
-    <span className="text-[--color-text-muted]">Shipping</span>
-    <span className="font-semibold text-[--color-brand-primary]">Free</span>
-  </div>
-</div>
-
-      {/* Final total */}
-      <div className="border-t border-[--color-border] pt-4 flex justify-between text-lg font-bold">
-        <span className="text-[--color-text-heading]">Total</span>
-        <div className="text-right">
-          {couponData && (
-            <p className="text-sm line-through text-[--color-text-muted] font-normal">
-              ₹{totalPrice.toFixed(2)}
-            </p>
-          )}
-          <span className="text-[--color-text-heading]">₹{finalTotal.toFixed(2)}</span>
-        </div>
-      </div>
-
-    </CardContent>
-  </Card>
-</div>
 
         </div>
       </div>

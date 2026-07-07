@@ -9,10 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 interface CheckoutFormProps {
   totalAmount: number
   onSubmit: (address: any, paymentMethod: string) => Promise<void>
+  onZipCodeChange?: (zip: string) => void   // ← add this
   availablePaymentMethods: string[]
   initialData?: {
     name?: string
-    email?: string // ← new
+    email?: string
     phone?: string
     street?: string
     city?: string
@@ -149,6 +150,7 @@ function PaymentOption({
 export function CheckoutForm({
   totalAmount,
   onSubmit,
+  onZipCodeChange,   // ← add this
   availablePaymentMethods,
   initialData,
   isSubmitting = false,
@@ -168,9 +170,12 @@ export function CheckoutForm({
   const [paymentMethod, setPaymentMethod] = useState(availablePaymentMethods[0] || "ccavenue")
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+  const { name, value } = e.target
+  setFormData((prev) => ({ ...prev, [name]: value }))
+  if (name === "zipCode" && /^\d{6}$/.test(value)) {
+    onZipCodeChange?.(value)
   }
+}
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -40,16 +40,16 @@ export async function autoCreateShiprocketOrder(orderId: string) {
 
   try {
     const result = await createShiprocketOrder({
-      orderId: order._id.toString(),
-      orderDate: new Date(order.createdAt).toISOString().split("T")[0],
-      items,
-      shipping: shippingAddress,
-      billing: shippingAddress,
-      paymentMethod: order.paymentMethod === "cod" ? "COD" : "Prepaid",
-      subTotal: order.totalAmount,
-      shippingCharges: 0,
-      totalDiscount: order.discountAmount ?? 0,
-    });
+  orderId: order._id.toString(),
+  orderDate: new Date(order.createdAt).toISOString().split("T")[0],
+  items,
+  shipping: shippingAddress,
+  billing: shippingAddress,
+  paymentMethod: order.paymentMethod === "cod" ? "COD" : "Prepaid",
+  subTotal: order.totalAmount,
+  shippingCharges: order.shippingAmount ?? 0,   // ← was hardcoded 0
+  totalDiscount: order.discountAmount ?? 0,
+});
 
     await Order.findByIdAndUpdate(order._id, {
       shiprocketOrderId: result.shiprocketOrderId,
@@ -242,4 +242,66 @@ export async function createShiprocketOrder(
     awbCode: data.awb_code ?? undefined,
     courierName: data.courier_name ?? undefined,
   };
+}
+
+
+
+export interface ShiprocketRateOption {
+  courierId: number;
+  courierName: string;
+  rate: number;
+  etd: string;
+  codAvailable: boolean;
+}
+
+export async function getShippingRate({
+  deliveryPincode,
+  weight, // kg
+  cod = false,
+}: {
+  deliveryPincode: string;
+  weight: number;
+  cod?: boolean;
+}): Promise<{ cheapest: ShiprocketRateOption | null; options: ShiprocketRateOption[] }> {
+  const token = await getToken();
+  const pickupPincode = process.env.SHIPROCKET_PICKUP_PINCODE;
+
+  if (!pickupPincode) {
+    throw new Error("SHIPROCKET_PICKUP_PINCODE is not set in env");
+  }
+
+  const params = new URLSearchParams({
+    pickup_postcode: pickupPincode,
+    delivery_postcode: deliveryPincode,
+    weight: weight.toFixed(2),
+    cod: cod ? "1" : "0",
+  });
+
+  const res = await fetch(`${SHIPROCKET_API}/courier/serviceability/?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(`Shiprocket serviceability failed: ${JSON.stringify(data)}`);
+  }
+
+  const companies = data?.data?.available_courier_companies ?? [];
+
+  if (!Array.isArray(companies) || companies.length === 0) {
+    return { cheapest: null, options: [] };
+  }
+
+  const options: ShiprocketRateOption[] = companies.map((c: any) => ({
+    courierId: c.courier_company_id,
+    courierName: c.courier_name,
+    rate: c.rate,
+    etd: c.etd,
+    codAvailable: c.cod === 1,
+  }));
+
+  options.sort((a, b) => a.rate - b.rate);
+
+  return { cheapest: options[0], options };
 }

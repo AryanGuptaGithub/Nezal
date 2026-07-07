@@ -1,0 +1,51 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getShippingRate } from "@/lib/shiprocket";
+import { Product } from "@/lib/models/product";
+import { connectDB } from "@/lib/db"; // adjust to your actual export name in lib/db.ts
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { pincode, items, cod } = body;
+
+    if (!pincode || !/^\d{6}$/.test(String(pincode))) {
+      return NextResponse.json({ error: "Valid 6-digit pincode required" }, { status: 400 });
+    }
+    if (!Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ error: "items array required" }, { status: 400 });
+    }
+
+   await connectDB();
+
+    const productIds = items.map((i: any) => i.productId);
+    const products = await Product.find({ _id: { $in: productIds } }).select("weight");
+    const weightMap = new Map(products.map((p: any) => [p._id.toString(), p.weight ?? 0.3]));
+
+    const totalWeight = items.reduce((sum: number, i: any) => {
+      const w = weightMap.get(i.productId) ?? 0.3;
+      return sum + w * (i.quantity ?? 1);
+    }, 0);
+
+    const { cheapest, options } = await getShippingRate({
+      deliveryPincode: String(pincode),
+      weight: Math.max(totalWeight, 0.1),
+      cod: !!cod,
+    });
+
+    if (!cheapest) {
+      return NextResponse.json({ serviceable: false, error: "Not serviceable to this pincode" });
+    }
+
+    return NextResponse.json({
+      serviceable: true,
+      rate: cheapest.rate,
+      courierName: cheapest.courierName,
+      etd: cheapest.etd,
+      weight: totalWeight,
+      options,
+    });
+  } catch (err: any) {
+    console.error("Shipping rate error:", err.message);
+    return NextResponse.json({ error: err.message ?? "Failed to fetch shipping rate" }, { status: 500 });
+  }
+}

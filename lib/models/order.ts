@@ -33,6 +33,7 @@ const orderSchema = new mongoose.Schema(
     ],
 
     totalAmount: { type: Number, required: true },
+    shippingAmount: { type: Number, default: 0 }, 
 
     shippingAddress: {
       name:    String,

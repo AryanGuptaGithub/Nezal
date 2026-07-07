@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession();
     const body = await request.json();
-    const { items, shippingAddress, totalAmount, paymentMethod } = body;
+    const { items, shippingAddress, totalAmount, paymentMethod, shippingAmount } = body;
 
     await connectDB();
 
@@ -51,18 +51,19 @@ export async function POST(request: NextRequest) {
     };
 
     const order = await Order.create({
-      orderNumber,
-      user: user?._id, // undefined for guests — schema now allows this
-      guestEmail: user ? undefined : shippingAddress.email,
-      guestName: user ? undefined : shippingAddress.name,
-      guestPhone: user ? undefined : shippingAddress.phone,
-      items,
-      totalAmount,
-      shippingAddress: mappedAddress,
-      paymentMethod: paymentMethod || "cod",
-      paymentStatus: "pending",
-      orderStatus: "pending",
-    });
+  orderNumber,
+  user: user?._id,
+  guestEmail: user ? undefined : shippingAddress.email,
+  guestName: user ? undefined : shippingAddress.name,
+  guestPhone: user ? undefined : shippingAddress.phone,
+  items,
+  totalAmount,
+  shippingAmount: shippingAmount ?? 0,   // ← add this
+  shippingAddress: mappedAddress,
+  paymentMethod: paymentMethod || "cod",
+  paymentStatus: "pending",
+  orderStatus: "pending",
+});
 
     const recipientEmail = user?.email || shippingAddress.email;
     const recipientName = user?.name || shippingAddress.name;

@@ -9,6 +9,7 @@ import Image from "next/image"
 import { Trash2, Phone, Zap, Sparkles } from "lucide-react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,7 @@ import {
 
 export default function CartPage() {
 const { items, removeItem, removeRitual, updateQuantity, getTotalPrice, getTotalItems } = useCartStore()
+ const { status } = useSession() 
   const totalPrice = getTotalPrice()
   const router = useRouter()
   const [showBulkOrderModal, setShowBulkOrderModal] = useState(false)
@@ -28,6 +30,42 @@ const { items, removeItem, removeRitual, updateQuantity, getTotalPrice, getTotal
   return sum + (item.price - item.discountPrice) * item.quantity
 }, 0)
 
+
+// ===== Not logged in state =====
+  if (status === "unauthenticated") {
+    return (
+      <main className="min-h-screen bg-background">
+        <div className="container-nezal py-10">
+          <h1 className="text-4xl font-bold text-foreground mb-8">Shopping Cart</h1>
+
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <svg className="w-24 h-24 text-muted-foreground mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
+            </svg>
+            <p className="text-lg text-muted-foreground mb-4">Please log in to view your cart</p>
+            <Button
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              onClick={() => router.push("/auth/login?redirect=/cart")}
+            >
+              Log In
+            </Button>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
+  // ===== Loading session state =====
+  if (status === "loading") {
+    return (
+      <main className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-lg text-muted-foreground flex items-center gap-3">
+          <div className="w-5 h-5 border-2 border-muted-foreground border-t-primary rounded-full animate-spin" />
+          Loading cart...
+        </div>
+      </main>
+    )
+  }
 
   // ===== Empty cart state =====
   if (items.length === 0) {
