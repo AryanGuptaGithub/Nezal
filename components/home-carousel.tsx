@@ -11,34 +11,31 @@ interface CarouselImage {
   url: string
   title?: string
   description?: string
+  link?: string
 }
 
 interface HomeCarouselProps {
   images?: CarouselImage[]
 }
 
+// Fallback only — used if no banners exist in the DB yet
 const staticImages: CarouselImage[] = [
- 
-    { _id: "8", url: "/14.jpeg" },
-     { _id: "2", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990599/image9_a1avzr.png" },
-          { _id: "3", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990599/image7_wfgoej.png" },
-      { _id: "1", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990598/image8_cqm0fb.png" },
-    { _id: "7", url: "/13.jpeg" },
-     { _id: "4", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990692/image10_escelc.png" },
-      { _id: "6", url: "/12.jpeg" },
-    { _id: "5", url: "/11.jpeg" },
-   
-    
-  
+  { _id: "8", url: "/14.jpeg" },
+  { _id: "2", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990599/image9_a1avzr.png" },
+  { _id: "3", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990599/image7_wfgoej.png" },
+  { _id: "1", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990598/image8_cqm0fb.png" },
+  { _id: "7", url: "/13.jpeg" },
+  { _id: "4", url: "https://res.cloudinary.com/douyptcm1/image/upload/v1782990692/image10_escelc.png" },
+  { _id: "6", url: "/12.jpeg" },
+  { _id: "5", url: "/11.jpeg" },
 ]
 
 export function HomeCarousel({ images }: HomeCarouselProps) {
-  const carouselImages = images || staticImages
+  const carouselImages = images && images.length > 0 ? images : staticImages
   const [currentIndex, setCurrentIndex] = useState(0)
   const [autoPlay, setAutoPlay] = useState(true)
   const router = useRouter()
 
-  // ── Auto-play logic (unchanged) ──────────────────────────────
   useEffect(() => {
     if (!autoPlay || carouselImages.length === 0) return
     const interval = setInterval(() => {
@@ -59,14 +56,15 @@ export function HomeCarousel({ images }: HomeCarouselProps) {
     setCurrentIndex((prev) => (prev + 1) % carouselImages.length)
   }
 
-  // ── Click routing (unchanged) ─────────────────────────────────
-  const handleImageClick = (index: number) => {
-    if (index === 0) router.push("/shop/nezal")
-    else if (index === 1) router.push("/shop/dermaflay")
+  // ── Click routing — now driven by admin-configured `link` ──────────
+  const handleImageClick = () => {
+    const link = carouselImages[currentIndex]?.link
+    if (link) router.push(link)
   }
 
   const currentImage = carouselImages[currentIndex]
   const isDataUrl = currentImage?.url?.startsWith("data:")
+  const isClickable = Boolean(currentImage?.link)
 
   return (
     <div
@@ -83,12 +81,11 @@ export function HomeCarousel({ images }: HomeCarouselProps) {
       aria-roledescription="carousel"
       aria-label="Featured products carousel"
     >
-      {/* Aspect ratio container — matches Figma hero proportions */}
       <div className="relative w-full" style={{ aspectRatio: "1000 / 384", minHeight: 200 }}>
         {currentImage && (
           <div
-            className="relative w-full h-full cursor-pointer"
-            onClick={() => handleImageClick(currentIndex)}
+            className={`relative w-full h-full ${isClickable ? "cursor-pointer" : ""}`}
+            onClick={handleImageClick}
           >
             {isDataUrl ? (
               <img
@@ -106,13 +103,11 @@ export function HomeCarousel({ images }: HomeCarouselProps) {
                 priority
                 quality={90}
                 unoptimized={
-                  currentImage.url.startsWith("/") ||
-                  currentImage.url.startsWith("/public")
+                  currentImage.url.startsWith("/") || currentImage.url.startsWith("/public")
                 }
               />
             )}
 
-            {/* Overlay text (only when title/desc set in DB) */}
             {(currentImage.title || currentImage.description) && (
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent flex items-end pointer-events-none">
                 <div className="p-6 sm:p-10 text-white">
@@ -135,7 +130,6 @@ export function HomeCarousel({ images }: HomeCarouselProps) {
           </div>
         )}
 
-        {/* ── Prev / Next arrows — white circle buttons matching Figma ── */}
         {carouselImages.length > 1 && (
           <>
             <button
@@ -158,7 +152,6 @@ export function HomeCarousel({ images }: HomeCarouselProps) {
           </>
         )}
 
-        {/* ── Dot indicators — matching Figma bottom-center ── */}
         {carouselImages.length > 1 && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
             {carouselImages.map((_, idx) => (
@@ -170,16 +163,13 @@ export function HomeCarousel({ images }: HomeCarouselProps) {
                 style={{
                   width: idx === currentIndex ? 28 : 8,
                   height: 8,
-                  background: idx === currentIndex
-                    ? "var(--color-brand-primary)"
-                    : "rgba(255,255,255,0.7)",
+                  background: idx === currentIndex ? "var(--color-brand-primary)" : "rgba(255,255,255,0.7)",
                 }}
               />
             ))}
           </div>
         )}
 
-        {/* Slide counter pill */}
         {carouselImages.length > 1 && (
           <div
             className="absolute top-3 right-3 z-20 px-3 py-1 rounded-full text-white text-xs font-medium"

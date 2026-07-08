@@ -16,7 +16,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { decrypt, parseCCAvenueResponse } from "@/lib/ccavenue";
 import { connectDB } from "@/lib/db";
 import { Order } from "@/lib/models/order";
-import { sendEmail, getOrderConfirmationEmail, getAdminOrderNotificationEmail } from "@/lib/email";
+import { sendEmail, getOrderConfirmationEmail, getAdminOrderNotificationEmail, getPaymentFailedEmail } from "@/lib/email";
 import "@/lib/models/product";
 import { autoCreateShiprocketOrder } from "@/lib/shiprocket";
 
@@ -130,14 +130,46 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.redirect(`${siteUrl}/order-success/${order_id}`);
     } else {
-      // Aborted, Failure, Invalid, etc.
-      await Order.findByIdAndUpdate(order_id, {
-        paymentStatus: "failed",
-      }).catch(() => {});
+  // Aborted, Failure, Invalid, etc.
+  const updatedOrder = await Order.findByIdAndUpdate(
+    order_id,
+    { paymentStatus: "failed" },
+    { new: true }
+  ).catch(() => null);
 
-      const reason = encodeURIComponent(failure_message || order_status || "payment_failed");
-      return NextResponse.redirect(`${siteUrl}/checkout?error=${reason}`);
+  if (updatedOrder) {
+    try {
+      const recipientEmail =
+        (updatedOrder as any).guestEmail ??
+        (updatedOrder as any).shippingAddress?.email ??
+        "";
+      const recipientName =
+        (updatedOrder as any).guestName ??
+        (updatedOrder as any).shippingAddress?.name ??
+        "Customer";
+
+      if (recipientEmail) {
+        const failedEmailHtml = getPaymentFailedEmail({
+          customerName: recipientName,
+          orderId: (updatedOrder as any).orderNumber,
+          totalAmount: (updatedOrder as any).totalAmount,
+          reason: failure_message || order_status,
+        });
+
+        await sendEmail({
+          to: recipientEmail,
+          subject: `Payment Failed - Order ${(updatedOrder as any).orderNumber}`,
+          html: failedEmailHtml,
+        });
+      }
+    } catch (emailError) {
+      console.error("Failed to send CCAvenue payment-failed email:", emailError);
     }
+  }
+
+  const reason = encodeURIComponent(failure_message || order_status || "payment_failed");
+  return NextResponse.redirect(`${siteUrl}/checkout?error=${reason}`);
+}
   } catch (err: any) {
     console.error("CCAvenue response error:", err.message);
     return NextResponse.redirect(`${siteUrl}/checkout?error=processing_error`);

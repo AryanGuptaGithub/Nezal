@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Eye, MapPin, CreditCard, Package, Truck, ExternalLink } from "lucide-react"
+import { Search } from "lucide-react"
 
 interface OrderItem {
   product?: {
@@ -88,6 +89,7 @@ export default function AdminOrdersPage() {
   const [shipError, setShipError] = useState<Record<string, string>>({})
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [showDetails, setShowDetails] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
     if (!session) {
@@ -189,6 +191,21 @@ export default function AdminOrdersPage() {
     setShowDetails(true)
   }
 
+  const filteredOrders = orders.filter((order) => {
+  const query = searchQuery.trim().toLowerCase()
+  if (!query) return true
+
+  const orderId = (order.orderNumber || order._id).toLowerCase()
+  const customerName = (order.user?.name || order.guestName || "").toLowerCase()
+  const customerEmail = (order.user?.email || order.guestEmail || "").toLowerCase()
+
+  return (
+    orderId.includes(query) ||
+    customerName.includes(query) ||
+    customerEmail.includes(query)
+  )
+})
+
   if (loading) {
     return (
       <main className="min-h-screen bg-background flex items-center justify-center">
@@ -203,13 +220,27 @@ export default function AdminOrdersPage() {
         <h1 className="text-3xl font-bold text-foreground mb-8">Orders Management</h1>
 
         <Card>
-          <CardHeader>
-            <CardTitle>All Orders ({orders.length})</CardTitle>
-          </CardHeader>
+          <CardHeader className="flex flex-col items-start gap-1">
+  <CardTitle className="">All Orders ({searchQuery ? filteredOrders.length : orders.length})</CardTitle>
+  <div className="relative mt-3 max-w-lg ">
+    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+    <input
+      type="text"
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+      placeholder="Search by order ID or customer name..."
+      className="w-full  h-9 pl-9 pr-3 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
+    />
+  </div>
+</CardHeader>
           <CardContent>
             {orders.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">No orders found</div>
-            ) : (
+  <div className="text-center py-8 text-muted-foreground">No orders found</div>
+) : filteredOrders.length === 0 ? (
+  <div className="text-center py-8 text-muted-foreground">
+    No orders match "{searchQuery}"
+  </div>
+) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -220,14 +251,14 @@ export default function AdminOrdersPage() {
                       <th className="text-left py-3 px-4 font-semibold">Amount</th>
                       <th className="text-left py-3 px-4 font-semibold">Payment</th>
                       <th className="text-left py-3 px-4 font-semibold">Method</th>
-                      <th className="text-left py-3 px-4 font-semibold">Status</th>
+                      
                       <th className="text-left py-3 px-4 font-semibold">Shipping</th>
                       <th className="text-left py-3 px-4 font-semibold">Date</th>
                       <th className="text-left py-3 px-4 font-semibold">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {orders.map((order) => (
+                   {filteredOrders.map((order) => (
                       <tr key={order._id} className="border-b border-border hover:bg-muted/50">
                         <td className="py-3 px-4 font-mono text-xs font-semibold">
                           {order.orderNumber || order._id.slice(-6)}
@@ -242,28 +273,41 @@ export default function AdminOrdersPage() {
                           <Badge variant="outline">{order.items?.length || 0} items</Badge>
                         </td>
                         <td className="py-3 px-4 font-semibold">₹{(order.totalAmount || 0).toFixed(2)}</td>
+                       <td className="py-3 px-4">
+  <Badge
+    className={
+      order.paymentStatus === "completed"
+        ? "bg-green-100 text-green-800 border-green-200"
+        : order.paymentStatus === "failed"
+        ? "bg-red-100 text-red-800 border-red-200"
+        : "bg-amber-100 text-amber-800 border-amber-200"
+    }
+  >
+    {order.paymentStatus === "completed"
+      ? "Completed"
+      : order.paymentStatus === "failed"
+      ? "Failed"
+      : "Pending"}
+  </Badge>
+</td>
                         <td className="py-3 px-4">
-                          <Select
-                            value={order.paymentStatus || "pending"}
-                            onValueChange={(value) => updatePaymentStatus(order._id, value)}
-                            disabled={updatingId === order._id}
-                          >
-                            <SelectTrigger className="w-28 h-8">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="completed">Completed</SelectItem>
-                              <SelectItem value="failed">Failed</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="py-3 px-4">
-                          <Badge variant={order.paymentMethod === "cod" ? "secondary" : "default"}>
-                            {order.paymentMethod === "cod" ? "COD" : "Razorpay"}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-4">
+  <Badge
+    variant={
+      order.paymentMethod === "cod"
+        ? "secondary"
+        : order.paymentMethod === "ccavenue"
+        ? "outline"
+        : "default"
+    }
+  >
+    {order.paymentMethod === "cod"
+      ? "COD"
+      : order.paymentMethod === "ccavenue"
+      ? "CCAvenue"
+      : "Razorpay"}
+  </Badge>
+</td>
+                        {/* <td className="py-3 px-4">
                           <Select
                             value={order.orderStatus || "pending"}
                             onValueChange={(value) => updateOrderStatus(order._id, value)}
@@ -280,51 +324,41 @@ export default function AdminOrdersPage() {
                               <SelectItem value="cancelled">Cancelled</SelectItem>
                             </SelectContent>
                           </Select>
-                        </td>
+                        </td> */}
 
                         {/* Shiprocket column */}
                         <td className="py-3 px-4">
-                          {order.shiprocketOrderId ? (
-                            <div className="space-y-1">
-                              <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
-                                Shipped
-                              </Badge>
-                              {order.awbCode && (
-                                <p className="text-xs text-muted-foreground font-mono">
-                                  AWB: {order.awbCode}
-                                </p>
-                              )}
-                              {order.trackingUrl && (
-                                <a
-                                  href={order.trackingUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-blue-600 hover:underline flex items-center gap-1"
-                                >
-                                  Track <ExternalLink className="w-3 h-3" />
-                                </a>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="space-y-1">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-8 text-xs gap-1 border-orange-300 text-orange-700 hover:bg-orange-50"
-                                onClick={() => handleShipOrder(order._id)}
-                                disabled={shippingId === order._id}
-                              >
-                                <Truck className="w-3 h-3" />
-                                {shippingId === order._id ? "Shipping..." : "Ship"}
-                              </Button>
-                              {shipError[order._id] && (
-                                <p className="text-xs text-red-500 max-w-[120px]">
-                                  {shipError[order._id]}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </td>
+  {order.shiprocketOrderId ? (
+    <div className="space-y-1">
+      <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
+        Shipped
+      </Badge>
+      {order.awbCode && (
+        <p className="text-xs text-muted-foreground font-mono">
+          AWB: {order.awbCode}
+        </p>
+      )}
+      {order.trackingUrl && (
+        <a
+          href={order.trackingUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+        >
+          Track <ExternalLink className="w-3 h-3" />
+        </a>
+      )}
+    </div>
+  ) : order.paymentStatus === "completed" || order.paymentMethod === "cod" ? (
+    <Badge variant="outline" className="text-xs text-muted-foreground">
+      Processing…
+    </Badge>
+  ) : (
+    <Badge variant="outline" className="text-xs text-muted-foreground">
+      Awaiting payment
+    </Badge>
+  )}
+</td>
 
                         <td className="py-3 px-4 text-xs text-muted-foreground">
                           {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "—"}
@@ -473,7 +507,13 @@ export default function AdminOrdersPage() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Payment Method</p>
-                    <p className="font-medium">{selectedOrder.paymentMethod === "cod" ? "Cash on Delivery" : "Razorpay"}</p>
+                   <p className="font-medium">
+  {selectedOrder.paymentMethod === "cod"
+    ? "Cash on Delivery"
+    : selectedOrder.paymentMethod === "ccavenue"
+    ? "CCAvenue"
+    : "Razorpay"}
+</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Payment Status</p>
@@ -529,23 +569,10 @@ export default function AdminOrdersPage() {
                     )}
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    <p className="text-sm text-muted-foreground">No shipment created yet.</p>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-2 border-orange-300 text-orange-700 hover:bg-orange-50"
-                      onClick={() => handleShipOrder(selectedOrder._id)}
-                      disabled={shippingId === selectedOrder._id}
-                    >
-                      <Truck className="w-4 h-4" />
-                      {shippingId === selectedOrder._id ? "Creating shipment..." : "Ship via Shiprocket"}
-                    </Button>
-                    {shipError[selectedOrder._id] && (
-                      <p className="text-sm text-red-500">{shipError[selectedOrder._id]}</p>
-                    )}
-                  </div>
-                )}
+  <p className="text-sm text-muted-foreground">
+    Shipment will be created automatically once payment is confirmed.
+  </p>
+)}
               </div>
             </div>
           </DialogContent>

@@ -9,6 +9,9 @@ import { CheckoutForm } from "@/components/checkout-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { trackInitiateCheckout } from "@/lib/facebook-pixel"
 import { Zap } from "lucide-react"
+import Image from "next/image"
+import { Tag, Truck, ShoppingBag } from "lucide-react"
+import { useCheckoutStore } from "@/lib/store/checkout-store"
 
 declare global {
   interface Window {
@@ -96,12 +99,53 @@ function CheckoutPageInner() {
     discountAmount: number
   } | null>(null)
 
+  const { pendingOrder, setPendingOrder, clearPendingOrder } = useCheckoutStore()
+
   useEffect(() => {
     if (items.length > 0) {
       const productIds = items.map(item => item.productId)
       trackInitiateCheckout(getTotalPrice(), items.length, productIds)
     }
   }, [])
+
+  useEffect(() => {
+  if (!pendingOrder) return
+
+  let cancelled = false
+  let timer: ReturnType<typeof setTimeout> | null = null
+
+  const check = async () => {
+    try {
+      const res = await fetch(`/api/orders/${pendingOrder.orderId}/check-abandonment`, {
+        method: "POST",
+      })
+      const data = await res.json()
+      if (cancelled) return
+
+      if (!data.stillPending) {
+        clearPendingOrder()
+        return
+      }
+
+      if (data.tooSoon) {
+        timer = setTimeout(check, data.remainingMs + 1000)
+        return
+      }
+
+      // Email just sent, or was already sent on a previous visit — done tracking it.
+      clearPendingOrder()
+    } catch (err) {
+      console.error("Abandonment check failed:", err)
+    }
+  }
+
+  check()
+
+  return () => {
+    cancelled = true
+    if (timer) clearTimeout(timer)
+  }
+}, [pendingOrder])
 
   // Surface CCAvenue failure/cancel redirects (?error=...) as a visible message
   useEffect(() => {
@@ -290,6 +334,8 @@ function CheckoutPageInner() {
         const orderData = await orderResponse.json()
         if (!orderResponse.ok) throw new Error(orderData.error || "Failed to create order")
 
+          setPendingOrder({ orderId: orderData.orderId, createdAt: Date.now() })
+
         const initiateResponse = await fetch("/api/ccavenue/initiate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -310,8 +356,7 @@ function CheckoutPageInner() {
         const initiateData = await initiateResponse.json()
         if (!initiateResponse.ok) throw new Error(initiateData.error || "Failed to initiate payment")
 
-        clearCart()
-
+        
         const form = document.createElement("form")
         form.method = "POST"
         form.action = initiateData.actionUrl
@@ -378,9 +423,28 @@ function CheckoutPageInner() {
                 setIsLoading(false)
                 router.push(`/order-success/${verifyData.orderId}`)
               } else {
-                setIsLoading(false)
-                alert("Payment verification failed. Please contact support.")
-              }
+                 try {
+        await fetch("/api/email/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "payment-failed",
+            to: shippingAddress.email || session?.user?.email,
+            subject: "Payment Verification Failed - Nezal",
+            data: {
+              customerName: shippingAddress.name || session?.user?.name || "Customer",
+              totalAmount: finalTotal,
+              reason: "We couldn't verify your payment. If money was deducted, it will be refunded automatically.",
+            },
+          }),
+        })
+      } catch (emailErr) {
+        console.error("Failed to send payment-failed email:", emailErr)
+      }
+      setIsLoading(false)
+      alert("Payment verification failed. Please contact support.")
+    }
+              
             } catch (error) {
               console.error("Payment verification error:", error)
               setIsLoading(false)
@@ -388,11 +452,29 @@ function CheckoutPageInner() {
             }
           },
           modal: {
-            ondismiss: () => {
-              alert("Payment cancelled. Your order was not created.")
-              setIsLoading(false)
-            },
+  ondismiss: async () => {
+    try {
+      await fetch("/api/email/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "payment-failed",
+          to: shippingAddress.email || session?.user?.email,
+          subject: "Payment Cancelled - Nezal",
+          data: {
+            customerName: shippingAddress.name || session?.user?.name || "Customer",
+            totalAmount: finalTotal,
+            reason: "You cancelled the payment window before completing it.",
           },
+        }),
+      })
+    } catch (emailErr) {
+      console.error("Failed to send payment-cancelled email:", emailErr)
+    }
+    alert("Payment cancelled. Your order was not created.")
+    setIsLoading(false)
+  },
+},
           prefill: {
             email: session?.user?.email || shippingAddress?.email,
             name: session?.user?.name || shippingAddress?.name,
@@ -433,7 +515,7 @@ function CheckoutPageInner() {
   const availablePaymentMethods = getAvailablePaymentMethods()
 
   return (
-    <main className="min-h-screen bg-[--color-bg-page]">
+    <main className="min-h-screen bg-[--color-bg-page] ">
       <TopProgressBar visible={isLoading} />
 
       <div className="container-nezal py-10">
@@ -467,156 +549,203 @@ function CheckoutPageInner() {
             />
           </div>
 
-          {/* Order Summary – 1/3 */}
-          <div className="lg:col-span-1">
-            <Card className="sticky top-20 border border-[--color-border] rounded-2xl shadow-sm">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-bold text-[--color-text-heading]">Order Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+         {/* Order Summary – 1/3 */}
+<div className="lg:col-span-1">
+  <Card className="sticky top-20 border border-[#2d8116] rounded-2xl shadow-sm bg-white overflow-hidden">
+    <CardHeader className="pb-4 flex-row items-center gap-3">
+      <div className="w-8 h-8 rounded-lg bg-[#2d8116]/10 flex items-center justify-center text-[#2d8116] flex-shrink-0">
+        <ShoppingBag className="w-4 h-4" />
+      </div>
+      <CardTitle className="text-base font-semibold text-[#2d8116]">
+        Order Summary
+        <span className="ml-2 text-xs font-normal text-[#2d8116]">
+          ({items.reduce((n, i) => n + i.quantity, 0)} {items.reduce((n, i) => n + i.quantity, 0) === 1 ? "item" : "items"})
+        </span>
+      </CardTitle>
+    </CardHeader>
 
-                {/* Items */}
-                {items.map((item) => (
-                  <div key={item.productId} className="text-sm border-b border-[--color-border] pb-3 last:border-b-0">
-                    <div className="flex justify-between">
-                      <span className="text-[--color-text-body]">{item.name} x {item.quantity}</span>
-                      <span className="font-semibold text-[--color-text-heading]">
-                        ₹{((item.discountPrice || item.price) * item.quantity).toFixed(2)}
-                      </span>
-                    </div>
-                    {item.selectedSize && (
-                      <div className="text-xs text-[--color-text-muted] mt-1">
-                        Size: {item.selectedSize.size} ({item.selectedSize.quantity}{item.selectedSize.unit})
-                      </div>
-                    )}
-                    {item.ritual && (
-                      <div className="inline-flex items-center gap-1 border text-[10px] bg-[#074d09] text-white font-semibold px-2 py-0.5 rounded-full mt-1.5">
-                        ✨ {item.ritual.name}
-                      </div>
-                    )}
-                    {item.flashSale && item.discountPrice && (
-                      <div
-                        className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full mt-1.5"
-                        style={{ backgroundColor: "#E4432B", color: "#ffffff" }}
-                      >
-                        <Zap className="w-2.5 h-2.5 fill-current" />
-                        {item.flashSale.discountPercent}% Flash Sale
-                      </div>
-                    )}
-                  </div>
-                ))}
+    <CardContent className="space-y-5">
 
-                {/* Coupon input */}
-                <div className="border-t border-[--color-border] pt-4">
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-[--color-text-muted] mb-2">
-                    Coupon Code
-                  </p>
+     {/* Items */}
+<div className="space-y-3">
+  {items.map((item) => (
+    <div
+      key={item.productId}
+      className="flex items-start gap-3 rounded-xl border border-[#2d8116] bg-[#ebffe6] p-3"
+    >
+      {/* Product Image */}
+      <div className="relative flex-shrink-0">
+        <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-[#2d8116]/20 bg-[#f5faf3]">
+          {item.image && (
+            <Image
+              src={item.image}
+              alt={item.name}
+              fill
+              sizes="64px"
+              className="object-cover"
+            />
+          )}
+        </div>
 
-                  {couponData ? (
-                    <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-3 py-2.5">
-                      <div>
-                        <p className="text-sm font-bold text-green-700 font-mono">{couponData.code}</p>
-                        <p className="text-xs text-green-600 mt-0.5">
-                          {couponData.discountType === "percentage"
-                            ? `${couponData.discountValue}% off applied`
-                            : `₹${couponData.discountValue} off applied`}
-                        </p>
-                      </div>
-                      <button
-                        onClick={removeCoupon}
-                        className="text-xs font-semibold text-red-500 hover:text-red-700 transition-colors ml-2"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={couponInput}
-                          onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponError("") }}
-                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleApplyCoupon() } }}
-                          placeholder="Enter code e.g. NEZAL25"
-                          className="flex-1 h-10 px-3 text-sm font-mono uppercase rounded-xl border border-[--color-border] focus:outline-none focus:border-[--color-brand-primary] transition-colors bg-white"
-                        />
-                        <button
-                          onClick={handleApplyCoupon}
-                          disabled={couponLoading || !couponInput.trim()}
-                          className="px-4 h-10 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
-                          style={{ backgroundColor: "var(--color-brand-primary)" }}
-                        >
-                          {couponLoading ? "..." : "Apply"}
-                        </button>
-                      </div>
-                      {couponError && (
-                        <p className="text-xs text-red-500 flex items-center gap-1">
-                          <span>✕</span> {couponError}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
+        {/* Quantity Badge */}
+        <span className="absolute -top-2 -right-2 flex h-6 min-w-[24px] items-center justify-center rounded-full bg-[#2d8116] px-1.5 text-[11px] font-bold text-white shadow-md ring-2 ring-white">
+          {item.quantity}
+        </span>
+      </div>
 
-                {/* Price breakdown */}
-                <div className="border-t border-[--color-border] pt-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[--color-text-muted]">Subtotal</span>
-                    <span className="font-semibold text-[--color-text-heading]">₹{totalPrice.toFixed(2)}</span>
-                  </div>
+      {/* Product Details */}
+      <div className="min-w-0 flex-1">
+        <h4 className="line-clamp-2 text-sm font-semibold text-[#2d8116]">
+          {item.name}
+        </h4>
 
-                  {flashSavings > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="flex items-center gap-1" style={{ color: "#E4432B" }}>
-                        <Zap className="w-3.5 h-3.5 fill-current" />
-                        Flash Sale Savings
-                      </span>
-                      <span className="font-semibold" style={{ color: "#E4432B" }}>
-                        − ₹{flashSavings.toFixed(2)}
-                      </span>
-                    </div>
-                  )}
+        {item.selectedSize && (
+          <p className="mt-1 text-xs text-[#222421]">
+            {item.selectedSize.size} • {item.selectedSize.quantity}
+            {item.selectedSize.unit}
+          </p>
+        )}
 
-                  {couponData && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-green-600 font-medium">
-                        Coupon ({couponData.code})
-                      </span>
-                      <span className="font-semibold text-green-600">
-                        −₹{discountAmount.toFixed(2)}
-                      </span>
-                    </div>
-                  )}
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          {item.ritual && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#2d8116]/10 px-2 py-1 text-[10px] font-semibold text-[#2d8116]">
+              ✨ {item.ritual.name}
+            </span>
+          )}
 
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[--color-text-muted]">Shipping</span>
-                    {shippingLoading ? (
-                      <span className="text-xs text-[--color-text-muted]">Calculating…</span>
-                    ) : shippingRate !== null ? (
-                      <span className="font-semibold text-[--color-text-heading]">₹{shippingRate.toFixed(2)}</span>
-                    ) : (
-                      <span className="text-xs text-[--color-text-muted]">Enter pincode to calculate</span>
-                    )}
-                  </div>
-                  {shippingError && <p className="text-xs text-red-500 mt-1">{shippingError}</p>}
-                </div>
+          {item.flashSale && item.discountPrice && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#E4432B] px-2 py-1 text-[10px] font-bold text-white">
+              <Zap className="h-3 w-3 fill-current" />
+              {item.flashSale.discountPercent}% OFF
+            </span>
+          )}
+        </div>
+      </div>
 
-                {/* Final total */}
-                <div className="border-t border-[--color-border] pt-4 flex justify-between text-lg font-bold">
-                  <span className="text-[--color-text-heading]">Total</span>
-                  <div className="text-right">
-                    {couponData && (
-                      <p className="text-sm line-through text-[--color-text-muted] font-normal">
-                        ₹{totalPrice.toFixed(2)}
-                      </p>
-                    )}
-                    <span className="text-[--color-text-heading]">₹{finalTotal.toFixed(2)}</span>
-                  </div>
-                </div>
+      {/* Price */}
+      <div className="flex flex-col items-end flex-shrink-0">
+        <span className="text-base font-bold text-[#2d8116]">
+          ₹{((item.discountPrice || item.price) * item.quantity).toFixed(2)}
+        </span>
 
-              </CardContent>
-            </Card>
+        {item.discountPrice && (
+          <span className="mt-1 text-xs text-[#2d8116] line-through">
+            ₹{(item.price * item.quantity).toFixed(2)}
+          </span>
+        )}
+      </div>
+    </div>
+  ))}
+</div>
+
+      {/* Coupon input */}
+      <div className="border-t border-[#2d8116] pt-4">
+        <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-[#2d8116] mb-2">
+          <Tag className="w-3 h-3" /> Coupon Code
+        </p>
+
+        {couponData ? (
+          <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-3 py-2.5">
+            <div>
+              <p className="text-sm font-bold text-green-700 font-mono">{couponData.code}</p>
+              <p className="text-xs text-green-600 mt-0.5">
+                {couponData.discountType === "percentage"
+                  ? `${couponData.discountValue}% off applied`
+                  : `₹${couponData.discountValue} off applied`}
+              </p>
+            </div>
+            <button
+              onClick={removeCoupon}
+              className="text-xs font-semibold text-red-500 hover:text-red-700 transition-colors ml-2"
+            >
+              Remove
+            </button>
           </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={couponInput}
+                onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponError("") }}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleApplyCoupon() } }}
+                placeholder="Enter code e.g. NEZAL25"
+                className="flex-1 h-10 px-3 text-sm font-mono uppercase rounded-xl border border-[#2d8116] focus:outline-none focus:border-[#2d8116] transition-colors bg-white"
+              />
+              <button
+                onClick={handleApplyCoupon}
+                disabled={couponLoading || !couponInput.trim()}
+                className="px-4 h-10 rounded-xl text-sm font-semibold text-white bg-[#09813b] transition-all disabled:opacity-50 flex-shrink-0"
+              >
+                {couponLoading ? "..." : "Apply"}
+              </button>
+            </div>
+            {couponError && (
+              <p className="text-xs text-red-500 flex items-center gap-1">
+                <span>✕</span> {couponError}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Price breakdown */}
+      <div className="border-t border-[#2d8116] pt-4 space-y-2.5">
+        <div className="flex justify-between text-sm">
+          <span className="text-[#a4a4a4]">Subtotal</span>
+          <span className="font-medium text-[#2d8116]">₹{totalPrice.toFixed(2)}</span>
+        </div>
+
+        {flashSavings > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="flex items-center gap-1" style={{ color: "#E4432B" }}>
+              <Zap className="w-3.5 h-3.5 fill-current" />
+              Flash Sale Savings
+            </span>
+            <span className="font-medium" style={{ color: "#E4432B" }}>
+              − ₹{flashSavings.toFixed(2)}
+            </span>
+          </div>
+        )}
+
+        {couponData && (
+          <div className="flex justify-between text-sm">
+            <span className="text-green-600 font-medium">Coupon ({couponData.code})</span>
+            <span className="font-medium text-green-600">−₹{discountAmount.toFixed(2)}</span>
+          </div>
+        )}
+
+        <div className="flex justify-between items-center text-sm">
+          <span className="flex items-center gap-1.5 text-[#858585]">
+            <Truck className="w-3.5 h-3.5" /> Shipping
+          </span>
+          {shippingLoading ? (
+            <span className="text-xs text-[#858585] animate-pulse">Calculating…</span>
+          ) : shippingRate !== null ? (
+            <span className="font-medium text-[#2d8116]">₹{shippingRate.toFixed(2)}</span>
+          ) : (
+            <span className="text-xs text-[#858585]">Enter pincode to calculate</span>
+          )}
+        </div>
+        {shippingError && <p className="text-xs text-red-500"> <span className="border">+</span>{shippingError}</p>}
+      </div>
+
+      {/* Final total */}
+      <div className="rounded-xl bg-[--color-bg-cream] px-4 py-3.5 flex justify-between items-center">
+        <span className="font-semibold text-[#024a21]">Total</span>
+        <div className="text-right">
+          {couponData && (
+            <p className="text-xs line-through text-[#858585] font-normal leading-none mb-0.5">
+              ₹{totalPrice.toFixed(2)}
+            </p>
+          )}
+          <span className="text-xl font-bold text-[#2d8116]">₹{finalTotal.toFixed(2)}</span>
+        </div>
+      </div>
+
+    </CardContent>
+  </Card>
+</div>
 
         </div>
       </div>

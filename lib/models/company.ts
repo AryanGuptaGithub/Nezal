@@ -1,3 +1,4 @@
+// lib/models/company.ts
 import mongoose from "mongoose";
 
 // Subdocument schema for carousel images

@@ -28,43 +28,46 @@ async function getHomeData() {
     const { Company }   = await import("@/lib/models/company")
     const { Review }    = await import("@/lib/models/review")
     const { FlashSale } = await import("@/lib/models/flashsale")
+    const { HomeBanner } = await import("@/lib/models/homeBanner")
 
     const now = new Date()
 
-    const [companiesRaw, productsRaw, reviewsRaw, flashSalesRaw] = await Promise.all([
-      Company.find({}).sort({ name: 1 }).lean(),
+    const [companiesRaw, productsRaw, reviewsRaw, flashSalesRaw, bannersRaw] = await Promise.all([
+  Company.find({}).sort({ name: 1 }).lean(),
 
-      Product.find({ isActive: true })
-        .sort({ createdAt: -1 })
-        .limit(8)
-        .populate("company", "name slug _id")
-        .lean(),
+  Product.find({ isActive: true })
+    .sort({ createdAt: -1 })
+    .limit(8)
+    .populate("company", "name slug _id")
+    .lean(),
 
-      Review.find({ status: "approved" })
-        .sort({ rating: -1, createdAt: -1 })
-        .limit(10)
-        .populate("product", "name image")
-        .populate("company", "name")
-        .lean(),
+  Review.find({ status: "approved" })
+    .sort({ rating: -1, createdAt: -1 })
+    .limit(10)
+    .populate("product", "name image")
+    .populate("company", "name")
+    .lean(),
 
-      FlashSale.find({
-        isActive:  true,
-        startsAt:  { $lte: now },
-        endsAt:    { $gte: now },
-      })
-        .populate({
-          path:     "products",
-          select:   "name slug price discountPrice image images company stock",
-          populate: { path: "company", select: "name slug" },
-        })
-        .lean(),
-    ])
+  FlashSale.find({
+    isActive:  true,
+    startsAt:  { $lte: now },
+    endsAt:    { $gte: now },
+  })
+    .populate({
+      path:     "products",
+      select:   "name slug price discountPrice image images company stock",
+      populate: { path: "company", select: "name slug" },
+    })
+    .lean(),
 
+  HomeBanner.find({ isActive: true }).sort({ order: 1, createdAt: 1 }).lean(),
+])
     const s = (obj: any) => JSON.parse(JSON.stringify(obj))
 
     const companies  = s(companiesRaw)
     const reviews    = s(reviewsRaw)
     const flashSales = s(flashSalesRaw)
+    const banners = s(bannersRaw)
 
     // ── Merge in flash-sale pricing so these 8 products carry the same
     //    discountPrice / flashSale data as every other listing, in case
@@ -78,11 +81,11 @@ async function getHomeData() {
 
     const activeSale = flashSales.find((s: any) => s.products?.length > 0) ?? null
 
-    return { companies, products, reviews, nezalCompany, activeSale }
-  } catch (err) {
-    console.error("Home page data fetch error:", err)
-    return { companies: [], products: [], reviews: [], nezalCompany: null, activeSale: null }
-  }
+    return { companies, products, reviews, nezalCompany, activeSale, banners }
+ } catch (err) {
+  console.error("Home page data fetch error:", err)
+  return { companies: [], products: [], reviews: [], nezalCompany: null, activeSale: null, banners: [] }
+}
 }
 
 // ── Promo banners (static, no fetch needed) ───────────────────────────────────
@@ -141,7 +144,7 @@ function PromoBannerGrid() {
 
 // ── Page (Server Component) ───────────────────────────────────────────────────
 export default async function Home() {
- const { companies, products, reviews, nezalCompany, activeSale } = await getHomeData()
+const { companies, products, reviews, nezalCompany, activeSale, banners } = await getHomeData()
 
 const testimonials = reviews.slice(0, 8).map((r: any) => ({
   id:      r._id,
@@ -157,8 +160,8 @@ const testimonials = reviews.slice(0, 8).map((r: any) => ({
     <main className="min-h-screen bg-background overflow-x-hidden">
 
       {/* Hero Carousel */}
-      <section className="w-full">
-        <HomeCarousel />
+     <section className="w-full">
+         <HomeCarousel images={banners} />
       </section>
 
       {/* Scrolling Ticker */}

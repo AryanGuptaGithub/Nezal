@@ -148,18 +148,7 @@ export default function HomeClient({ products, showFloatingButtons = false, comp
                   <p className="text-[11px] text-muted-foreground">{PRIMARY_WA}</p>
                 </div>
               </button>
-              <button
-                onClick={() => { window.open(`https://wa.me/${SECONDARY_WA}`, "_blank", "noopener,noreferrer"); setWaMenuOpen(false) }}
-                className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-3 hover:bg-muted transition-colors"
-              >
-                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ color: "#3b82f6" }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M22 12v6a2 2 0 01-2 2H6l-4 4V6a2 2 0 012-2h16a2 2 0 012 2z" />
-                </svg>
-                <div>
-                  <p className="font-medium text-[13px] text-foreground">Chat with Support</p>
-                  <p className="text-[11px] text-muted-foreground">{SECONDARY_WA}</p>
-                </div>
-              </button>
+             
             </div>
           </div>
         </div>

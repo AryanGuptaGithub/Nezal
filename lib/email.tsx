@@ -219,7 +219,7 @@ export function getWelcomeEmail(name: string) {
           <div class="container">
             <!-- Header -->
             <div class="header">
-              <img src="https://nezal.com/nezallogo.jpg" alt="Nezal Logo" class="logo">
+              <img src="https://nezalherbocare.com/nezallogo.jpg" alt="Nezal Logo" class="logo">
               <h1>Welcome to Nezal!</h1>
               <p>Premium Skincare Solutions</p>
             </div>
@@ -245,7 +245,7 @@ export function getWelcomeEmail(name: string) {
               </div>
 
               <div style="text-align: center;">
-                <a href="https://nezal.com/shop" class="cta-button">Start Shopping Now</a>
+                <a href="https://nezalherbocare.com/shop" class="cta-button">Start Shopping Now</a>
               </div>
 
               <p class="text-block">
@@ -264,19 +264,19 @@ export function getWelcomeEmail(name: string) {
             <!-- Footer -->
             <div class="footer">
               <div class="footer-links">
-                <a href="https://nezal.com">Home</a>
-                <a href="https://nezal.com/shop">Shop</a>
-                <a href="https://nezal.com/blog">Blog</a>
-                <a href="https://nezal.com/profile">Account</a>
+                <a href="https://nezalherbocare.com">Home</a>
+                <a href="https://nezalherbocare.com/shop">Shop</a>
+                <a href="https://nezalherbocare.com/blog">Blog</a>
+                <a href="https://nezalherbocare.com/profile">Account</a>
               </div>
               <div class="footer-text">
                 <p><strong>Nezal</strong></p>
                 <p>Premium Skincare for Everyone</p>
                 <p style="margin-top: 10px; color: #95a5a6;">
-                  📧 care@nezal.com | 🌐 www.nezal.com
+                  📧 care@nezalherbocare.com | 🌐 www.nezalherbocare.com
                 </p>
                 <p style="margin-top: 15px; color: #bdc3c7;">
-                  &copy; 2025 Nezal.com. All rights reserved.
+                  &copy; 2025 nezalherbocare.com. All rights reserved.
                 </p>
               </div>
             </div>
@@ -551,7 +551,7 @@ export function getOrderConfirmationEmail({
           <div class="container">
             <!-- Header -->
             <div class="header">
-              <img src="https://nezal.com/nezallogo.jpg" alt="Nezal Logo" class="logo">
+              <img src="https://nezalherbocare.com/nezallogo.jpg" alt="Nezal Logo" class="logo">
               <h1>Order Confirmation</h1>
               <p>Your order has been received!</p>
             </div>
@@ -624,7 +624,7 @@ export function getOrderConfirmationEmail({
               </div>
 
               <div style="text-align: center;">
-                <a href="https://nezal.com/profile/orders" class="cta-button">Track Your Order</a>
+                <a href="https://nezalherbocare.com/profile/orders" class="cta-button">Track Your Order</a>
               </div>
 
               <p class="text-block">
@@ -635,19 +635,19 @@ export function getOrderConfirmationEmail({
             <!-- Footer -->
             <div class="footer">
               <div class="footer-links">
-                <a href="https://nezal.com">Home</a>
-                <a href="https://nezal.com/shop">Shop</a>
-                <a href="https://nezal.com/blog">Blog</a>
-                <a href="https://nezal.com/profile/orders">Orders</a>
+                <a href="https://nezalherbocare.com">Home</a>
+                <a href="https://nezalherbocare.com/shop">Shop</a>
+                <a href="https://nezalherbocare.com/blog">Blog</a>
+                <a href="https://nezalherbocare.com/profile/orders">Orders</a>
               </div>
               <div class="footer-text">
                 <p><strong>Nezal</strong></p>
                 <p>Premium Skincare for Everyone</p>
                 <p style="margin-top: 10px; color: #95a5a6;">
-                  📧 care@nezal.com | 🌐 www.nezal.com
+                  📧 care@nezalherbocare.com | 🌐 www.nezalherbocare.com
                 </p>
                 <p style="margin-top: 15px; color: #bdc3c7;">
-                  &copy; 2025 Nezal.com. All rights reserved.
+                  &copy; 2025 nezalherbocare.com. All rights reserved.
                 </p>
               </div>
               <div class="support-text">
@@ -889,7 +889,7 @@ export function getOrderStatusUpdateEmail({
           <div class="container">
             <!-- Header -->
             <div class="header">
-              <img src="https://nezal.com/nezallogo.jpg" alt="Nezal Logo" class="logo">
+              <img src="https://nezalherbocare.com/nezallogo.jpg" alt="Nezal Logo" class="logo">
               <h1>Order Update</h1>
               <p>Your order status has been updated</p>
             </div>
@@ -947,7 +947,7 @@ export function getOrderStatusUpdateEmail({
               </div>
 
               <div style="text-align: center;">
-                <a href="https://nezal.com/profile/orders" class="cta-button">Track Your Order</a>
+                <a href="https://nezalherbocare.com/profile/orders" class="cta-button">Track Your Order</a>
               </div>
 
               <p class="text-block">
@@ -958,19 +958,19 @@ export function getOrderStatusUpdateEmail({
             <!-- Footer -->
             <div class="footer">
               <div class="footer-links">
-                <a href="https://nezal.com">Home</a>
-                <a href="https://nezal.com/shop">Shop</a>
-                <a href="https://nezal.com/blog">Blog</a>
-                <a href="https://nezal.com/profile/orders">Orders</a>
+                <a href="https://nezalherbocare.com">Home</a>
+                <a href="https://nezalherbocare.com/shop">Shop</a>
+                <a href="https://nezalherbocare.com/blog">Blog</a>
+                <a href="https://nezalherbocare.com/profile/orders">Orders</a>
               </div>
               <div class="footer-text">
                 <p><strong>Nezal</strong></p>
                 <p>Premium Skincare for Everyone</p>
                 <p style="margin-top: 10px; color: #95a5a6;">
-                  📧 care@nezal.com | 🌐 www.nezal.com
+                  📧 care@nezalherbocare.com | 🌐 www.nezalherbocare.com
                 </p>
                 <p style="margin-top: 15px; color: #bdc3c7;">
-                  &copy; 2025 Nezal.com. All rights reserved.
+                  &copy; 2025 nezalherbocare.com. All rights reserved.
                 </p>
               </div>
             </div>
@@ -1310,8 +1310,334 @@ export function getAdminOrderNotificationEmail({
               <p><strong>Nezal Order Management System</strong></p>
               <p>This is an automated admin notification. Please process this order accordingly.</p>
               <p style="margin-top: 10px; border-top: 1px solid #ecf0f1; padding-top: 10px;">
-                &copy; 2025 Nezal.com. All rights reserved.
+                &copy; 2025 nezalherbocare.com. All rights reserved.
               </p>
+            </div>
+          </div>
+        </div>
+      </body>
+    </html>
+  `
+}
+
+
+
+
+export function getPaymentFailedEmail({
+  customerName,
+  orderId,
+  totalAmount,
+  reason,
+}: {
+  customerName: string
+  orderId?: string
+  totalAmount: number
+  reason?: string
+}) {
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #2c3e50;
+            background-color: #f8f9fa;
+          }
+          .email-wrapper { background-color: #f8f9fa; padding: 20px; }
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+          }
+          .header {
+            background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+          }
+          .logo { max-width: 150px; height: auto; margin-bottom: 15px; display: inline-block; }
+          .header h1 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+          .header p { font-size: 14px; opacity: 0.95; }
+          .content { padding: 40px 30px; }
+          .greeting { font-size: 16px; margin-bottom: 20px; }
+          .greeting strong { color: #8B4513; font-weight: 600; }
+          .text-block { margin-bottom: 20px; font-size: 15px; line-height: 1.8; color: #34495e; }
+          .status-badge {
+            display: inline-block;
+            background: #fdecea;
+            color: #c0392b;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 20px;
+          }
+          .order-info {
+            background: #faf7f2;
+            border-left: 4px solid #c0392b;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 6px;
+          }
+          .order-info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #ecf0f1;
+            font-size: 14px;
+          }
+          .order-info-row:last-child { border-bottom: none; }
+          .order-info-label { font-weight: 600; color: #8B4513; }
+          .order-info-value { color: #34495e; font-weight: 500; }
+          .reassurance {
+            background: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #34495e;
+          }
+          .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+            color: white;
+            padding: 14px 32px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 20px 0;
+            font-size: 15px;
+          }
+          .footer {
+            background-color: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #ecf0f1;
+          }
+          .footer-links a { color: #8B4513; text-decoration: none; font-size: 13px; margin: 0 10px; }
+          .footer-text { font-size: 12px; color: #7f8c8d; margin-top: 15px; line-height: 1.6; }
+        </style>
+      </head>
+      <body>
+        <div class="email-wrapper">
+          <div class="container">
+            <div class="header">
+              <img src="https://nezalherbocare.com/nezallogo.jpg" alt="Nezal Logo" class="logo">
+              <h1>Payment Not Completed</h1>
+              <p>We couldn't process your payment</p>
+            </div>
+            <div class="content">
+              <p class="greeting">Hello <strong>${customerName}</strong>,</p>
+              <div class="status-badge">✕ Payment Failed</div>
+              <p class="text-block">
+                Your recent payment on Nezal could not be completed${orderId ? ` for order <strong>${orderId}</strong>` : ""}.
+                Don't worry — you have not been charged, and if any amount was deducted it will be automatically refunded within 5-7 business days.
+              </p>
+
+              <div class="order-info">
+                ${orderId ? `
+                <div class="order-info-row">
+                  <span class="order-info-label">Order ID</span>
+                  <span class="order-info-value">${orderId}</span>
+                </div>` : ""}
+                <div class="order-info-row">
+                  <span class="order-info-label">Amount</span>
+                  <span class="order-info-value">₹${totalAmount.toFixed(2)}</span>
+                </div>
+                ${reason ? `
+                <div class="order-info-row">
+                  <span class="order-info-label">Reason</span>
+                  <span class="order-info-value">${reason}</span>
+                </div>` : ""}
+              </div>
+
+              <div class="reassurance">
+                💡 Good news — your cart items are still saved. You can pick up right where you left off.
+              </div>
+
+              <div style="text-align: center;">
+                <a href="https://nezalherbocare.com/checkout" class="cta-button">Try Payment Again</a>
+              </div>
+
+              <p class="text-block">
+                If you keep facing issues, or money was deducted and not refunded within 7 days, please reach out to our support team and we'll sort it out right away.
+              </p>
+            </div>
+            <div class="footer">
+              <div class="footer-links">
+                <a href="https://nezalherbocare.com">Home</a>
+                <a href="https://nezalherbocare.com/shop">Shop</a>
+                <a href="https://nezalherbocare.com/contact-us">Contact</a>
+              </div>
+              <div class="footer-text">
+                <p><strong>Nezal</strong></p>
+                <p>📧 care@nezalherbocare.com | 🌐 www.nezalherbocare.com</p>
+                <p style="margin-top: 15px; color: #bdc3c7;">&copy; 2025 nezalherbocare.com. All rights reserved.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </body>
+    </html>
+  `
+}
+
+
+
+export function getAbandonedPaymentEmail({
+  customerName,
+  orderId,
+  totalAmount,
+  supportPhone,
+}: {
+  customerName: string
+  orderId?: string
+  totalAmount: number
+  supportPhone: string
+}) {
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #2c3e50;
+            background-color: #f8f9fa;
+          }
+          .email-wrapper { background-color: #f8f9fa; padding: 20px; }
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+          }
+          .header {
+            background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+          }
+          .logo { max-width: 150px; height: auto; margin-bottom: 15px; display: inline-block; }
+          .header h1 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+          .header p { font-size: 14px; opacity: 0.95; }
+          .content { padding: 40px 30px; }
+          .greeting { font-size: 16px; margin-bottom: 20px; }
+          .greeting strong { color: #8B4513; font-weight: 600; }
+          .text-block { margin-bottom: 20px; font-size: 15px; line-height: 1.8; color: #34495e; }
+          .order-info {
+            background: #faf7f2;
+            border-left: 4px solid #8B4513;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 6px;
+          }
+          .order-info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #ecf0f1;
+            font-size: 14px;
+          }
+          .order-info-row:last-child { border-bottom: none; }
+          .order-info-label { font-weight: 600; color: #8B4513; }
+          .order-info-value { color: #34495e; font-weight: 500; }
+          .support-box {
+            background: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #34495e;
+          }
+          .support-box a { color: #2980b9; font-weight: 600; text-decoration: none; }
+          .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+            color: white;
+            padding: 14px 32px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 20px 0;
+            font-size: 15px;
+          }
+          .footer {
+            background-color: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #ecf0f1;
+          }
+          .footer-links a { color: #8B4513; text-decoration: none; font-size: 13px; margin: 0 10px; }
+          .footer-text { font-size: 12px; color: #7f8c8d; margin-top: 15px; line-height: 1.6; }
+        </style>
+      </head>
+      <body>
+        <div class="email-wrapper">
+          <div class="container">
+            <div class="header">
+              <img src="https://nezalherbocare.com/nezallogo.jpg" alt="Nezal Logo" class="logo">
+              <h1>Looks like checkout didn't go through</h1>
+              <p>Your order is still waiting for payment</p>
+            </div>
+            <div class="content">
+              <p class="greeting">Hello <strong>${customerName}</strong>,</p>
+              <p class="text-block">
+                We noticed your recent order on Nezal wasn't completed — it looks like the payment step
+                didn't go through. No charge was made, and your order hasn't been confirmed yet.
+              </p>
+
+              <div class="order-info">
+                ${orderId ? `
+                <div class="order-info-row">
+                  <span class="order-info-label">Order ID</span>
+                  <span class="order-info-value">${orderId}</span>
+                </div>` : ""}
+                <div class="order-info-row">
+                  <span class="order-info-label">Amount</span>
+                  <span class="order-info-value">₹${totalAmount.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div style="text-align: center;">
+                <a href="https://nezalherbocare.com/checkout" class="cta-button">Complete Your Order</a>
+              </div>
+
+              <div class="support-box">
+                Having trouble? Call us at <a href="tel:${supportPhone}">${supportPhone}</a> and we'll help you complete your purchase.
+              </div>
+
+              <p class="text-block">
+                If you've decided not to go ahead with this order, no action is needed — you won't be charged.
+              </p>
+            </div>
+            <div class="footer">
+              <div class="footer-links">
+                <a href="https://nezalherbocare.com">Home</a>
+                <a href="https://nezalherbocare.com/shop">Shop</a>
+                <a href="https://nezalherbocare.com/contact-us">Contact</a>
+              </div>
+              <div class="footer-text">
+                <p><strong>Nezal</strong></p>
+                <p>📧 care@nezalherbocare.com | 🌐 www.nezalherbocare.com</p>
+                <p style="margin-top: 15px; color: #bdc3c7;">&copy; 2025 nezalherbocare.com. All rights reserved.</p>
+              </div>
             </div>
           </div>
         </div>

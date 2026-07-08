@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle } from "lucide-react"
 import { trackPurchase } from "@/lib/facebook-pixel"
 import { useSession } from "next-auth/react"
+import { useCartStore } from "@/lib/store/cart-store"
+import { useCheckoutStore } from "@/lib/store/checkout-store"
 
 declare global {
   interface Window {
@@ -21,6 +23,17 @@ export default function OrderSuccessPage() {
   const orderId = params.id as string
   const { data: session } = useSession()
   const [orderData, setOrderData] = useState<any>(null)
+    const { clearCart } = useCartStore() 
+    const { clearPendingOrder } = useCheckoutStore()
+
+
+      // Landing on this page at all means the order succeeded — clear unconditionally.
+ useEffect(() => {
+  clearCart()
+  clearPendingOrder()
+}, [])
+
+
 
   useEffect(() => {
     if (window.gtag) {
@@ -30,6 +43,8 @@ export default function OrderSuccessPage() {
       })
     }
   }, [orderId])
+
+  
 
   useEffect(() => {
     const fetchOrderData = async () => {

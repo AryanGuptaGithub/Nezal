@@ -1,15 +1,18 @@
+// components/checkout-form.tsx
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useState } from "react" 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useCheckoutStore } from "@/lib/store/checkout-store"
+import Link from "next/link"  
 
 interface CheckoutFormProps {
   totalAmount: number
   onSubmit: (address: any, paymentMethod: string) => Promise<void>
-  onZipCodeChange?: (zip: string) => void   // ← add this
+  onZipCodeChange?: (zip: string) => void
   availablePaymentMethods: string[]
   initialData?: {
     name?: string
@@ -43,6 +46,12 @@ const MapPinIcon = () => (
   </svg>
 )
 
+const PencilIcon = () => (
+  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 3a2.85 2.85 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+  </svg>
+)
+
 const ShieldIcon = () => (
   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
@@ -58,6 +67,12 @@ const LockIcon = () => (
 const TruckIcon = () => (
   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="1" y="3" width="15" height="13" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" />
+  </svg>
+)
+
+const ArrowLeftIcon = () => (
+  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
   </svg>
 )
 
@@ -118,22 +133,16 @@ function PaymentOption({
     >
       <div className={[
         "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200",
-        selected
-          ? "border-(--color-brand-primary) bg-(--color-brand-primary) text-white"
-          : "border-(--color-border)",
+        selected ? "border-(--color-brand-primary) bg-(--color-brand-primary) text-white" : "border-(--color-border)",
       ].join(" ")}>
         {selected && <CheckIcon />}
       </div>
-
       <div className={[
         "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-lg transition-all duration-200",
-        selected
-          ? "bg-(--color-brand-primary)/10 text-(--color-brand-primary)"
-          : "bg-(--color-bg-cream) text-(--color-text-muted)",
+        selected ? "bg-(--color-brand-primary)/10 text-(--color-brand-primary)" : "bg-(--color-bg-cream) text-(--color-text-muted)",
       ].join(" ")}>
         {icon}
       </div>
-
       <div className="flex-1 min-w-0">
         <p className={[
           "text-sm font-semibold transition-colors duration-200",
@@ -147,45 +156,113 @@ function PaymentOption({
   )
 }
 
+type AddressData = {
+  name: string
+  email: string
+  phone: string
+  street: string
+  city: string
+  state: string
+  zipCode: string
+  country: string
+}
+
 export function CheckoutForm({
   totalAmount,
   onSubmit,
-  onZipCodeChange,   // ← add this
+  onZipCodeChange,
   availablePaymentMethods,
   initialData,
   isSubmitting = false,
 }: CheckoutFormProps) {
-  
-  const [formData, setFormData] = useState({
-  name: initialData?.name || "",
-  email: initialData?.email || "", // ← new
-  phone: initialData?.phone || "",
-  street: initialData?.street || "",
-  city: initialData?.city || "",
-  state: initialData?.state || "",
-  zipCode: initialData?.zipCode || "",
-  country: initialData?.country || "India",
-})
+  const {
+    address: savedAddress,
+    paymentMethod: savedPaymentMethod,
+    setAddress: persistAddress,
+    setPaymentMethod: persistPaymentMethod,
+  } = useCheckoutStore()
 
-  const [paymentMethod, setPaymentMethod] = useState(availablePaymentMethods[0] || "ccavenue")
+  // Prefer whatever the user last typed (persisted in localStorage) over
+  // the profile fallback — this is what survives a failed/cancelled payment redirect.
+  const buildInitial = (): AddressData => ({
+    name: savedAddress?.name || initialData?.name || "",
+    email: savedAddress?.email || initialData?.email || "",
+    phone: savedAddress?.phone || initialData?.phone || "",
+    street: savedAddress?.street || initialData?.street || "",
+    city: savedAddress?.city || initialData?.city || "",
+    state: savedAddress?.state || initialData?.state || "",
+    zipCode: savedAddress?.zipCode || initialData?.zipCode || "",
+    country: savedAddress?.country || initialData?.country || "India",
+  })
+
+  const [formData, setFormData] = useState<AddressData>(buildInitial)
+
+  const hasSavedAddress = Boolean(
+    savedAddress?.street && savedAddress?.city && savedAddress?.zipCode && savedAddress?.phone,
+  )
+  const [isEditing, setIsEditing] = useState(!hasSavedAddress)
+
+  const [paymentMethod, setPaymentMethod] = useState(
+    savedPaymentMethod && availablePaymentMethods.includes(savedPaymentMethod)
+      ? savedPaymentMethod
+      : availablePaymentMethods[0] || "ccavenue",
+  )
+
+  useEffect(() => {
+  if (/^\d{6}$/.test(formData.zipCode)) {
+    onZipCodeChange?.(formData.zipCode)
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const { name, value } = e.target
-  setFormData((prev) => ({ ...prev, [name]: value }))
-  if (name === "zipCode" && /^\d{6}$/.test(value)) {
-    onZipCodeChange?.(value)
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+    if (name === "zipCode" && /^\d{6}$/.test(value)) {
+      onZipCodeChange?.(value)
+    }
   }
-}
+
+  const handleSelectPayment = (method: string) => {
+    setPaymentMethod(method)
+    persistPaymentMethod(method)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    // Save before submitting — this is what makes the address survive
+    // a failed/cancelled payment redirect back to this page.
+    persistAddress(formData)
+    persistPaymentMethod(paymentMethod)
     await onSubmit(formData, paymentMethod)
   }
+
+  const handleUseSavedAddress = () => {
+  if (savedAddress) {
+    setFormData(savedAddress as AddressData)
+    if (/^\d{6}$/.test(savedAddress.zipCode)) {
+      onZipCodeChange?.(savedAddress.zipCode)
+    }
+  }
+  setIsEditing(false)
+}
 
   const steps = ["Cart", "Delivery", "Confirm"]
 
   return (
     <div className="w-full max-w-lg mx-auto space-y-4">
+
+       {/* Back to cart */}
+       {!isSubmitting && (
+    <Link
+      href="/cart"
+      className="inline-flex items-center gap-1.5 text-sm font-medium border p-2 rounded-xl mb-5 bg-[#aeb4b0] hover:bg-[#9b8282] text-white hover: transition-colors mb-1"
+    >
+      <ArrowLeftIcon />
+      Back to Cart
+    </Link>
+    )}
+
 
       {/* Progress stepper */}
       <div className="flex items-center gap-2 mb-6 px-1">
@@ -196,115 +273,152 @@ export function CheckoutForm({
               <div className="flex items-center gap-1.5">
                 <div className={[
                   "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold flex-shrink-0",
-                  state === "done"   ? "bg-(--color-brand-primary) text-white" : "",
+                  state === "done" ? "bg-(--color-brand-primary) text-white" : "",
                   state === "active" ? "bg-(--color-text-heading) text-white" : "",
-                  state === "idle"   ? "bg-(--color-border) text-(--color-text-muted)" : "",
+                  state === "idle" ? "bg-(--color-border) text-(--color-text-muted)" : "",
                 ].join(" ")}>
                   {state === "done" ? <CheckIcon /> : i + 1}
                 </div>
                 <span className={[
                   "text-xs font-medium hidden sm:block",
-                  state === "done"   ? "text-(--color-brand-primary)" : "",
+                  state === "done" ? "text-(--color-brand-primary)" : "",
                   state === "active" ? "text-(--color-text-heading)" : "",
-                  state === "idle"   ? "text-(--color-text-muted)" : "",
+                  state === "idle" ? "text-(--color-text-muted)" : "",
                 ].join(" ")}>
                   {step}
                 </span>
               </div>
-              {i < steps.length - 1 && (
-                <div className="flex-1 h-px bg-(--color-border)" />
-              )}
+              {i < steps.length - 1 && <div className="flex-1 h-px bg-(--color-border)" />}
             </div>
           )
         })}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-
         <Card className="border border-(--color-border) rounded-2xl shadow-sm bg-white overflow-hidden">
-          <CardHeader className="pb-0 pt-5 px-6 flex-row items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-(--color-brand-primary)/10 flex items-center justify-center text-(--color-brand-primary) flex-shrink-0">
-              <MapPinIcon />
+          <CardHeader className="pb-0 pt-5 px-6 flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-(--color-brand-primary)/10 flex items-center justify-center text-(--color-brand-primary) flex-shrink-0">
+                <MapPinIcon />
+              </div>
+              <CardTitle className="text-base font-semibold text-(--color-text-heading)">
+                Shipping Address
+              </CardTitle>
             </div>
-            <CardTitle className="text-base font-semibold text-(--color-text-heading)">
-              Shipping Address
-            </CardTitle>
+            {hasSavedAddress && !isEditing && (
+              <span className="inline-flex items-center gap-1  text-[10px] font-semibold uppercase tracking-wide text-green-700 bg-green-50 border border-green-200 rounded-full px-2 py-1">
+                <CheckIcon /> Saved
+              </span>
+            )}
           </CardHeader>
 
           <CardContent className="px-6 pt-5 pb-6 space-y-4">
+            {hasSavedAddress && !isEditing ? (
+              /* ===== Saved address summary ===== */
+              <div className="rounded-xl border border-(--color-border) bg-(--color-bg-cream) px-4 py-4 flex items-start justify-between gap-4">
+                <div className="text-sm min-w-0">
+                  <p className="font-semibold text-(--color-text-heading)">{formData.name}</p>
+                  <p className="text-(--color-text-body) mt-0.5 leading-relaxed">
+                    {formData.street}, {formData.city}, {formData.state} {formData.zipCode}
+                  </p>
+                  <p className="text-(--color-text-muted) mt-1">{formData.phone} · {formData.email}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-1.5 text-xs border rounded-xl bg-[#4e733b] hover:bg-[#226003] text-white  p-2 font-semibold text-(--color-brand-primary)  flex-shrink-0 mt-0.5"
+                >
+                  <PencilIcon /> Change
+                </button>
+              </div>
+            ) : (
+              /* ===== Editable form ===== */
+              <>
+                {hasSavedAddress && (
+                  <button
+                    type="button"
+                    onClick={handleUseSavedAddress}
+                    className="text-xs font-semibold text-(--color-brand-primary) hover:underline mb-1"
+                  >
+                    ← Use saved address instead
+                  </button>
+                )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <FieldLabel>Full Name</FieldLabel>
-                <StyledInput
-                  name="name" value={formData.name} onChange={handleChange}
-                  placeholder="Rohan Mehta" required
-                  icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>}
-                />
-              </div>
-              <div>
-                <FieldLabel>Phone Number</FieldLabel>
-                <StyledInput
-                  name="phone" value={formData.phone} onChange={handleChange}
-                  placeholder="+91 98765 43210" required
-                  icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.8 19.79 19.79 0 01.22 4.22 2 2 0 012.2 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 9.27a16 16 0 006.72 6.72l1.34-1.34a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" /></svg>}
-                />
-              </div>
-            </div>
-            <div>
-  <FieldLabel>Email Address</FieldLabel>
-  <StyledInput
-    name="email" type="email" value={formData.email} onChange={handleChange}
-    placeholder="you@example.com" required
-    icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>}
-  />
-</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <FieldLabel>Full Name</FieldLabel>
+                    <StyledInput
+                      name="name" value={formData.name} onChange={handleChange}
+                      placeholder="Rohan Mehta" required
+                      icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>}
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>Phone Number</FieldLabel>
+                    <StyledInput
+                      name="phone" value={formData.phone} onChange={handleChange}
+                      placeholder="+91 98765 43210" required
+                      icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.8 19.79 19.79 0 01.22 4.22 2 2 0 012.2 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 9.27a16 16 0 006.72 6.72l1.34-1.34a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" /></svg>}
+                    />
+                  </div>
+                </div>
 
-            <div>
-              <FieldLabel>Street Address</FieldLabel>
-              <StyledInput
-                name="street" value={formData.street} onChange={handleChange}
-                placeholder="123 Brigade Road, Apt 4B" required
-                icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>}
-              />
-            </div>
+                <div>
+                  <FieldLabel>Email Address</FieldLabel>
+                  <StyledInput
+                    name="email" type="email" value={formData.email} onChange={handleChange}
+                    placeholder="you@example.com" required
+                    icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>}
+                  />
+                </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <FieldLabel>City</FieldLabel>
-                <StyledInput
-                  name="city" value={formData.city} onChange={handleChange}
-                  placeholder="Mumbai" required
-                  icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" /><line x1="12" y1="12" x2="12" y2="17" /><line x1="9.5" y1="14.5" x2="14.5" y2="14.5" /></svg>}
-                />
-              </div>
-              <div>
-                <FieldLabel>State</FieldLabel>
-                <StyledInput
-                  name="state" value={formData.state} onChange={handleChange}
-                  placeholder="Maharashtra" required
-                  icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11" /></svg>}
-                />
-              </div>
-            </div>
+                <div>
+                  <FieldLabel>Street Address</FieldLabel>
+                  <StyledInput
+                    name="street" value={formData.street} onChange={handleChange}
+                    placeholder="123 Brigade Road, Apt 4B" required
+                    icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>}
+                  />
+                </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <FieldLabel>Pin Code</FieldLabel>
-                <StyledInput
-                  name="zipCode" value={formData.zipCode} onChange={handleChange}
-                  placeholder="400001" required
-                  icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="9" x2="20" y2="9" /><line x1="4" y1="15" x2="20" y2="15" /><line x1="10" y1="3" x2="8" y2="21" /><line x1="16" y1="3" x2="14" y2="21" /></svg>}
-                />
-              </div>
-              <div>
-                <FieldLabel>Country</FieldLabel>
-                <StyledInput
-                  name="country" value={formData.country} disabled
-                  icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" /></svg>}
-                />
-              </div>
-            </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <FieldLabel>City</FieldLabel>
+                    <StyledInput
+                      name="city" value={formData.city} onChange={handleChange}
+                      placeholder="Mumbai" required
+                      icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" /><line x1="12" y1="12" x2="12" y2="17" /><line x1="9.5" y1="14.5" x2="14.5" y2="14.5" /></svg>}
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>State</FieldLabel>
+                    <StyledInput
+                      name="state" value={formData.state} onChange={handleChange}
+                      placeholder="Maharashtra" required
+                      icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11" /></svg>}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <FieldLabel>Pin Code</FieldLabel>
+                    <StyledInput
+                      name="zipCode" value={formData.zipCode} onChange={handleChange}
+                      placeholder="400001" required
+                      icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="9" x2="20" y2="9" /><line x1="4" y1="15" x2="20" y2="15" /><line x1="10" y1="3" x2="8" y2="21" /><line x1="16" y1="3" x2="14" y2="21" /></svg>}
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>Country</FieldLabel>
+                    <StyledInput
+                      name="country" value={formData.country} disabled
+                      icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" /></svg>}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Payment */}
             <div className="border-t border-(--color-border) pt-5 mt-1">
@@ -318,7 +432,7 @@ export function CheckoutForm({
                     description="Credit card, debit card, UPI, net banking & more"
                     icon="💳"
                     selected={paymentMethod === "ccavenue"}
-                    onSelect={() => setPaymentMethod("ccavenue")}
+                    onSelect={() => handleSelectPayment("ccavenue")}
                   />
                 )}
                 {availablePaymentMethods.includes("razorpay") && (
@@ -327,7 +441,7 @@ export function CheckoutForm({
                     description="Credit card, debit card, UPI, net banking & more"
                     icon="⚡"
                     selected={paymentMethod === "razorpay"}
-                    onSelect={() => setPaymentMethod("razorpay")}
+                    onSelect={() => handleSelectPayment("razorpay")}
                   />
                 )}
                 {availablePaymentMethods.includes("cod") && (
@@ -336,12 +450,11 @@ export function CheckoutForm({
                     description="Pay in cash when your order arrives at your door"
                     icon="💵"
                     selected={paymentMethod === "cod"}
-                    onSelect={() => setPaymentMethod("cod")}
+                    onSelect={() => handleSelectPayment("cod")}
                   />
                 )}
               </div>
             </div>
-
           </CardContent>
         </Card>
 
@@ -380,7 +493,6 @@ export function CheckoutForm({
             </span>
           </div>
         </div>
-
       </form>
     </div>
   )

@@ -1,3 +1,4 @@
+// app/api/companies/[id]/carousel/route.ts
 import { connectDB } from "@/lib/db";
 import { Company } from "@/lib/models/company";
 import { type NextRequest, NextResponse } from "next/server";
