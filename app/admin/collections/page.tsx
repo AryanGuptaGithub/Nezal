@@ -258,11 +258,18 @@ export default function AdminCollectionsPage() {
                           </Button>
                         </a>
 
-                        <Link href={`/admin/collections/${row.slug}/products`} title="Manage products">
-                          <Button size="icon" variant="ghost" className="text-gray-400 hover:text-amber-700 h-8 w-8">
+                       <Link href={`/admin/collections/${row.slug}/products`} title="Manage products">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-gray-400 hover:text-amber-700 gap-1.5 h-8 px-2.5 border"
+                        >
                             <Boxes className="w-3.5 h-3.5" />
-                          </Button>
+                            <span className="text-xs font-medium">Manage Products</span>
+                        </Button>
                         </Link>
+
+                      
 
                         <Link href={`/admin/collections/edit/${row.slug}`} title="Edit">
                           <Button size="icon" variant="ghost" className="text-gray-400 hover:text-emerald-700 h-8 w-8">

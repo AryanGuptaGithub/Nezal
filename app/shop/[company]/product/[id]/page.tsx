@@ -982,7 +982,7 @@ const currentImage =
               </div>
 
               {product.amazonUrl && (
-                
+                <a
                   href={buildAmazonLink(product.amazonUrl)}
                   target="_blank"
                   rel="noopener noreferrer sponsored"
