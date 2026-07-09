@@ -55,6 +55,7 @@ interface FormData {
   category: string; mainCategory: string; company: string
   stock: number; sku: string
    weight: number
+    amazonUrl: string
   ingredients: string[]; benefits: string[]; usage: string; suitableFor: string[]
   results: Result[]; isActive: boolean
   
@@ -88,6 +89,7 @@ export default function EditProductPage() {
     category: "", mainCategory: "", company: "",
     stock: 0, sku: "",
     weight: 0.3,
+    amazonUrl: "",
     ingredients: [], benefits: [], usage: "", suitableFor: [],
     results: [], isActive: true,
     whyYoullLoveIt: [], fragranceExp: [],
@@ -157,6 +159,7 @@ export default function EditProductPage() {
         stock: productData.stock || 0,
         sku: productData.sku || "",
         weight: productData.weight ?? 0.3,
+        amazonUrl: productData.amazonUrl || "",
         ingredients: normalizeStringArray(productData.ingredients),
         benefits: normalizeStringArray(productData.benefits),
         usage: productData.usage || "",
@@ -297,6 +300,7 @@ export default function EditProductPage() {
         category: formData.category || undefined,
         mainCategory: formData.mainCategory || undefined,
         company: formData.company, stock: Number(formData.stock), sku: formData.sku,
+        amazonUrl: formData.amazonUrl.trim(),
         ingredients: normalizeStringArray(formData.ingredients),
         benefits: normalizeStringArray(formData.benefits),
         suitableFor: normalizeByNewlineOnly(formData.suitableFor),
@@ -459,6 +463,22 @@ fragranceExp: normalizeByNewlineOnly(formData.fragranceExp),
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">SKU</label>
                 <Input type="text" name="sku" value={formData.sku} onChange={handleChange} placeholder="SKU-001" className="bg-background border-border" />
+              </div>
+
+              {/* Amazon marketplace link */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Amazon Product Link (Optional)</label>
+                <Input
+                  type="url"
+                  name="amazonUrl"
+                  value={formData.amazonUrl}
+                  onChange={handleChange}
+                  placeholder="https://www.amazon.in/dp/XXXXXXXXXX"
+                  className="bg-background border-border"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  If set, a "Buy on Amazon" button will appear on this product's page.
+                </p>
               </div>
 
               {/* Sizes */}

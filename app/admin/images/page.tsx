@@ -3,19 +3,13 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
-import Image from "next/image"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Trash2, RefreshCw, FolderOpen, AlertTriangle, CheckSquare, XSquare, Cloud, HardDrive } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
+  Trash2, RefreshCw, FolderOpen, AlertTriangle, CheckSquare, XSquare,
+  Cloud, HardDrive, ImageIcon,
+} from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +21,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
+/* ─── Types ──────────────────────────────────────────────── */
+
 interface ImageFile {
   path: string
   folder: string
@@ -35,6 +31,14 @@ interface ImageFile {
   isUsed: boolean
   usedBy: string[]
   storageType: "local" | "cloudinary"
+}
+
+const FOLDER_COLORS: Record<string, string> = {
+  arrivals: "bg-blue-50 text-blue-700",
+  blogs: "bg-emerald-50 text-emerald-700",
+  carousel: "bg-purple-50 text-purple-700",
+  "shop-by-concern": "bg-amber-50 text-amber-700",
+  uploads: "bg-gray-100 text-gray-600",
 }
 
 export default function ImagesPage() {
@@ -157,21 +161,7 @@ export default function ImagesPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
   }
 
-  const getFolderColor = (folder: string) => {
-    const colors: Record<string, string> = {
-      arrivals: "bg-blue-100 text-blue-800 border-blue-200",
-      "cloudinary/arrivals": "bg-blue-100 text-blue-800 border-blue-200",
-      blogs: "bg-green-100 text-green-800 border-green-200",
-      "cloudinary/blogs": "bg-green-100 text-green-800 border-green-200",
-      carousel: "bg-purple-100 text-purple-800 border-purple-200",
-      "cloudinary/carousel": "bg-purple-100 text-purple-800 border-purple-200",
-      "shop-by-concern": "bg-orange-100 text-orange-800 border-orange-200",
-      "cloudinary/shop-by-concern": "bg-orange-100 text-orange-800 border-orange-200",
-      uploads: "bg-gray-100 text-gray-800 border-gray-200",
-      "cloudinary/uploads": "bg-gray-100 text-gray-800 border-gray-200",
-    }
-    return colors[folder] || "bg-gray-100 text-gray-800 border-gray-200"
-  }
+  const getFolderColor = (folder: string) => FOLDER_COLORS[normaliseFolder(folder)] || "bg-gray-100 text-gray-600"
 
   const getFolderLabel = (folder: string) =>
     folder.replace("cloudinary/", "").replace(/-/g, " ")
@@ -190,12 +180,11 @@ export default function ImagesPage() {
 
   if (status === "loading" || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading images...</p>
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex items-center gap-2 text-gray-400 text-sm">
+          <RefreshCw className="w-4 h-4 animate-spin" /> Loading images...
         </div>
-      </div>
+      </main>
     )
   }
 
@@ -205,199 +194,237 @@ export default function ImagesPage() {
   const localCount = images.filter(img => img.storageType === "local").length
   const selectedUnusedCount = Array.from(selectedImages).filter(p => unusedImages.some(img => img.path === p)).length
 
-  return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Image Management</h1>
-          <p className="text-muted-foreground">Manage images across local storage and Cloudinary</p>
-        </div>
-        <div className="flex gap-2">
-          {selectedImages.size > 0 && (
-            <Button
-              variant="destructive"
-              onClick={() => setShowDeleteDialog(true)}
-              disabled={bulkDeleting}
-              className="flex items-center gap-2"
-            >
-              {bulkDeleting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-              Delete Selected ({selectedImages.size})
-            </Button>
-          )}
-          <Button onClick={scanImages} disabled={scanning} className="flex items-center gap-2">
-            <RefreshCw className={`w-4 h-4 ${scanning ? "animate-spin" : ""}`} />
-            {scanning ? "Scanning..." : "Scan Images"}
-          </Button>
-        </div>
-      </div>
+  const usedInFolder = getFilteredImages(activeFolder, true)
+  const unusedInFolder = getFilteredImages(activeFolder, false)
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Images</CardTitle>
-            <FolderOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent><div className="text-2xl font-bold">{images.length}</div></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Used</CardTitle>
-            <div className="h-4 w-4 rounded-full bg-green-500" />
-          </CardHeader>
-          <CardContent><div className="text-2xl font-bold text-green-600">{usedImages.length}</div></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Unused (Local)</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-orange-500" />
-          </CardHeader>
-          <CardContent><div className="text-2xl font-bold text-orange-600">{unusedImages.length}</div></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Storage</CardTitle>
-            <Cloud className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm space-y-1">
-              <div className="flex items-center gap-1">
-                <Cloud className="w-3 h-3 text-blue-500" />
-                <span className="font-semibold">{cloudinaryCount}</span>
-                <span className="text-muted-foreground">Cloudinary</span>
+  return (
+    <main className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+
+        {/* ── Page header ──────────────────────────────────── */}
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-700 flex items-center justify-center shrink-0">
+              <ImageIcon className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Image Management</h1>
+              <p className="text-sm text-gray-500 mt-0.5">Manage images across local storage and Cloudinary.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {selectedImages.size > 0 && (
+              <Button
+                onClick={() => setShowDeleteDialog(true)}
+                disabled={bulkDeleting}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {bulkDeleting ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                Delete selected ({selectedImages.size})
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              onClick={scanImages}
+              disabled={scanning}
+              className="border-gray-200 text-gray-600 hover:text-gray-900"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${scanning ? "animate-spin" : ""}`} />
+              {scanning ? "Scanning..." : "Scan images"}
+            </Button>
+          </div>
+        </div>
+
+        {/* ── Stats row ────────────────────────────────────── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-white rounded-2xl border border-gray-200 p-4">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+              <p className="text-xs font-medium text-gray-500">Total images</p>
+            </div>
+            <p className="text-2xl font-bold tabular-nums text-gray-900">{images.length}</p>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-200 p-4">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <p className="text-xs font-medium text-gray-500">Used</p>
+            </div>
+            <p className="text-2xl font-bold tabular-nums text-emerald-700">{usedImages.length}</p>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-200 p-4">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              <p className="text-xs font-medium text-gray-500">Unused</p>
+            </div>
+            <p className="text-2xl font-bold tabular-nums text-amber-700">{unusedImages.length}</p>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-200 p-4">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              <p className="text-xs font-medium text-gray-500">Storage</p>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5 text-sm">
+                <Cloud className="w-3.5 h-3.5 text-blue-500" />
+                <span className="font-semibold text-gray-900 tabular-nums">{cloudinaryCount}</span>
+                <span className="text-gray-400 text-xs">Cloudinary</span>
               </div>
-              <div className="flex items-center gap-1">
-                <HardDrive className="w-3 h-3 text-gray-500" />
-                <span className="font-semibold">{localCount}</span>
-                <span className="text-muted-foreground">Local</span>
+              <div className="flex items-center gap-1.5 text-sm">
+                <HardDrive className="w-3.5 h-3.5 text-gray-400" />
+                <span className="font-semibold text-gray-900 tabular-nums">{localCount}</span>
+                <span className="text-gray-400 text-xs">Local</span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+
+        {/* ── Folder filter ────────────────────────────────── */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          {["all", ...folders].map((folder) => {
+            const active = activeFolder === folder
+            return (
+              <button
+                key={folder}
+                onClick={() => setActiveFolder(folder)}
+                className={`shrink-0 rounded-full border-2 px-4 py-1.5 text-sm font-medium transition-all ${
+                  active
+                    ? "border-emerald-700 bg-emerald-50 text-emerald-800"
+                    : "border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                {folder === "all" ? "All folders" : getFolderLabel(folder)}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* ── Used images ──────────────────────────────────── */}
+        {usedInFolder.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <h2 className="font-semibold text-gray-900">Used images</h2>
+              <span className="text-xs text-gray-400">{usedInFolder.length}</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {usedInFolder.map(image => (
+                <ImageCard
+                  key={image.path}
+                  image={image}
+                  formatFileSize={formatFileSize}
+                  getFolderColor={getFolderColor}
+                  getFolderLabel={getFolderLabel}
+                  normaliseFolder={normaliseFolder}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Unused images ────────────────────────────────── */}
+        {unusedInFolder.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <AlertTriangle className="w-4 h-4 text-amber-500" />
+                <h2 className="font-semibold text-gray-900">Unused images</h2>
+                <span className="text-xs text-gray-400">{unusedInFolder.length}</span>
+                <span className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
+                  Local only · safe to delete
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => selectAllInFolder(activeFolder, false)}
+                className="border-gray-200 text-gray-600 hover:text-gray-900"
+              >
+                {unusedInFolder.every(img => selectedImages.has(img.path))
+                  ? <><XSquare className="w-3.5 h-3.5 mr-1.5" /> Deselect all</>
+                  : <><CheckSquare className="w-3.5 h-3.5 mr-1.5" /> Select all</>}
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {unusedInFolder.map(image => (
+                <div
+                  key={image.path}
+                  className={`relative bg-white border rounded-2xl overflow-hidden transition-all ${
+                    selectedImages.has(image.path) ? "border-amber-400 ring-2 ring-amber-100" : "border-gray-200"
+                  }`}
+                >
+                  <div className="absolute top-2.5 left-2.5 z-10">
+                    <Checkbox
+                      checked={selectedImages.has(image.path)}
+                      onCheckedChange={() => toggleImageSelection(image.path)}
+                      className="bg-white border-2 border-gray-300"
+                    />
+                  </div>
+                  <div className="aspect-square relative bg-gray-100">
+                    <img
+                      src={image.path}
+                      alt={image.filename}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.jpg" }}
+                    />
+                  </div>
+                  <div className="p-3 space-y-2">
+                    <div className="flex items-center justify-between gap-1.5">
+                      <span className={`inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full ${getFolderColor(image.folder)}`}>
+                        {getFolderLabel(normaliseFolder(image.folder))}
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Unused
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-gray-400">
+                      <HardDrive className="w-3 h-3" /> Local
+                    </div>
+                    <p className="text-sm font-medium text-gray-900 truncate" title={image.filename}>{image.filename}</p>
+                    <p className="text-xs text-gray-400">{formatFileSize(image.size)}</p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full mt-1 border-red-200 text-red-600 hover:bg-red-50"
+                      onClick={() => deleteImage(image.path)}
+                      disabled={deleting === image.path}
+                    >
+                      {deleting === image.path
+                        ? <><RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />Deleting...</>
+                        : <><Trash2 className="w-3.5 h-3.5 mr-1.5" />Delete</>}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Empty state ──────────────────────────────────── */}
+        {usedInFolder.length === 0 && unusedInFolder.length === 0 && (
+          <div className="text-center bg-white border border-dashed border-gray-300 rounded-2xl py-16 px-6">
+            <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+              <FolderOpen className="w-5 h-5 text-gray-400" />
+            </div>
+            <p className="text-sm font-medium text-gray-700">No images found</p>
+            <p className="text-xs text-gray-400 mt-1">No images in this folder.</p>
+          </div>
+        )}
       </div>
 
-      {/* Folder Tabs */}
-      <Tabs defaultValue="all" className="w-full" onValueChange={setActiveFolder}>
-        <TabsList className="w-full justify-start overflow-x-auto flex-wrap h-auto">
-          <TabsTrigger value="all">All Folders</TabsTrigger>
-          {folders.map(folder => (
-            <TabsTrigger key={folder} value={folder}>
-              {getFolderLabel(folder)}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        {["all", ...folders].map(folder => (
-          <TabsContent key={folder} value={folder} className="space-y-6">
-
-            {/* Used Images */}
-            {getFilteredImages(folder, true).length > 0 && (
-              <div>
-                <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
-                  <div className="h-3 w-3 rounded-full bg-green-500" />
-                  Used Images ({getFilteredImages(folder, true).length})
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {getFilteredImages(folder, true).map(image => (
-                    <ImageCard key={image.path} image={image} formatFileSize={formatFileSize} getFolderColor={getFolderColor} getFolderLabel={getFolderLabel} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Unused Images */}
-            {getFilteredImages(folder, false).length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-orange-500" />
-                    Unused Images ({getFilteredImages(folder, false).length})
-                    <Badge variant="outline" className="text-xs font-normal">Local only — safe to delete</Badge>
-                  </h2>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => selectAllInFolder(folder, false)}
-                    className="flex items-center gap-2"
-                  >
-                    {getFilteredImages(folder, false).every(img => selectedImages.has(img.path))
-                      ? <><XSquare className="w-4 h-4" /> Deselect All</>
-                      : <><CheckSquare className="w-4 h-4" /> Select All</>}
-                  </Button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {getFilteredImages(folder, false).map(image => (
-                    <Card
-                      key={image.path}
-                      className={`overflow-hidden border-orange-200 relative ${selectedImages.has(image.path) ? "ring-2 ring-orange-500" : ""}`}
-                    >
-                      <div className="absolute top-2 left-2 z-10">
-                        <Checkbox
-                          checked={selectedImages.has(image.path)}
-                          onCheckedChange={() => toggleImageSelection(image.path)}
-                          className="bg-white border-2"
-                        />
-                      </div>
-                      <div className="aspect-square relative">
-                        <img
-                          src={image.path}
-                          alt={image.filename}
-                          className="w-full h-full object-cover"
-                          onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.jpg" }}
-                        />
-                      </div>
-                      <CardContent className="p-3 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Badge className={getFolderColor(image.folder)}>{getFolderLabel(normaliseFolder(image.folder))}</Badge>
-                          <Badge variant="destructive">Unused</Badge>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <HardDrive className="w-3 h-3" />
-                          <span>Local</span>
-                        </div>
-                        <p className="text-sm font-medium truncate" title={image.filename}>{image.filename}</p>
-                        <p className="text-xs text-muted-foreground">{formatFileSize(image.size)}</p>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="w-full mt-2"
-                          onClick={() => deleteImage(image.path)}
-                          disabled={deleting === image.path}
-                        >
-                          {deleting === image.path
-                            ? <><RefreshCw className="w-4 h-4 animate-spin mr-2" />Deleting...</>
-                            : <><Trash2 className="w-4 h-4 mr-2" />Delete</>}
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {getFilteredImages(folder, true).length === 0 && getFilteredImages(folder, false).length === 0 && (
-              <div className="text-center py-12">
-                <FolderOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">No images found</h3>
-                <p className="text-muted-foreground">No images in this folder.</p>
-              </div>
-            )}
-          </TabsContent>
-        ))}
-      </Tabs>
-
-      {/* Bulk Delete Dialog */}
+      {/* ── Bulk delete dialog ───────────────────────────────── */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-2xl sm:max-w-[440px]">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {selectedImages.size} images?</AlertDialogTitle>
+            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mb-2">
+              <Trash2 className="w-4.5 h-4.5 text-red-600" />
+            </div>
+            <AlertDialogTitle>Delete {selectedImages.size} image{selectedImages.size !== 1 ? "s" : ""}?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. Selected images will be permanently deleted.
               {selectedUnusedCount < selectedImages.size && (
-                <div className="mt-2 text-orange-600 font-semibold">
+                <span className="block mt-2 text-amber-700 font-medium">
                   Warning: {selectedImages.size - selectedUnusedCount} selected image(s) are marked as "used".
-                </div>
+                </span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -406,33 +433,36 @@ export default function ImagesPage() {
             <AlertDialogAction
               onClick={bulkDeleteImages}
               disabled={bulkDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               {bulkDeleting ? <><RefreshCw className="w-4 h-4 animate-spin mr-2" />Deleting...</> : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </main>
   )
 }
 
-// ── Sub-component: used image card ────────────────────────────────────────────
+/* ─── Sub-component: used image card ────────────────────────── */
+
 function ImageCard({
   image,
   formatFileSize,
   getFolderColor,
   getFolderLabel,
+  normaliseFolder,
 }: {
   image: ImageFile
   formatFileSize: (b: number) => string
   getFolderColor: (f: string) => string
   getFolderLabel: (f: string) => string
+  normaliseFolder: (f: string) => string
 }) {
-  const normalised = image.folder.replace("cloudinary/", "")
+  const normalised = normaliseFolder(image.folder)
   return (
-    <Card className="overflow-hidden">
-      <div className="aspect-square relative">
+    <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+      <div className="aspect-square relative bg-gray-100">
         <img
           src={image.path}
           alt={image.filename}
@@ -440,24 +470,28 @@ function ImageCard({
           onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.jpg" }}
         />
       </div>
-      <CardContent className="p-3 space-y-2">
-        <div className="flex items-center justify-between">
-          <Badge className={getFolderColor(image.folder)}>{getFolderLabel(normalised)}</Badge>
-          <Badge variant="secondary" className="bg-green-100 text-green-800">Used</Badge>
+      <div className="p-3 space-y-2">
+        <div className="flex items-center justify-between gap-1.5">
+          <span className={`inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full ${getFolderColor(image.folder)}`}>
+            {getFolderLabel(normalised)}
+          </span>
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Used
+          </span>
         </div>
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1 text-xs text-gray-400">
           {image.storageType === "cloudinary"
             ? <><Cloud className="w-3 h-3 text-blue-500" /><span>Cloudinary</span></>
             : <><HardDrive className="w-3 h-3" /><span>Local</span></>}
         </div>
-        <p className="text-sm font-medium truncate" title={image.filename}>{image.filename}</p>
-        <p className="text-xs text-muted-foreground">{formatFileSize(image.size)}</p>
+        <p className="text-sm font-medium text-gray-900 truncate" title={image.filename}>{image.filename}</p>
+        <p className="text-xs text-gray-400">{formatFileSize(image.size)}</p>
         {image.usedBy.length > 0 && (
-          <p className="text-xs text-muted-foreground truncate" title={image.usedBy.join(", ")}>
+          <p className="text-xs text-gray-400 truncate" title={image.usedBy.join(", ")}>
             {image.usedBy[0]}{image.usedBy.length > 1 ? ` +${image.usedBy.length - 1} more` : ""}
           </p>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

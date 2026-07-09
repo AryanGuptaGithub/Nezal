@@ -53,6 +53,7 @@ export default function AddProductPage() {
     category: "", mainCategory: "", company: "",
     stock: "", sku: "",
     weight: "0.3", 
+    amazonUrl: "",
     ingredients: "", benefits: "", usage: "", suitableFor: "",
     isActive: true,
     // ── New structured section fields ──
@@ -200,6 +201,7 @@ export default function AddProductPage() {
         category: formData.category || undefined,
         mainCategory: formData.mainCategory || undefined,
         company: formData.company, stock: Number(formData.stock), sku: formData.sku,
+           amazonUrl: formData.amazonUrl.trim(),
         ingredients: normalizeTextarea(formData.ingredients),
         benefits: normalizeTextarea(formData.benefits),
         suitableFor: normalizeByNewlineOnly(formData.suitableFor),
@@ -339,6 +341,22 @@ setTimeout(() => router.push("/admin/products"), 1500)
 
               {/* SKU */}
               <div><label className="block text-sm font-medium text-foreground mb-2">SKU</label><Input type="text" name="sku" value={formData.sku} onChange={handleChange} placeholder="SKU-001" className="bg-background border-border" /></div>
+
+                   {/* Amazon marketplace link */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Amazon Product Link (Optional)</label>
+                <Input
+                  type="url"
+                  name="amazonUrl"
+                  value={formData.amazonUrl}
+                  onChange={handleChange}
+                  placeholder="https://www.amazon.in/dp/XXXXXXXXXX"
+                  className="bg-background border-border"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  If set, a "Buy on Amazon" button will appear on this product's page.
+                </p>
+              </div>
 
               {/* Sizes */}
               <div>

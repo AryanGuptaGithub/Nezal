@@ -45,6 +45,21 @@ function getFlashPrice(basePrice: number, flashSale?: Product["flashSale"] | nul
   return Math.round(basePrice - (basePrice * flashSale.discountPercent) / 100)
 }
 
+// ── Amazon affiliate link helper ───────────────────────────
+// Set NEXT_PUBLIC_AMAZON_AFFILIATE_TAG in your env once you have an
+// Amazon Associates tag (e.g. "nezal-21"). Until then, the raw URL is used as-is.
+function buildAmazonLink(rawUrl: string): string {
+  const tag = process.env.NEXT_PUBLIC_AMAZON_AFFILIATE_TAG
+  if (!tag) return rawUrl
+  try {
+    const url = new URL(rawUrl)
+    url.searchParams.set("tag", tag)
+    return url.toString()
+  } catch {
+    return rawUrl // malformed URL saved in admin — fall back to as-is rather than break the button
+  }
+}
+
 // ── API helpers ───────────────────────────────────────────
 async function fetchProductAPI(id: string): Promise<Product> {
   // retry once on failure
@@ -124,6 +139,7 @@ interface Product {
   skinHairConcern?: string
   expectedResults?: string
   keyIngredients?: { name: string; benefit: string }[]
+  amazonUrl?: string
   flashSale?: {
     saleId: string
     saleName: string
@@ -964,6 +980,23 @@ const currentImage =
                   Shop Now
                 </button>
               </div>
+
+              {product.amazonUrl && (
+                
+                  href={buildAmazonLink(product.amazonUrl)}
+                  target="_blank"
+                  rel="noopener noreferrer sponsored"
+                  className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-sm font-semibold border-2 transition-all duration-150 active:scale-95"
+                  style={{
+                    backgroundColor: "#fff8ee",
+                    borderColor: "#f0c14b",
+                    color: "#111827",
+                  }}
+                >
+                  <Image src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg" alt="" width={72} height={22} className="object-contain" />
+                  Buy this product on Amazon
+                </a>
+              )}
 
               <button
                 onClick={() => setWishlist(!wishlist)}

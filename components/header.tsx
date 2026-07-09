@@ -60,11 +60,12 @@ const NAV_CATEGORIES = [
     key: "soaps",
     collections: [
       { label: "Rock Soap",     slug: "rock-soap",     tagline: "Ancient mineral-rich rocks meet Ayurvedic botanicals" },
-      { label: "Designer Soap", slug: "designer-soap", tagline: "Aesthetic skincare with functional benefits"           },
+      { label: "Designer Soap", slug: "designer-soap", tagline: "Aesthetic skincare with functional benefits"          },
       { label: "Round Soap",    slug: "round-soap",    tagline: "Gentle care for everyday skin"                        },
       { label: "Aissis Soap",   slug: "aissis-soap",   tagline: "Advanced skincare solutions in every bar"             },
       { label: "Premium Soap",  slug: "premium-soap",  tagline: "Luxury bathing reimagined with active botanicals"     },
       { label: "Doobie Soap",   slug: "doobie-soap",   tagline: "Pure natural cleansing for everyday skin"             },
+      { label: "Chip Soap",     slug: "chip-soap",     tagline: "Pure natural cleansing for everyday skin"             },
     ],
   },
   {

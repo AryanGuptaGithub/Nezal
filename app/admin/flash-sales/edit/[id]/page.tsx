@@ -4,10 +4,9 @@
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ArrowLeft, X } from "lucide-react"
+import { ArrowLeft, X, Zap, Search, Package, CalendarClock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -133,161 +132,187 @@ export default function EditFlashSalePage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Failed to update flash sale")
-      setMessage("Flash sale updated successfully!")
+      setMessage("success:Flash sale updated successfully!")
       setTimeout(() => router.push("/admin/flash-sales"), 1200)
     } catch (err: any) {
       setMessage(err.message || "Error updating flash sale.")
     } finally { setSubmitting(false) }
   }
 
+  const isSuccess = message.startsWith("success:")
+  const displayMessage = isSuccess ? message.replace("success:", "") : message
+
   if (status === "loading" || pageLoading) {
     return (
-      <main className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading flash sale...</p>
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex items-center gap-2 text-gray-400 text-sm">
+          <Loader2 className="w-4 h-4 animate-spin" /> Loading flash sale...
+        </div>
       </main>
     )
   }
 
   return (
-    <main className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto px-4 py-8">
+    <main className="min-h-screen bg-gray-50">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+
         <Link href="/admin/flash-sales">
-          <Button variant="ghost" className="mb-6 bg-transparent">
-            <ArrowLeft className="w-4 h-4 mr-2" />Back to Flash Sales
+          <Button variant="ghost" className="-ml-2 text-gray-500 hover:text-gray-900">
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to flash sales
           </Button>
         </Link>
-        <h1 className="text-3xl font-bold text-foreground mb-8">Edit Flash Sale</h1>
 
-        <Card>
-          <CardHeader><CardTitle>Sale Details</CardTitle></CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+        {/* ── Page header ──────────────────────────────────── */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-700 flex items-center justify-center shrink-0">
+            <Zap className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Edit flash sale</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Update the discount window or which products it applies to.</p>
+          </div>
+        </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Sale Name *</label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Diwali Flash Sale" required />
+        {/* ── Form card ────────────────────────────────────── */}
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5 block">
+                Sale Name *
+              </label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Diwali Flash Sale" required />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5 block">
+                Discount Percentage *
+              </label>
+              <Input
+                type="number"
+                min={1}
+                max={90}
+                value={discountPercent}
+                onChange={(e) => setDiscountPercent(e.target.value)}
+                placeholder="e.g. 25"
+                required
+              />
+              <p className="text-xs text-gray-400 mt-1">Applied to the regular price of each selected product while the sale is live.</p>
+            </div>
+
+            {/* Window */}
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+              <div className="flex items-center gap-1.5 mb-3">
+                <CalendarClock className="w-3.5 h-3.5 text-gray-400" />
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Sale window</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-medium text-gray-500 mb-1.5 block">Starts at *</label>
+                  <Input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} required className="bg-white" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500 mb-1.5 block">Ends at *</label>
+                  <Input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} required className="bg-white" />
+                </div>
+              </div>
+            </div>
+
+            {/* Products */}
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+              <div className="flex items-center gap-1.5 mb-3">
+                <Package className="w-3.5 h-3.5 text-gray-400" />
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Products on sale
+                </span>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Discount Percentage *</label>
+              <div className="relative">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <Input
-                  type="number"
-                  min={1}
-                  max={90}
-                  value={discountPercent}
-                  onChange={(e) => setDiscountPercent(e.target.value)}
-                  placeholder="e.g. 25"
-                  required
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  placeholder="Search products by name..."
+                  className="bg-white pl-9"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Applied to the regular price of each selected product while the sale is live
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Starts At *</label>
-                  <Input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Ends At *</label>
-                  <Input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} required />
-                </div>
-              </div>
-
-              <div className="border rounded-xl overflow-visible">
-                <div className="bg-muted/60 px-4 py-3 border-b">
-                  <h2 className="text-sm font-semibold">Products on Sale</h2>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Search and add the products this discount applies to
-                  </p>
-                </div>
-                <div className="p-4 space-y-3">
-                  <div className="relative">
-                    <Input
-                      value={productSearch}
-                      onChange={(e) => setProductSearch(e.target.value)}
-                      placeholder="Search products by name..."
-                    />
-                    {searchResults.length > 0 && (
-                      <div className="absolute z-10 left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        {searchResults.map((p) => (
-                          <button
-                            key={p._id}
-                            type="button"
-                            onClick={() => addProduct(p)}
-                            className="flex w-full items-center gap-3 px-3 py-2 hover:bg-muted text-left"
-                          >
-                            <div className="relative h-8 w-8 shrink-0 rounded overflow-hidden bg-muted">
-                              {p.image && <Image src={p.image} alt={p.name} fill className="object-cover" />}
-                            </div>
-                            <span className="text-sm">{p.name}</span>
-                            <span className="text-xs text-muted-foreground ml-auto">₹{p.price}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {selectedProducts.length > 0 && (
-                    <div className="space-y-2 pt-2 border-t">
-                      {selectedProducts.map((p) => (
-                        <div key={p._id} className="flex items-center gap-3 bg-background border rounded-lg px-3 py-2">
-                          <div className="relative h-9 w-9 shrink-0 rounded overflow-hidden bg-muted">
-                            {p.image && <Image src={p.image} alt={p.name} fill className="object-cover" />}
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm">{p.name}</p>
-                            {discountPercent && Number(discountPercent) > 0 && (
-                              <p className="text-xs">
-                                <span className="line-through text-muted-foreground">₹{p.price}</span>
-                                {" → "}
-                                <span className="font-bold text-amber-600">₹{discountPreview(p.price)}</span>
-                              </p>
-                            )}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeProduct(p._id)}
-                            className="text-muted-foreground hover:text-destructive"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
+                {searchResults.length > 0 && (
+                  <div className="absolute z-10 left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-lg shadow-md max-h-60 overflow-y-auto">
+                    {searchResults.map((p) => (
+                      <button
+                        key={p._id}
+                        type="button"
+                        onClick={() => addProduct(p)}
+                        className="w-full text-left px-3 py-2.5 hover:bg-emerald-50 flex items-center gap-3 text-sm border-b border-gray-100 last:border-0 transition-colors"
+                      >
+                        <div className="relative h-9 w-9 shrink-0 rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                          {p.image && <Image src={p.image} alt={p.name} fill className="object-cover" />}
                         </div>
-                      ))}
+                        <span className="font-medium text-gray-900 truncate flex-1">{p.name}</span>
+                        <span className="text-xs text-gray-400">₹{p.price}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {selectedProducts.length > 0 && (
+                <div className="space-y-2 mt-3 pt-3 border-t border-gray-200">
+                  {selectedProducts.map((p) => (
+                    <div key={p._id} className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-3 py-2">
+                      <div className="relative h-9 w-9 shrink-0 rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                        {p.image && <Image src={p.image} alt={p.name} fill className="object-cover" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{p.name}</p>
+                        {discountPercent && Number(discountPercent) > 0 && (
+                          <p className="text-xs">
+                            <span className="line-through text-gray-400">₹{p.price}</span>
+                            {" → "}
+                            <span className="font-bold text-amber-700">₹{discountPreview(p.price)}</span>
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeProduct(p._id)}
+                        className="text-gray-400 hover:text-red-600 shrink-0"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={isActive}
-                  onChange={(e) => setIsActive(e.target.checked)}
-                  className="w-4 h-4"
-                />
-                <label className="text-sm font-medium">
-                  Active (enabled — will go live automatically at the start time)
-                </label>
-              </div>
-
-              {message && (
-                <div className={`p-3 rounded text-sm ${
-                  message.includes("successfully")
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
-                }`}>
-                  {message}
+                  ))}
                 </div>
               )}
+            </div>
 
-              <Button type="submit" disabled={submitting} className="w-full">
-                {submitting ? "Updating..." : "Update Flash Sale"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+            {/* Active toggle */}
+            <div className="flex items-center gap-2.5 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-3">
+              <input
+                type="checkbox"
+                id="isActive"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+                className="w-4 h-4 accent-emerald-700"
+              />
+              <label htmlFor="isActive" className="text-sm font-medium text-gray-800">
+                Active — will go live automatically at the start time
+              </label>
+            </div>
+
+            {message && (
+              <div className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-sm ${
+                isSuccess ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"
+              }`}>
+                {isSuccess ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+                {displayMessage}
+              </div>
+            )}
+
+            <Button type="submit" disabled={submitting} className="w-full bg-emerald-700 hover:bg-emerald-800">
+              {submitting ? "Updating..." : "Update flash sale"}
+            </Button>
+          </form>
+        </div>
       </div>
     </main>
   )

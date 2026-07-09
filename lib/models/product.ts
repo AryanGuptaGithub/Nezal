@@ -41,6 +41,17 @@ weight: {
   type: Number,
   default: 0.3, // kg — used for Shiprocket shipment weight calculation
 },
+
+// ─── Amazon marketplace link ───────────────────────────────────────────
+// Raw Amazon product URL, entered in the admin panel. Optional — the
+// "Buy on Amazon" button only renders on the product page when this is set.
+amazonUrl: {
+  type: String,
+  default: "",
+  trim: true,
+},
+
+
     // ─── Legacy fields (kept for backward compatibility) ───────────────────
     ingredients: [String],
     benefits: [String],

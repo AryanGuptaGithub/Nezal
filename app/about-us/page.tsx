@@ -172,7 +172,7 @@ export default function AboutUs() {
               </motion.h2>
               <motion.div variants={stagger} className="space-y-5 text-base leading-relaxed" style={{ color: "#3d5c45" }}>
                 <motion.p variants={fadeUp}>
-                  Today, {BRAND.name} is a modern skincare, hair care, bath &amp; body care, and wellness brand
+                  {BRAND.name} is a modern skincare, hair care, bath &amp; body care, and wellness brand
                   inspired by natural active ingredients and formulation science, spanning premium handmade soap, advanced
                   face serums, nourishing herbal shampoo and conditioner, body lotion, Aloe Vera gels, bath salts,
                   and wellness essentials — each one designed to turn an ordinary moment into a considered one.
@@ -218,7 +218,7 @@ export default function AboutUs() {
               />
               <div className="relative z-10 rounded-3xl overflow-hidden aspect-[4/5]">
                 <img
-                  src="/aboutus.png"
+                  src="https://res.cloudinary.com/douyptcm1/image/upload/v1783582774/nezal-product-showcase_ebo16u.png"
                   alt={`${BRAND.name} facility`}
                   className="w-full h-full object-cover"
                 />
