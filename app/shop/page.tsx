@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import ProductCard from "@/components/product-card";
 import { Button } from "@/components/ui/button";
@@ -94,12 +95,21 @@ const SOAP_COLLECTIONS = [
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function ShopPage() {
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [products, setProducts] = useState<Product[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
+  
+ 
 
   const [filters, setFilters] = useState({
     company:   "",
@@ -110,8 +120,7 @@ export default function ShopPage() {
     minPrice:  0,
     maxPrice:  10000,
   });
-  const [sortBy, setSortBy] = useState<SortOption>("newest");
-  const [searchQuery, setSearchQuery] = useState("");
+  
 
   // Fetch companies once
   useEffect(() => {
@@ -121,6 +130,21 @@ export default function ShopPage() {
       .catch(console.error);
   }, []);
 
+  // Pick up ?search= from URL (set by header search bar) on load
+   useEffect(() => {
+    const q = searchParams.get("search");
+    if (q) {
+      setSearchQuery(q);
+      setDebouncedSearch(q);
+    }
+  }, [searchParams]);
+
+   // Debounce typing so we're not hitting the API on every keystroke
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery), 400);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
   // Fetch products whenever filters / page / sort change
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -128,6 +152,7 @@ export default function ShopPage() {
       const params = new URLSearchParams();
       params.append("page", page.toString());
       params.append("limit", "12");
+      if (debouncedSearch.trim()) params.append("search", debouncedSearch.trim());
       if (filters.company)    params.append("company",  filters.company);
       if (filters.category)   params.append("category", filters.category);
       if (filters.concern)    params.append("concern",  filters.concern);
@@ -149,19 +174,17 @@ export default function ShopPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, filters, sortBy]);
+  }, [page, filters, sortBy, debouncedSearch]);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
-  // Client-side search filter on top of API results
-  const filteredProducts = useMemo(() => {
-    if (!searchQuery.trim()) return products;
-    const q = searchQuery.toLowerCase();
-    return products.filter((p) => p.name.toLowerCase().includes(q));
-  }, [products, searchQuery]);
+  // No more client-side re-filtering — the API already did it
+  const filteredProducts = products;
+
+
 
   // Reset to page 1 when filters change
-  useEffect(() => { setPage(1); }, [filters, sortBy]);
+   useEffect(() => { setPage(1); }, [filters, sortBy, debouncedSearch]);
 
   const setFilter = (key: keyof typeof filters, value: string | number) => {
     setFilters((prev) => ({ ...prev, [key]: value }));

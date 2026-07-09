@@ -2,15 +2,16 @@
 //
 // Unified search endpoint powering the header SearchBar dropdown.
 // Returns up to N matches across three categories in one response:
-//   - products:   name match (existing product search behavior)
-//   - concerns:   matched against the known concern list (mirrors
-//                 the mega menu's CONCERNS array)
+//   - products:    fuzzy name/description match (typo-tolerant)
+//   - concerns:    matched against the known concern list (mirrors
+//                  the mega menu's CONCERNS array)
 //   - ingredients: distinct ingredient names matched from `ingredients`
-//                 and `keyIngredients.name` across all active products
+//                  and `keyIngredients.name` across all active products
 //
 // GET /api/search?q=tea+tree
 
 import { NextRequest, NextResponse } from "next/server"
+import Fuse from "fuse.js"
 import { connectDB } from "@/lib/db"
 import { Product } from "@/lib/models/product"
 import { getActiveFlashSaleMap, applyFlashSaleToList } from "@/lib/flashSale"
@@ -26,6 +27,12 @@ const CONCERNS = [
   { label: "Hair Fall", slug: "hairfall" },
   { label: "Dryness", slug: "dryness" },
 ]
+
+const FUSE_OPTIONS = {
+  threshold: 0.4,        // 0 = exact only, 1 = match almost anything
+  ignoreLocation: true,  // typo can land anywhere in the word, not just the start
+  minMatchCharLength: 2,
+}
 
 function slugify(text: string): string {
   return text
@@ -44,42 +51,47 @@ export async function GET(req: NextRequest) {
     }
 
     await connectDB()
-    const regex = new RegExp(q, "i")
 
-    // ── Products ──
-    const products = await Product.find(
-      {
-        isActive: true,
-        $or: [{ name: { $regex: regex } }, { description: { $regex: regex } }],
-      },
-      { _id: 1, name: 1, price: 1, discountPrice: 1, image: 1, company: 1 }
+    // ── Products (fuzzy) ──
+    // Pull every active product's searchable fields, then let Fuse rank by
+    // closeness to the typed query — this is what makes "sleo vera" find
+    // "Aloe Vera" even though it's not a substring match.
+    const allProducts = await Product.find(
+      { isActive: true },
+      { _id: 1, name: 1, description: 1, price: 1, discountPrice: 1, image: 1, company: 1 }
     )
       .populate("company", "slug name")
-      .limit(MAX_PER_GROUP)
       .lean()
+
+    const productFuse = new Fuse(allProducts, {
+      ...FUSE_OPTIONS,
+      keys: [
+        { name: "name", weight: 0.7 },
+        { name: "description", weight: 0.3 },
+      ],
+    })
+    const products = productFuse.search(q).slice(0, MAX_PER_GROUP).map((r) => r.item)
 
     // Merge in flash-sale pricing so a searched product shows the same
     // sale price / ribbon data as the shop grid and product page.
     const flashSaleMap = await getActiveFlashSaleMap()
     const productsWithSales = applyFlashSaleToList(products, flashSaleMap)
 
-    // ── Concerns (static list — no DB query needed) ──
-    const concerns = CONCERNS.filter((c) => regex.test(c.label)).slice(0, MAX_PER_GROUP)
+    // ── Concerns (static list, fuzzy) ──
+    const concernFuse = new Fuse(CONCERNS, { ...FUSE_OPTIONS, keys: ["label"] })
+    const concerns = concernFuse.search(q).slice(0, MAX_PER_GROUP).map((r) => r.item)
 
-    // ── Ingredients (distinct names matched from product data) ──
+    // ── Ingredients (distinct names, fuzzy) ──
+    // First collect every distinct ingredient name across active products,
+    // then fuzzy-match against that distinct list (cheaper than matching
+    // per-document, and gives clean deduped results).
     const ingredientDocs = await Product.find(
-      {
-        isActive: true,
-        $or: [
-          { ingredients: { $elemMatch: { $regex: regex } } },
-          { "keyIngredients.name": { $regex: regex } },
-        ],
-      },
+      { isActive: true },
       { ingredients: 1, "keyIngredients.name": 1 }
     ).lean()
 
     const seen = new Set<string>()
-    const ingredients: { name: string; slug: string }[] = []
+    const distinctIngredients: { name: string; slug: string }[] = []
 
     for (const doc of ingredientDocs) {
       const names = [
@@ -87,15 +99,16 @@ export async function GET(req: NextRequest) {
         ...((doc.keyIngredients || []).map((k: any) => k.name)),
       ]
       for (const name of names) {
-        if (!name || !regex.test(name)) continue
+        if (!name) continue
         const key = name.toLowerCase()
         if (seen.has(key)) continue
         seen.add(key)
-        ingredients.push({ name, slug: slugify(name) })
-        if (ingredients.length >= MAX_PER_GROUP) break
+        distinctIngredients.push({ name, slug: slugify(name) })
       }
-      if (ingredients.length >= MAX_PER_GROUP) break
     }
+
+    const ingredientFuse = new Fuse(distinctIngredients, { ...FUSE_OPTIONS, keys: ["name"] })
+    const ingredients = ingredientFuse.search(q).slice(0, MAX_PER_GROUP).map((r) => r.item)
 
     return NextResponse.json({ products: productsWithSales, concerns, ingredients })
   } catch (error) {

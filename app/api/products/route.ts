@@ -8,6 +8,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getActiveFlashSaleMap, applyFlashSaleToList } from "@/lib/flashSale";
+import Fuse from "fuse.js";
 
 // Simple in-memory cache for API responses
 const apiCache = new Map<string, { data: any; timestamp: number }>();
@@ -129,23 +130,50 @@ export async function GET(request: NextRequest) {
       query._id = { $ne: exclude };
     }
 
-    if (search) {
-      query.name = { $regex: search, $options: "i" };
-    }
+    
 
     const skip = (page - 1) * limit;
 
-    const [products, total] = await Promise.all([
-      Product.find(query)
-        .populate("company", "name slug")
-        .populate("category", "name slug")
-        .select("name slug price discountPrice image images stock company category isActive createdAt")
-        .skip(skip)
-        .limit(limit)
-        .sort({ createdAt: -1 })
-        .lean(),
-      Product.countDocuments(query),
-    ]);
+
+      let products: any[];
+      let total: number;
+
+    if (search) {
+  // Typo-tolerant search: pull everything matching the other filters,
+  // then let Fuse.js rank by closeness so "sleo vera" still finds "Aloe Vera".
+  const candidates = await Product.find(query)
+    .populate("company", "name slug")
+    .populate("category", "name slug")
+    .select("name slug price discountPrice image images stock company category isActive createdAt")
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const fuse = new Fuse(candidates, {
+    keys: [
+      { name: "name", weight: 0.7 },
+      { name: "company.name", weight: 0.3 },
+    ],
+    threshold: 0.4,        // 0 = exact only, 1 = match almost anything
+    ignoreLocation: true,  // typo can be anywhere in the word, not just start
+    minMatchCharLength: 2,
+  });
+
+  const fuzzyResults = fuse.search(search).map((r) => r.item);
+  total = fuzzyResults.length;
+  products = fuzzyResults.slice(skip, skip + limit);
+} else {
+  [products, total] = await Promise.all([
+    Product.find(query)
+      .populate("company", "name slug")
+      .populate("category", "name slug")
+      .select("name slug price discountPrice image images stock company category isActive createdAt")
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 })
+      .lean(),
+    Product.countDocuments(query),
+  ]);
+}
 
     // ── Merge in flash-sale pricing so every listing (shop, search, home, etc.)
     //    reflects an active sale automatically ──────────────────────────────
