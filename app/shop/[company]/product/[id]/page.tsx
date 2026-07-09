@@ -311,8 +311,22 @@ const initialReviews = null
   const [showBulkOrderModal, setShowBulkOrderModal] = useState(false)
   const [wishlist, setWishlist] = useState(false)
   const [timeLeft, setTimeLeft] = useState<{ hours: number; minutes: number; seconds: number } | null>(null)
+  const [isZooming, setIsZooming] = useState(false)
+  const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 })
+  const imageContainerRef = useRef<HTMLDivElement>(null)
 
   const reviewsFetchRef = useRef(false)
+
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const container = imageContainerRef.current
+  if (!container) return
+  const rect = container.getBoundingClientRect()
+  const x = ((e.clientX - rect.left) / rect.width) * 100
+  const y = ((e.clientY - rect.top) / rect.height) * 100
+  setZoomPosition({ x, y })
+}
+
 
 
       // ── Flash sale countdown ticker ─────────────────────────
@@ -326,6 +340,9 @@ const initialReviews = null
         const interval = setInterval(tick, 1000)
         return () => clearInterval(interval)
       }, [product?.flashSale?.endsAt])
+
+
+
 
 
   // ── Effects ────────────────────────────────────────────
@@ -632,60 +649,77 @@ const currentImage =
 
             {/* Main image */}
             <div
-              className="relative overflow-hidden rounded-2xl border"
-              style={{
-                backgroundColor: "#ffffff",
-                borderColor: "#dde8de",
-                aspectRatio: "1 / 1",
-              }}
-            >
-              {discount > 0 && (
-  <div
-    className="absolute top-4 left-4 z-10 text-xs font-bold px-3 py-1.5 rounded-full"
-    style={{ backgroundColor: "#1e3a28", color: "#ffffff" }}
-  >
-    {discount}% OFF
-  </div>
-)}
+  ref={imageContainerRef}
+  className="relative overflow-hidden rounded-2xl border cursor-zoom-in"
+  style={{
+    backgroundColor: "#ffffff",
+    borderColor: "#dde8de",
+    aspectRatio: "1 / 1",
+  }}
+  onMouseEnter={() => setIsZooming(true)}
+  onMouseLeave={() => setIsZooming(false)}
+  onMouseMove={handleMouseMove}
+>
+  {discount > 0 && (
+    <div
+      className="absolute top-4 left-4 z-10 text-xs font-bold px-3 py-1.5 rounded-full"
+      style={{ backgroundColor: "#1e3a28", color: "#ffffff" }}
+    >
+      {discount}% OFF
+    </div>
+  )}
 
+  {currentImage ? (
+    <Image
+      src={`${currentImage}?v=${product._id.slice(-6)}`}
+      alt={product.name}
+      fill
+      className="object-contain p-8"
+      priority
+    />
+  ) : (
+    <div className="flex h-full items-center justify-center text-gray-400">
+      No image available
+    </div>
+  )}
 
+  {/* Zoom overlay — desktop only, appears on hover, pans with cursor */}
+  {currentImage && (
+    <div
+      className="absolute inset-0 pointer-events-none transition-opacity duration-150 hidden lg:block"
+      style={{
+        opacity: isZooming ? 1 : 0,
+        backgroundImage: `url(${currentImage}?v=${product._id.slice(-6)})`,
+        backgroundRepeat: "no-repeat",
+        backgroundSize: "220%",   // ← increase for a stronger zoom, decrease for subtler
+        backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
+        backgroundColor: "#ffffff",
+      }}
+    />
+  )}
 
-           {currentImage ? (
-  <Image
-     src={`${currentImage}?v=${product._id.slice(-6)}`}
-     alt={product.name}
-     fill
-     className="object-contain p-8 transition-transform duration-300 hover:scale-105"
-     priority
-  />
-) : (
-  <div className="flex h-full items-center justify-center text-gray-400">
-    No image available
-  </div>
-)}
-
-              {/* Prev / Next arrows for mobile */}
-              {allImages.length > 1 && (
-                <>
-                  <button
-                    onClick={() => setSelectedImage((i) => (i - 1 + allImages.length) % allImages.length)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 border flex items-center justify-center lg:hidden"
-                    style={{ borderColor: "#dde8de" }}
-                    aria-label="Previous image"
-                  >
-                    <ChevronLeft className="w-4 h-4" style={{ color: "#1e3a28" }} />
-                  </button>
-                  <button
-                    onClick={() => setSelectedImage((i) => (i + 1) % allImages.length)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 border flex items-center justify-center lg:hidden"
-                    style={{ borderColor: "#dde8de" }}
-                    aria-label="Next image"
-                  >
-                    <ChevronRight className="w-4 h-4" style={{ color: "#1e3a28" }} />
-                  </button>
-                </>
-              )}
-            </div>
+  {/* Prev / Next arrows for mobile — unchanged */}
+  {allImages.length > 1 && (
+    <>
+      <button
+        onClick={() => setSelectedImage((i) => (i - 1 + allImages.length) % allImages.length)}
+        className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 border flex items-center justify-center lg:hidden"
+        style={{ borderColor: "#dde8de" }}
+        aria-label="Previous image"
+      >
+        <ChevronLeft className="w-4 h-4" style={{ color: "#1e3a28" }} />
+      </button>
+      <button
+        onClick={() => setSelectedImage((i) => (i + 1) % allImages.length)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 border flex items-center justify-center lg:hidden"
+        style={{ borderColor: "#dde8de" }}
+        aria-label="Next image"
+      >
+        <ChevronRight className="w-4 h-4" style={{ color: "#1e3a28" }} />
+      </button>
+    </>
+  )}
+</div>
 
             {/* Thumbnails */}
             {allImages.length > 1 && (
