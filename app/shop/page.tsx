@@ -1,6 +1,7 @@
 // app/shop/page.tsx
 "use client";
 
+import { Suspense } from "react";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -94,7 +95,7 @@ const SOAP_COLLECTIONS = [
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function ShopPage() {
+function ShopContent() {
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -406,6 +407,34 @@ export default function ShopPage() {
               </>
             )}
           </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+
+// New default export — wraps ShopContent in Suspense since it uses useSearchParams()
+export default function ShopPage() {
+  return (
+    <Suspense fallback={<ShopPageFallback />}>
+      <ShopContent />
+    </Suspense>
+  );
+}
+
+function ShopPageFallback() {
+  return (
+    <main className="min-h-screen bg-gradient-to-br from-[#fafaf5] to-white">
+      <div className="container-nezal py-10 md:py-16">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="animate-pulse rounded-2xl bg-white p-4 shadow-sm">
+              <div className="aspect-square w-full rounded-xl bg-gray-100" />
+              <div className="mt-4 h-4 w-3/4 rounded bg-gray-100" />
+              <div className="mt-2 h-4 w-1/2 rounded bg-gray-100" />
+            </div>
+          ))}
         </div>
       </div>
     </main>
