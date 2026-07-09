@@ -20,84 +20,86 @@ import { X, ChevronDown, Download, Leaf, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 
 /* ── reuse the same constants from Header.tsx ── */
-const NAV_CATEGORIES = [
-  {
-    heading: "Soap",
-    key: "soaps",
-    collections: [
-      { label: "Rock Soap",     slug: "rock-soap",     tagline: "Ancient mineral-rich rocks meet Ayurvedic botanicals" },
-      { label: "Designer Soap", slug: "designer-soap", tagline: "Aesthetic skincare with functional benefits"           },
-      { label: "Round Soap",    slug: "round-soap",    tagline: "Gentle care for everyday skin"                        },
-      { label: "Aissis Soap",   slug: "aissis-soap",   tagline: "Advanced skincare solutions in every bar"             },
-      { label: "Premium Soap",  slug: "premium-soap",  tagline: "Luxury bathing reimagined with active botanicals"     },
-      { label: "Doobie Soap",   slug: "doobie-soap",   tagline: "Pure natural cleansing for everyday skin"             },
-    ],
-  },
-  {
-    heading: "Body Care",
-    key: "body-care",
-    collections: [
-      { label: "Body Lotion",   slug: "body-lotion",   tagline: "All-day hydration, nature's way"           },
-      { label: "Aloe Vera Gel", slug: "aloe-vera-gel", tagline: "Pure soothing hydration for skin and hair" },
-      { label: "Hand Wash",     slug: "hand-wash",     tagline: "Clean, protect and care for your hands"    },
-      { label: "Intimate Wash", slug: "intimate-wash", tagline: "Gentle care and daily freshness"           },
-    ],
-  },
-  {
-    heading: "Bath & Shower",
-    key: "bath-shower",
-    collections: [
-      { label: "Shower Gel", slug: "shower-gel", tagline: "Your daily cleanse, elevated" },
-      { label: "Bath Salt",  slug: "bath-salt",  tagline: "Turn your bath into a ritual" },
-    ],
-  },
-  {
-    heading: "Face Care",
-    key: "face-care",
-    collections: [
-      { label: "Foaming Face Wash", slug: "foaming-face-wash", tagline: "Deep cleanse without stripping your skin" },
-      { label: "Face Serum",        slug: "face-serum",        tagline: "Targeted actives for every skin story"   },
-    ],
-  },
-  {
-    heading: "Hair Care",
-    key: "hair-care",
-    collections: [
-      { label: "Shampoo",     slug: "shampoo",     tagline: "Cleanse your scalp, nourish your roots" },
-      { label: "Conditioner", slug: "conditioner", tagline: "Frizz-free, silky, nourished hair"      },
-      { label: "Hair Serum",  slug: "hair-serum",  tagline: "From root to tip — strength and growth" },
-    ],
-  },
-  {
-    heading: "Massage Oil",
-    key: "massage-oil",
-    collections: [
-      { label: "Body Massage Oil", slug: "body-massage-oil", tagline: "Relaxation and skin nourishment in every drop" },
-    ],
-  },
-  {
-    heading: "Nezal's Rituals",
-    key: "rituals",
-    viewAllHref: "/rituals",
-    collections: [],
-  },
-  {
-    heading: "Gift Kits",
-    key: "gift-kits",
-    collections: [
-      { label: "Gift Kits", slug: "gift-kits", tagline: "Curated care for the people you love" },
-    ],
-  },
-];
+// const NAV_CATEGORIES = [
+//   {
+//     heading: "Soap",
+//     key: "soaps",
+//     collections: [
+//       { label: "Rock Soap",     slug: "rock-soap",     tagline: "Ancient mineral-rich rocks meet Ayurvedic botanicals" },
+//       { label: "Designer Soap", slug: "designer-soap", tagline: "Aesthetic skincare with functional benefits"           },
+//       { label: "Round Soap",    slug: "round-soap",    tagline: "Gentle care for everyday skin"                        },
+//       { label: "Aissis Soap",   slug: "aissis-soap",   tagline: "Advanced skincare solutions in every bar"             },
+//       { label: "Premium Soap",  slug: "premium-soap",  tagline: "Luxury bathing reimagined with active botanicals"     },
+//       { label: "Doobie Soap",   slug: "doobie-soap",   tagline: "Pure natural cleansing for everyday skin"             },
+//     ],
+//   },
+//   {
+//     heading: "Body Care",
+//     key: "body-care",
+//     collections: [
+//       { label: "Body Lotion",   slug: "body-lotion",   tagline: "All-day hydration, nature's way"           },
+//       { label: "Aloe Vera Gel", slug: "aloe-vera-gel", tagline: "Pure soothing hydration for skin and hair" },
+//       { label: "Hand Wash",     slug: "hand-wash",     tagline: "Clean, protect and care for your hands"    },
+//       { label: "Intimate Wash", slug: "intimate-wash", tagline: "Gentle care and daily freshness"           },
+//     ],
+//   },
+//   {
+//     heading: "Bath & Shower",
+//     key: "bath-shower",
+//     collections: [
+//       { label: "Shower Gel", slug: "shower-gel", tagline: "Your daily cleanse, elevated" },
+//       { label: "Bath Salt",  slug: "bath-salt",  tagline: "Turn your bath into a ritual" },
+//     ],
+//   },
+//   {
+//     heading: "Face Care",
+//     key: "face-care",
+//     collections: [
+//       { label: "Foaming Face Wash", slug: "foaming-face-wash", tagline: "Deep cleanse without stripping your skin" },
+//       { label: "Face Serum",        slug: "face-serum",        tagline: "Targeted actives for every skin story"   },
+//     ],
+//   },
+//   {
+//     heading: "Hair Care",
+//     key: "hair-care",
+//     collections: [
+//       { label: "Shampoo",     slug: "shampoo",     tagline: "Cleanse your scalp, nourish your roots" },
+//       { label: "Conditioner", slug: "conditioner", tagline: "Frizz-free, silky, nourished hair"      },
+//       { label: "Hair Serum",  slug: "hair-serum",  tagline: "From root to tip — strength and growth" },
+//     ],
+//   },
+//   {
+//     heading: "Massage Oil",
+//     key: "massage-oil",
+//     collections: [
+//       { label: "Body Massage Oil", slug: "body-massage-oil", tagline: "Relaxation and skin nourishment in every drop" },
+//     ],
+//   },
+//   {
+//     heading: "Nezal's Rituals",
+//     key: "rituals",
+//     viewAllHref: "/rituals",
+//     collections: [],
+//   },
+//   {
+//     heading: "Gift Kits",
+//     key: "gift-kits",
+//     collections: [
+//       { label: "Gift Kits", slug: "gift-kits", tagline: "Curated care for the people you love" },
+//     ],
+//   },
+// ];
 
-const CONCERNS = [
-  { label: "Acne",         slug: "acne"         },
-  { label: "Pigmentation", slug: "pigmentation" },
-  { label: "Open Pores",   slug: "open-pores"   },
-  { label: "Hydration",    slug: "hydration"    },
-  { label: "Hair Fall",    slug: "hairfall"     },
-  { label: "Dryness",      slug: "dryness"      },
-];
+// const CONCERNS = [
+//   { label: "Acne",         slug: "acne"         },
+//   { label: "Pigmentation", slug: "pigmentation" },
+//   { label: "Open Pores",   slug: "open-pores"   },
+//   { label: "Hydration",    slug: "hydration"    },
+//   { label: "Hair Fall",    slug: "hairfall"     },
+//   { label: "Dryness",      slug: "dryness"      },
+// ];
+
+
 const INGREDIENTS = [
   { label: "Aloe Vera",       slug: "aloe-vera"       },
   { label: "Neem",            slug: "neem"            },
@@ -122,13 +124,13 @@ const NAV_LINKS = [
 
 /* ── Collection mini-card (horizontal scroll) ── */
 function MobileCollectionCard({
-  label, slug, tagline, onClick,
+  label, slug, tagline, onClick, href,
 }: {
-  label: string; slug: string; tagline: string; onClick: () => void;
+  label: string; slug: string; tagline?: string; onClick: () => void; href?: string;
 }) {
   return (
     <Link
-      href={`/collections/${slug}`}
+      href={href ?? `/collections/${slug}`}
       onClick={onClick}
       className="flex-shrink-0 w-36 flex flex-col gap-2 p-3 rounded-xl bg-[var(--color-bg-cream)] border border-[var(--color-border)] hover:border-[var(--color-brand-primary)]/40 transition-colors"
     >
@@ -145,7 +147,19 @@ function MobileCollectionCard({
 }
 
 /* ── MobileNav ── */
-export function MobileNav({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function MobileNav({
+  open, onClose, navCategories, concerns,
+}: {
+  open: boolean;
+  onClose: () => void;
+  navCategories: {
+    heading: string;
+    key: string;
+    collections: { label: string; slug: string; tagline?: string; href?: string }[];
+    viewAllHref?: string;
+  }[];
+  concerns: { label: string; slug: string }[];
+}) {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<"concerns" | "ingredients">("concerns")
@@ -239,7 +253,7 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
   {/* Pills */}
   <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
     {activeTab === "concerns"
-      ? CONCERNS.map((item) => (
+      ? concerns.map((item) => ( 
           <Link
             key={item.slug}
             href={`/concerns/${item.slug}`}
@@ -292,7 +306,7 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
             <div className="my-1 border-t" style={{ borderColor: "var(--color-border)" }} />
 
             {/* Category accordions */}
-            {NAV_CATEGORIES.map((cat) => (
+            {navCategories.map((cat) => (
               <div key={cat.key}>
                 <button
                   className="flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-semibold text-[var(--color-text-heading)] hover:bg-[var(--color-bg-cream)] transition-colors"
@@ -321,6 +335,7 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
                             slug={col.slug}
                             tagline={col.tagline}
                             onClick={onClose}
+                            href={(col as any).href}
                           />
                         ))}
                       </div>

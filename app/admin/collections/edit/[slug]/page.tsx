@@ -1,8 +1,8 @@
 "use client"
-// app/admin/collections/add/page.tsx
+// app/admin/collections/edit/[slug]/page.tsx
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -28,10 +28,14 @@ const LABELS: Record<string, string> = {
   "gift-kits": "Gift Kits", "soaps": "Soaps", "bath-shower": "Bath & Shower", "massage-oil": "Massage Oil",
 }
 
-export default function AddCollectionPage() {
+export default function EditCollectionPage() {
   const router = useRouter()
+  const params = useParams()
   const { data: session } = useSession()
-  const [loading, setLoading] = useState(false)
+  const originalSlug = params.slug as string
+
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState("")
 
@@ -67,24 +71,64 @@ export default function AddCollectionPage() {
   const [relatedCollections, setRelatedCollections] = useState<string[]>([])
   const [relatedSearch, setRelatedSearch] = useState("")
 
+  // Track whether subCategory should be auto-reset when navCategory changes.
+  // We skip the reset on the very first load so the fetched value isn't clobbered.
+  const [hydrated, setHydrated] = useState(false)
+
   useEffect(() => {
     if (!session) { router.push("/auth/login"); return }
+    fetchCollection()
     fetch("/api/admin/collections")
       .then((res) => res.json())
       .then((data) => setAllCollections((data.collections || []).map((c: any) => ({ _id: c._id, name: c.name, slug: c.slug }))))
       .catch(() => {})
-  }, [session])
+  }, [session, originalSlug])
 
-  useEffect(() => {
-    if (!slug && name) {
-      setSlug(name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""))
+  const fetchCollection = async () => {
+    try {
+      const res = await fetch(`/api/admin/collections/${originalSlug}`)
+      const data = await res.json()
+      const c = data.collection
+      if (!c) throw new Error("Not found")
+
+      setName(c.name || "")
+      setSlug(c.slug || "")
+      setTagline(c.tagline || "")
+      setNavCategory(c.navCategory || "face-care")
+      setSubCategory(c.subCategory || "face-care")
+      setSortOrder(c.sortOrder ?? 0)
+      setIsActive(c.isActive ?? true)
+
+      setHeroImage(c.heroImage || "")
+      setHeroHeadline(c.heroHeadline || "")
+      setHeroSubheadline(c.heroSubheadline || "")
+      setStoryText(c.storyText || "")
+
+      setKeyIngredients(c.keyIngredients || [])
+      setConcerns((c.concerns || []).join("\n"))
+      setRitualSteps(c.ritualSteps || [])
+      setRelatedCollections(c.relatedCollections || [])
+      setFaq(c.faq || [])
+
+      setSeoTitle(c.seoTitle || "")
+      setSeoDescription(c.seoDescription || "")
+      setMetaKeywords((c.metaKeywords || []).join(", "))
+
+      setHydrated(true)
+    } catch {
+      setMessage("Error loading collection.")
+    } finally {
+      setLoading(false)
     }
-  }, [name, slug])
+  }
 
+  // Only re-validate subCategory against navCategory AFTER initial hydration,
+  // so we don't stomp the loaded value on first render.
   useEffect(() => {
+    if (!hydrated) return
     const options = SUBCATEGORY_OPTIONS[navCategory] || []
     if (!options.includes(subCategory)) setSubCategory(options[0])
-  }, [navCategory])
+  }, [navCategory, hydrated])
 
   const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -137,10 +181,10 @@ export default function AddCollectionPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim() || !slug.trim()) { setMessage("Name and slug are required."); return }
-    setLoading(true); setMessage("")
+    setSubmitting(true); setMessage("")
     try {
-      const res = await fetch("/api/admin/collections", {
-        method: "POST",
+      const res = await fetch(`/api/admin/collections/${originalSlug}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name, slug, tagline, navCategory, subCategory, sortOrder, isActive,
@@ -155,17 +199,25 @@ export default function AddCollectionPage() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || "Failed to create collection")
-      setMessage("Collection created successfully!")
+      if (!res.ok) throw new Error(data.error || "Failed to update collection")
+      setMessage("Collection updated successfully!")
       setTimeout(() => router.push("/admin/collections"), 1200)
     } catch (err: any) {
-      setMessage(err.message || "Error creating collection.")
-    } finally { setLoading(false) }
+      setMessage(err.message || "Error updating collection.")
+    } finally { setSubmitting(false) }
   }
 
   const filteredRelated = allCollections.filter((c) =>
-    c.slug !== slug && c.name.toLowerCase().includes(relatedSearch.toLowerCase())
+    c.slug !== originalSlug && c.name.toLowerCase().includes(relatedSearch.toLowerCase())
   )
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Loading collection...</p>
+      </main>
+    )
+  }
 
   return (
     <main className="min-h-screen bg-background">
@@ -173,7 +225,7 @@ export default function AddCollectionPage() {
         <Link href="/admin/collections">
           <Button variant="ghost" className="mb-6 bg-transparent"><ArrowLeft className="w-4 h-4 mr-2" />Back to Collections</Button>
         </Link>
-        <h1 className="text-3xl font-bold text-foreground mb-8">Add New Collection</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-8">Edit Collection</h1>
 
         <Card>
           <CardHeader><CardTitle>Collection Information</CardTitle></CardHeader>
@@ -183,17 +235,17 @@ export default function AddCollectionPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Name *</label>
-                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Turmeric Glow" required />
+                  <Input value={name} onChange={(e) => setName(e.target.value)} required />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Slug *</label>
-                  <Input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="turmeric-glow" required />
+                  <Input value={slug} onChange={(e) => setSlug(e.target.value)} required />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Tagline (shown on cards)</label>
-                <Input value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="Short one-liner" />
+                <label className="block text-sm font-medium mb-2">Tagline</label>
+                <Input value={tagline} onChange={(e) => setTagline(e.target.value)} />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -246,7 +298,7 @@ export default function AddCollectionPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-2">Hero Headline</label>
-                <Input value={heroHeadline} onChange={(e) => setHeroHeadline(e.target.value)} placeholder="Main heading on the collection page" />
+                <Input value={heroHeadline} onChange={(e) => setHeroHeadline(e.target.value)} />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Hero Subheadline</label>
@@ -283,8 +335,8 @@ export default function AddCollectionPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Concerns <span className="text-muted-foreground font-normal">(one per line, matches concern slugs)</span></label>
-                <textarea value={concerns} onChange={(e) => setConcerns(e.target.value)} rows={3} className="w-full px-3 py-2 border border-border rounded-md bg-background" placeholder={"acne\npigmentation\ndryness"} />
+                <label className="block text-sm font-medium mb-2">Concerns <span className="text-muted-foreground font-normal">(one per line)</span></label>
+                <textarea value={concerns} onChange={(e) => setConcerns(e.target.value)} rows={3} className="w-full px-3 py-2 border border-border rounded-md bg-background" />
               </div>
 
               <div className="border rounded-xl overflow-hidden">
@@ -372,7 +424,7 @@ export default function AddCollectionPage() {
                 <div className={`p-3 rounded text-sm ${message.includes("successfully") ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>{message}</div>
               )}
 
-              <Button type="submit" disabled={loading} className="w-full">{loading ? "Creating..." : "Create Collection"}</Button>
+              <Button type="submit" disabled={submitting} className="w-full">{submitting ? "Updating..." : "Update Collection"}</Button>
             </form>
           </CardContent>
         </Card>

@@ -37,12 +37,49 @@ const COMPANIES_KEY = "companies:all";
 const TTL = 1000 * 60 * 5;
 const MAX_AGE = 1000 * 60 * 60 * 24;
 
+const MENU_TTL = 1000 * 60 * 5;       // 5 min — background refresh kicks in after this
+const MENU_MAX_AGE = 1000 * 60 * 30;  // 30 min — cached value is discarded after this
+
 async function fetchCompanies(): Promise<Company[]> {
   const res = await fetch("/api/companies", { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to fetch companies");
   const json = await res.json();
   return Array.isArray(json) ? json : (json?.data ?? []);
 }
+
+
+const MENU_COLLECTIONS_KEY = "menu:collections";
+const MENU_CONCERNS_KEY = "menu:concerns";
+const MENU_RITUALS_KEY = "menu:rituals";
+
+async function fetchMenuCollections(): Promise<MenuCollection[]> {
+  const res = await fetch("/api/collections", { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to fetch collections");
+  const data = await res.json(); // bare array
+  const list = Array.isArray(data) ? data : (data.collections ?? []);
+  return list.map((c: any) => ({
+    label: c.name,
+    slug: c.slug,
+    tagline: c.tagline || "",
+    navCategory: c.navCategory,
+    subCategory: c.subCategory,
+  }));
+}
+
+async function fetchMenuConcerns(): Promise<MenuConcern[]> {
+  const res = await fetch("/api/concerns", { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to fetch concerns");
+  const data = await res.json(); // { concerns: [...] }
+  return (data.concerns ?? []).map((c: any) => ({ label: c.label, slug: c.slug }));
+}
+
+async function fetchMenuRituals(): Promise<MenuRitual[]> {
+  const res = await fetch("/api/rituals", { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to fetch rituals");
+  const data = await res.json(); // { rituals: [...] }
+  return (data.rituals ?? []).map((r: any) => ({ label: r.name, slug: r.slug, tagline: r.tagline || "" }));
+}
+
 
 function requestIdle(cb: () => void) {
   if (typeof window !== "undefined" && "requestIdleCallback" in window) {
@@ -54,184 +91,221 @@ function requestIdle(cb: () => void) {
 
 /* ─── Mega Menu Data ────────────────────────────────────── */
 
-const NAV_CATEGORIES = [
-  {
-    heading: "Soap",
-    key: "soaps",
-    collections: [
-      { label: "Rock Soap",     slug: "rock-soap",     tagline: "Ancient mineral-rich rocks meet Ayurvedic botanicals" },
-      { label: "Designer Soap", slug: "designer-soap", tagline: "Aesthetic skincare with functional benefits"          },
-      { label: "Round Soap",    slug: "round-soap",    tagline: "Gentle care for everyday skin"                        },
-      { label: "Aissis Soap",   slug: "aissis-soap",   tagline: "Advanced skincare solutions in every bar"             },
-      { label: "Premium Soap",  slug: "premium-soap",  tagline: "Luxury bathing reimagined with active botanicals"     },
-      { label: "Doobie Soap",   slug: "doobie-soap",   tagline: "Pure natural cleansing for everyday skin"             },
-      { label: "Chip Soap",     slug: "chip-soap",     tagline: "Pure natural cleansing for everyday skin"             },
-    ],
-  },
-  {
-    heading: "Body Care",
-    key: "body-care",
-    collections: [
-      { label: "Body Lotion",      slug: "body-lotion",      tagline: "All-day hydration, nature's way"           },
-      { label: "Aloe Vera Gel",    slug: "aloe-vera-gel",    tagline: "Pure soothing hydration for skin and hair" },
-      { label: "Hand Wash",        slug: "hand-wash",        tagline: "Clean, protect and care for your hands"    },
-      { label: "Intimate Wash",    slug: "intimate-wash",    tagline: "Gentle care and daily freshness"           },
-    ],
-  },
-  {
-    heading: "Bath & Shower",
-    key: "bath-shower",
-    collections: [
-      { label: "Shower Gel", slug: "shower-gel", tagline: "Your daily cleanse, elevated" },
-      { label: "Bath Salt",  slug: "bath-salt",  tagline: "Turn your bath into a ritual" },
-    ],
-  },
-  {
-    heading: "Face Care",
-    key: "face-care",
-    collections: [
-      { label: "Foaming Face Wash", slug: "foaming-face-wash", tagline: "Deep cleanse without stripping your skin" },
-      { label: "Face Serum",        slug: "face-serum",        tagline: "Targeted actives for every skin story"   },
-    ],
-  },
-  {
-    heading: "Hair Care",
-    key: "hair-care",
-    collections: [
-      { label: "Shampoo",     slug: "shampoo",     tagline: "Cleanse your scalp, nourish your roots" },
-      { label: "Conditioner", slug: "conditioner", tagline: "Frizz-free, silky, nourished hair"      },
-      { label: "Hair Serum",  slug: "hair-serum",  tagline: "From root to tip — strength and growth" },
-    ],
-  },
-  {
-    heading: "Massage / Spa",
-    key: "massage-oil",
-    collections: [
-      { label: "Body Massage Oil", slug: "body-massage-oil", tagline: "Relaxation and skin nourishment in every drop" },
-       { label: "Bath Salt",  slug: "bath-salt",  tagline: "Turn your bath into a ritual" },
-    ],
-  },
-  {
-    heading: "Nezal's Rituals",
-    key: "rituals",
-    viewAllHref: "/rituals",
-    emptyState: { label: "Explore All Rituals", description: "Curated, step-by-step routines designed around how you want to feel." },
-collections: [
-  {
-    label: "Clear Skin Ritual",
-    slug: "clear-skin-ritual",
-    tagline: "...",
-    href: "/rituals/clear-skin-ritual",
-  },
-  {
-    label: "Radiance & Glow Ritual",
-    slug: "radiance-glow-ritual",
-    tagline: "Relaxation and skin nourishment in every drop",
-    href: "/rituals/radiance-glow-ritual",
-  },
-  {
-    label: "Hydration Ritual",
-    slug: "hydration-ritual",
-    tagline: "Relaxation and skin nourishment in every drop",
-    href: "/rituals/hydration-ritual",
-  },
-  {
-    label: "Hair Wellness Ritual",
-    slug: "hair-wellness-ritual",
-    tagline: "Relaxation and skin nourishment in every drop",
-    href: "/rituals/hair-wellness-ritual",
-  },
-  {
-    label: "Royal Glow Ritual",
-    slug: "royal-glow-ritual",
-    tagline: "Relaxation and skin nourishment in every drop",
-    href: "/rituals/royal-glow-ritual",
-  },
-  {
-    label: "Bridal Glow Ritual",
-    slug: "bridal-glow-ritual",
-    tagline: "Relaxation and skin nourishment in every drop",
-    href: "/rituals/bridal-glow-ritual",
-  },
-  {
-    label: "Spa Indulgence & Evening Ritual",
-    slug: "spa-indulgence-evening-ritual",
-    tagline: "Relaxation and skin nourishment in every drop",
-    href: "/rituals/spa-indulgence-evening-ritual",
-  },
-  {
-    label: "Daily Essentials Ritual",
-    slug: "daily-essentials-ritual",
-    tagline: "Relaxation and skin nourishment in every drop",
-    href: "/rituals/daily-essentials-ritual",
-  },
-  {
-    label: "Executive Gifting Ritual",
-    slug: "executive-gifting-ritual",
-    tagline: "Relaxation and skin nourishment in every drop",
-    href: "/rituals/executive-gifting-ritual",
-  },
-  {
-    label: "Morning Refresh Ritual",
-    slug: "morning-refresh-ritual",
-    tagline: "Relaxation and skin nourishment in every drop",
-    href: "/rituals/morning-refresh-ritual",
-  },
-  {
-    label: "Botanical Comfort Ritual",
-    slug: "botanical-comfort-ritual",
-    tagline: "Relaxation and skin nourishment in every drop",
-    href: "/rituals/botanical-comfort-ritual",
-  },
-  {
-    label: "Tropical Escape Ritual",
-    slug: "tropical-escape-ritual",
-    tagline: "Relaxation and skin nourishment in every drop",
-    href: "/rituals/tropical-escape-ritual",
-  },
-],
-  },
-  {
-    heading: "Gift Kits",
-    key: "gift-kits",
-    collections: [
-      { label: "Gift Kits", slug: "gift-kits", tagline: "Curated care for the people you love" },
-    ],
-  },
+// const NAV_CATEGORIES = [
+//   {
+//     heading: "Soap",
+//     key: "soaps",
+//     collections: [
+//       { label: "Rock Soap",     slug: "rock-soap",     tagline: "Ancient mineral-rich rocks meet Ayurvedic botanicals" },
+//       { label: "Designer Soap", slug: "designer-soap", tagline: "Aesthetic skincare with functional benefits"          },
+//       { label: "Round Soap",    slug: "round-soap",    tagline: "Gentle care for everyday skin"                        },
+//       { label: "Aissis Soap",   slug: "aissis-soap",   tagline: "Advanced skincare solutions in every bar"             },
+//       { label: "Premium Soap",  slug: "premium-soap",  tagline: "Luxury bathing reimagined with active botanicals"     },
+//       { label: "Doobie Soap",   slug: "doobie-soap",   tagline: "Pure natural cleansing for everyday skin"             },
+//       { label: "Chip Soap",     slug: "chip-soap",     tagline: "Pure natural cleansing for everyday skin"             },
+//     ],
+//   },
+//   {
+//     heading: "Body Care",
+//     key: "body-care",
+//     collections: [
+//       { label: "Body Lotion",      slug: "body-lotion",      tagline: "All-day hydration, nature's way"           },
+//       { label: "Aloe Vera Gel",    slug: "aloe-vera-gel",    tagline: "Pure soothing hydration for skin and hair" },
+//       { label: "Hand Wash",        slug: "hand-wash",        tagline: "Clean, protect and care for your hands"    },
+//       { label: "Intimate Wash",    slug: "intimate-wash",    tagline: "Gentle care and daily freshness"           },
+//     ],
+//   },
+//   {
+//     heading: "Bath & Shower",
+//     key: "bath-shower",
+//     collections: [
+//       { label: "Shower Gel", slug: "shower-gel", tagline: "Your daily cleanse, elevated" },
+//       { label: "Bath Salt",  slug: "bath-salt",  tagline: "Turn your bath into a ritual" },
+//     ],
+//   },
+//   {
+//     heading: "Face Care",
+//     key: "face-care",
+//     collections: [
+//       { label: "Foaming Face Wash", slug: "foaming-face-wash", tagline: "Deep cleanse without stripping your skin" },
+//       { label: "Face Serum",        slug: "face-serum",        tagline: "Targeted actives for every skin story"   },
+//     ],
+//   },
+//   {
+//     heading: "Hair Care",
+//     key: "hair-care",
+//     collections: [
+//       { label: "Shampoo",     slug: "shampoo",     tagline: "Cleanse your scalp, nourish your roots" },
+//       { label: "Conditioner", slug: "conditioner", tagline: "Frizz-free, silky, nourished hair"      },
+//       { label: "Hair Serum",  slug: "hair-serum",  tagline: "From root to tip — strength and growth" },
+//     ],
+//   },
+//   {
+//     heading: "Massage / Spa",
+//     key: "massage-oil",
+//     collections: [
+//       { label: "Body Massage Oil", slug: "body-massage-oil", tagline: "Relaxation and skin nourishment in every drop" },
+//        { label: "Bath Salt",  slug: "bath-salt",  tagline: "Turn your bath into a ritual" },
+//     ],
+//   },
+//   {
+//     heading: "Nezal's Rituals",
+//     key: "rituals",
+//     viewAllHref: "/rituals",
+//     emptyState: { label: "Explore All Rituals", description: "Curated, step-by-step routines designed around how you want to feel." },
+// collections: [
+//   {
+//     label: "Clear Skin Ritual",
+//     slug: "clear-skin-ritual",
+//     tagline: "...",
+//     href: "/rituals/clear-skin-ritual",
+//   },
+//   {
+//     label: "Radiance & Glow Ritual",
+//     slug: "radiance-glow-ritual",
+//     tagline: "Relaxation and skin nourishment in every drop",
+//     href: "/rituals/radiance-glow-ritual",
+//   },
+//   {
+//     label: "Hydration Ritual",
+//     slug: "hydration-ritual",
+//     tagline: "Relaxation and skin nourishment in every drop",
+//     href: "/rituals/hydration-ritual",
+//   },
+//   {
+//     label: "Hair Wellness Ritual",
+//     slug: "hair-wellness-ritual",
+//     tagline: "Relaxation and skin nourishment in every drop",
+//     href: "/rituals/hair-wellness-ritual",
+//   },
+//   {
+//     label: "Royal Glow Ritual",
+//     slug: "royal-glow-ritual",
+//     tagline: "Relaxation and skin nourishment in every drop",
+//     href: "/rituals/royal-glow-ritual",
+//   },
+//   {
+//     label: "Bridal Glow Ritual",
+//     slug: "bridal-glow-ritual",
+//     tagline: "Relaxation and skin nourishment in every drop",
+//     href: "/rituals/bridal-glow-ritual",
+//   },
+//   {
+//     label: "Spa Indulgence & Evening Ritual",
+//     slug: "spa-indulgence-evening-ritual",
+//     tagline: "Relaxation and skin nourishment in every drop",
+//     href: "/rituals/spa-indulgence-evening-ritual",
+//   },
+//   {
+//     label: "Daily Essentials Ritual",
+//     slug: "daily-essentials-ritual",
+//     tagline: "Relaxation and skin nourishment in every drop",
+//     href: "/rituals/daily-essentials-ritual",
+//   },
+//   {
+//     label: "Executive Gifting Ritual",
+//     slug: "executive-gifting-ritual",
+//     tagline: "Relaxation and skin nourishment in every drop",
+//     href: "/rituals/executive-gifting-ritual",
+//   },
+//   {
+//     label: "Morning Refresh Ritual",
+//     slug: "morning-refresh-ritual",
+//     tagline: "Relaxation and skin nourishment in every drop",
+//     href: "/rituals/morning-refresh-ritual",
+//   },
+//   {
+//     label: "Botanical Comfort Ritual",
+//     slug: "botanical-comfort-ritual",
+//     tagline: "Relaxation and skin nourishment in every drop",
+//     href: "/rituals/botanical-comfort-ritual",
+//   },
+//   {
+//     label: "Tropical Escape Ritual",
+//     slug: "tropical-escape-ritual",
+//     tagline: "Relaxation and skin nourishment in every drop",
+//     href: "/rituals/tropical-escape-ritual",
+//   },
+// ],
+//   },
+//   {
+//     heading: "Gift Kits",
+//     key: "gift-kits",
+//     collections: [
+//       { label: "Gift Kits", slug: "gift-kits", tagline: "Curated care for the people you love" },
+//     ],
+//   },
+// ];
+
+// const CONCERNS = [
+//   { label: "Acne & Oil Control",                 slug: "acne"                          },
+//   { label: "Pigmentation & Dark Spots",           slug: "pigmentation"                  },
+//   { label: "Dry Skin",                            slug: "dryness"                       },
+//   { label: "Hair Fall & Thinning Hair",           slug: "hairfall"                      },
+//   { label: "Dull & Tired Skin",                   slug: "dull-tired-skin"               },
+//   { label: "Skin Brightening & Glow",             slug: "skin-brightening-glow"         },
+//   { label: "Deep Hydration",                      slug: "hydration"                     },
+//   { label: "Sensitive Skin Care",                 slug: "ensitive-skin-care"            },
+//   { label: "Scalp Purification & Freshness",      slug: "scalp-purification-freshness"  },
+//   { label: "Frizz Control & Dry Hair",            slug: "frizz-control-dry-hair"        },
+//   { label: "Anti-Ageing Care",                    slug: "anti-ageing-care"              },
+//   { label: "Daily Skin Nourishment",              slug: "daily-skin-nourishment"        },
+//   { label: "Stress Relief & Relaxation",          slug: "stress-relief-relaxation"      },
+//   { label: "Spa at Home",                         slug: "spa-at-home"                   },
+//   { label: "Luxury Gifting",                      slug: "luxury-gifting"                },
+//   { label: "Hair Growth & Scalp Nourishment",     slug: "hair-growth-scalp-nourishment" },
+//   { label: "Daily Skin Care",                     slug: "daily-skin-care"               },
+//   { label: "Sun Exposure & Tan Care",             slug: "sun-exposure-tan-care"         },
+//   { label: "Deep Cleansing & Detox",              slug: "deep-cleansing-detox"          },
+//   { label: "Rough & Uneven Skin Texture",         slug: "rough-uneven-skin-texture"     },
+//   { label: "Soft & Smooth Skin",                  slug: "soft-smooth-skin"              },
+//   { label: "Summer Skin Care",                    slug: "summer-skin-care"              },
+//   { label: "Everyday Freshness",                  slug: "everyday-freshness"            },
+// ];
+
+// function getFlatCollections(cat: typeof NAV_CATEGORIES[number]) {
+//   if ("sections" in cat && cat.sections) {
+//     return cat.sections.flatMap((s) => s.collections);
+//   }
+//   return (cat as any).collections ?? [];
+// }
+
+
+const COLLECTION_MENU_GROUPS: { heading: string; key: string }[] = [
+  { heading: "Soap",          key: "soaps" },
+  { heading: "Body Care",     key: "body-care" },
+  { heading: "Bath & Shower", key: "bath-shower" },
+  { heading: "Face Care",     key: "face-care" },
+  { heading: "Hair Care",     key: "hair-care" },
+  { heading: "Massage / Spa", key: "massage-oil" },
+  { heading: "Gift Kits",     key: "gift-kits" },
 ];
 
-function getFlatCollections(cat: typeof NAV_CATEGORIES[number]) {
-  if ("sections" in cat && cat.sections) {
-    return cat.sections.flatMap((s) => s.collections);
-  }
-  return (cat as any).collections ?? [];
+const RITUALS_MENU_GROUP = {
+  heading: "Nezal's Rituals",
+  key: "rituals",
+  viewAllHref: "/rituals",
+  emptyState: {
+    label: "Explore All Rituals",
+    description: "Curated, step-by-step routines designed around how you want to feel.",
+  },
+};
+
+interface MenuCollection { label: string; slug: string; tagline: string; navCategory: string; subCategory: string }
+interface MenuConcern { label: string; slug: string }
+interface MenuRitual { label: string; slug: string; tagline: string }
+
+interface MenuCategoryGroup {
+  heading: string;
+  key: string;
+  collections: { label: string; slug: string; tagline?: string; href?: string }[];
+  viewAllHref?: string;
+  emptyState?: { label: string; description: string };
 }
 
-const CONCERNS = [
-  { label: "Acne & Oil Control",                 slug: "acne"                          },
-  { label: "Pigmentation & Dark Spots",           slug: "pigmentation"                  },
-  { label: "Dry Skin",                            slug: "dryness"                       },
-  { label: "Hair Fall & Thinning Hair",           slug: "hairfall"                      },
-  { label: "Dull & Tired Skin",                   slug: "dull-tired-skin"               },
-  { label: "Skin Brightening & Glow",             slug: "skin-brightening-glow"         },
-  { label: "Deep Hydration",                      slug: "hydration"                     },
-  { label: "Sensitive Skin Care",                 slug: "ensitive-skin-care"            },
-  { label: "Scalp Purification & Freshness",      slug: "scalp-purification-freshness"  },
-  { label: "Frizz Control & Dry Hair",            slug: "frizz-control-dry-hair"        },
-  { label: "Anti-Ageing Care",                    slug: "anti-ageing-care"              },
-  { label: "Daily Skin Nourishment",              slug: "daily-skin-nourishment"        },
-  { label: "Stress Relief & Relaxation",          slug: "stress-relief-relaxation"      },
-  { label: "Spa at Home",                         slug: "spa-at-home"                   },
-  { label: "Luxury Gifting",                      slug: "luxury-gifting"                },
-  { label: "Hair Growth & Scalp Nourishment",     slug: "hair-growth-scalp-nourishment" },
-  { label: "Daily Skin Care",                     slug: "daily-skin-care"               },
-  { label: "Sun Exposure & Tan Care",             slug: "sun-exposure-tan-care"         },
-  { label: "Deep Cleansing & Detox",              slug: "deep-cleansing-detox"          },
-  { label: "Rough & Uneven Skin Texture",         slug: "rough-uneven-skin-texture"     },
-  { label: "Soft & Smooth Skin",                  slug: "soft-smooth-skin"              },
-  { label: "Summer Skin Care",                    slug: "summer-skin-care"              },
-  { label: "Everyday Freshness",                  slug: "everyday-freshness"            },
-];
+// INGREDIENTS stays exactly as it was — untouched, still hardcoded.
+
+
 
 const INGREDIENTS = [
   { label: "Aloe Vera",        slug: "aloe-vera"        },
@@ -278,8 +352,24 @@ function CollectionCard({
 
 /* ─── Desktop Mega Menu ─────────────────────────────────── */
 
-function MegaMenu({ onClose }: { onClose: () => void }) {
-  const [activeCategory, setActiveCategory] = useState(NAV_CATEGORIES[0]);
+function MegaMenu({
+  onClose, navCategories, concerns,
+}: {
+  onClose: () => void;
+  navCategories: MenuCategoryGroup[];
+  concerns: MenuConcern[];
+}) {
+  const [activeCategory, setActiveCategory] = useState(navCategories[0]);
+
+  // navCategories arrives async (empty on first render before fetch resolves) —
+  // keep activeCategory in sync once real data lands
+  useEffect(() => {
+    if (!navCategories.find((c) => c.key === activeCategory?.key)) {
+      setActiveCategory(navCategories[0]);
+    }
+  }, [navCategories]);
+
+  if (!activeCategory) return null; // brief instant on first paint, resolves as soon as cache/fetch lands
 
   return (
     <div
@@ -297,7 +387,7 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
           <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] px-3 mb-2">
             Categories
           </p>
-          {NAV_CATEGORIES.map((cat) => (
+          {navCategories.map((cat) => (
             <button
 
               key={cat.key}
@@ -378,7 +468,7 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
             By Concern
           </p>
           <div className="flex flex-col gap-1 overflow-y-auto scrollbar-hide pr-1" style={{ maxHeight: "320px" }}>
-            {CONCERNS.map((concern) => (
+            {concerns.map((concern) => (
               <Link
                 key={concern.slug}
                 href={`/concerns/${concern.slug}`}
@@ -459,6 +549,11 @@ export function Header() {
   const shopMenuRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
+  const [menuCollections, setMenuCollections] = useState<MenuCollection[]>([]);
+const [menuConcerns, setMenuConcerns] = useState<MenuConcern[]>([]);
+const [menuRituals, setMenuRituals] = useState<MenuRitual[]>([]);
+
+
   const clearCart = useCartStore((state) => state.clearCart)
 
   useEffect(() => {
@@ -513,6 +608,55 @@ export function Header() {
     setShopMenuOpen(false);
     setMobileMenuOpen(false);
   }, [pathname]);
+
+ useEffect(() => {
+  const cachedCols = getCachedSync<MenuCollection[]>(MENU_COLLECTIONS_KEY, MENU_MAX_AGE) ?? [];
+  if (cachedCols.length > 0) setMenuCollections(cachedCols);
+  const cachedConcerns = getCachedSync<MenuConcern[]>(MENU_CONCERNS_KEY, MENU_MAX_AGE) ?? [];
+  if (cachedConcerns.length > 0) setMenuConcerns(cachedConcerns);
+  const cachedRituals = getCachedSync<MenuRitual[]>(MENU_RITUALS_KEY, MENU_MAX_AGE) ?? [];
+  if (cachedRituals.length > 0) setMenuRituals(cachedRituals);
+}, []);
+
+useEffect(() => {
+  fetchWithCache(MENU_COLLECTIONS_KEY, fetchMenuCollections, {
+    ttlMs: MENU_TTL, maxAgeMs: MENU_MAX_AGE, backgroundRefresh: true, persistToStorage: true,
+  }).then(setMenuCollections).catch(() => {});
+
+  fetchWithCache(MENU_CONCERNS_KEY, fetchMenuConcerns, {
+    ttlMs: MENU_TTL, maxAgeMs: MENU_MAX_AGE, backgroundRefresh: true, persistToStorage: true,
+  }).then(setMenuConcerns).catch(() => {});
+
+  fetchWithCache(MENU_RITUALS_KEY, fetchMenuRituals, {
+    ttlMs: MENU_TTL, maxAgeMs: MENU_MAX_AGE, backgroundRefresh: true, persistToStorage: true,
+  }).then(setMenuRituals).catch(() => {});
+}, []);
+
+const navCategories: MenuCategoryGroup[] = useMemo(() => {
+  const bySubCategory = menuCollections.reduce<Record<string, MenuCollection[]>>((acc, c) => {
+    if (!acc[c.subCategory]) acc[c.subCategory] = [];
+    acc[c.subCategory].push(c);
+    return acc;
+  }, {});
+
+  const collectionGroups: MenuCategoryGroup[] = COLLECTION_MENU_GROUPS.map((g) => ({
+    heading: g.heading,
+    key: g.key,
+    collections: bySubCategory[g.key] || [],
+  }));
+
+  const ritualsGroup: MenuCategoryGroup = {
+    ...RITUALS_MENU_GROUP,
+    collections: menuRituals.map((r) => ({
+      label: r.label,
+      slug: r.slug,
+      tagline: r.tagline,
+      href: `/rituals/${r.slug}`, // preserves exactly how rituals link today
+    })),
+  };
+
+  return [...collectionGroups, ritualsGroup];
+}, [menuCollections, menuRituals]);
 
   function handleSearch(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -585,8 +729,12 @@ export function Header() {
                   </button>
 
                   {shopMenuOpen && (
-                    <MegaMenu onClose={() => setShopMenuOpen(false)} />
-                  )}
+  <MegaMenu
+    onClose={() => setShopMenuOpen(false)}
+    navCategories={navCategories}
+    concerns={menuConcerns}
+  />
+)}
                 </div>
 
                 {/* Remaining links — About Us, Blogs, Contact */}
@@ -733,7 +881,12 @@ export function Header() {
       </header>
 
       {/* MOBILE NAV — rendered outside header so it can be full-screen */}
-      <MobileNav open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
+      <MobileNav
+  open={mobileMenuOpen}
+  onClose={() => setMobileMenuOpen(false)}
+  navCategories={navCategories}
+  concerns={menuConcerns}
+/>
     </>
   );
 }
