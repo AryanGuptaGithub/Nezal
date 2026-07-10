@@ -1,18 +1,21 @@
+// app/admin/companies/[id]/new-arrivals/page.tsx
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ImageUploadField } from "@/components/admin/image-upload-field"
-import { ArrowLeft, Plus, Trash2, GripVertical, Search, Settings, Edit, ArrowRight } from "lucide-react"
+import {
+    ArrowLeft, Plus, Trash2, GripVertical, Search, Settings, Edit,
+    ArrowRight, Sparkles, RefreshCw, Eye, EyeOff,
+} from "lucide-react"
 
 interface Product {
     _id: string
@@ -31,7 +34,7 @@ interface NewArrival {
     description?: string
     position: number
     addedAt: string
-    originalProductId?: string // For tracking original product when editing
+    originalProductId?: string
 }
 
 interface NewArrivalsSettings {
@@ -58,7 +61,6 @@ export default function NewArrivalsPage() {
     const [draggedItem, setDraggedItem] = useState<string | null>(null)
     const [selectedArrival, setSelectedArrival] = useState<NewArrival | null>(null)
 
-    // New arrival form state
     const [newArrivalForm, setNewArrivalForm] = useState({
         title: "",
         image: "",
@@ -71,9 +73,7 @@ export default function NewArrivalsPage() {
             router.push("/auth/login")
             return
         }
-
         if (!companyId) return
-
         fetchData()
     }, [session, router, companyId])
 
@@ -88,18 +88,13 @@ export default function NewArrivalsPage() {
     const fetchData = async () => {
         try {
             setLoading(true)
-
-            // Fetch new arrivals
-            const arrivalsRes = await fetch(
-                `/api/companies/${companyId}/new-arrivals?all=true`
-            )
+            const arrivalsRes = await fetch(`/api/companies/${companyId}/new-arrivals?all=true`)
             if (!arrivalsRes.ok) throw new Error("Failed to fetch new arrivals")
             const arrivalsData = await arrivalsRes.json()
             setNewArrivals(arrivalsData.newArrivals || [])
             setSettings(arrivalsData.settings || { isVisible: true, limit: 10 })
             setTempLimit(arrivalsData.settings?.limit || 10)
 
-            // Fetch available products for this company
             const productsRes = await fetch(`/api/products?company=${companyId}`)
             if (!productsRes.ok) throw new Error("Failed to fetch products")
             const productsData = await productsRes.json()
@@ -118,7 +113,6 @@ export default function NewArrivalsPage() {
             alert("Please fill in product, title, and image")
             return
         }
-
         try {
             const res = await fetch(`/api/companies/${companyId}/new-arrivals`, {
                 method: "POST",
@@ -130,17 +124,14 @@ export default function NewArrivalsPage() {
                     description: newArrivalForm.description,
                 }),
             })
-
             if (!res.ok) {
                 const error = await res.json()
                 throw new Error(error.error || "Failed to add product")
             }
-
             await fetchData()
             setShowAddDialog(false)
             setNewArrivalForm({ title: "", image: "", description: "", productId: "" })
             setSearchQuery("")
-            alert("Product added to New Arrivals!")
         } catch (error) {
             console.error("Error adding product:", error)
             alert(error instanceof Error ? error.message : "Failed to add product")
@@ -152,21 +143,14 @@ export default function NewArrivalsPage() {
             alert("Please fill in all required fields")
             return
         }
-
         try {
             const originalProductId = (selectedArrival as any).originalProductId
             const newProductId = typeof selectedArrival.productId === "object"
                 ? selectedArrival.productId._id
                 : selectedArrival.productId
 
-            // If product changed, we need to delete the old one and create a new one
             if (originalProductId !== newProductId) {
-                // Delete the old new arrival
-                await fetch(`/api/companies/${companyId}/new-arrivals/${originalProductId}`, {
-                    method: "DELETE",
-                })
-
-                // Create new one with the new product
+                await fetch(`/api/companies/${companyId}/new-arrivals/${originalProductId}`, { method: "DELETE" })
                 const res = await fetch(`/api/companies/${companyId}/new-arrivals`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -177,13 +161,11 @@ export default function NewArrivalsPage() {
                         description: selectedArrival.description || "",
                     }),
                 })
-
                 if (!res.ok) {
                     const error = await res.json()
                     throw new Error(error.error || "Failed to update product")
                 }
             } else {
-                // Just update the existing one
                 const res = await fetch(`/api/companies/${companyId}/new-arrivals/${originalProductId}`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
@@ -193,17 +175,14 @@ export default function NewArrivalsPage() {
                         description: selectedArrival.description || "",
                     }),
                 })
-
                 if (!res.ok) {
                     const error = await res.json()
                     throw new Error(error.error || "Failed to update product")
                 }
             }
-
             await fetchData()
             setShowEditDialog(false)
             setSelectedArrival(null)
-            alert("Product updated successfully!")
         } catch (error) {
             console.error("Error updating product:", error)
             alert(error instanceof Error ? error.message : "Failed to update product")
@@ -211,30 +190,17 @@ export default function NewArrivalsPage() {
     }
 
     const handleOpenEditDialog = (arrival: NewArrival) => {
-        // Store the original product ID separately to handle product changes
-        const originalProductId = typeof arrival.productId === "object"
-            ? arrival.productId._id
-            : arrival.productId
-
-        setSelectedArrival({
-            ...arrival,
-            originalProductId, // Store original for comparison
-        })
+        const originalProductId = typeof arrival.productId === "object" ? arrival.productId._id : arrival.productId
+        setSelectedArrival({ ...arrival, originalProductId })
         setShowEditDialog(true)
     }
 
     const handleRemoveProduct = async (arrivalId: string, productId: string) => {
         if (!confirm("Are you sure you want to remove this product?")) return
-
         try {
-            const res = await fetch(`/api/companies/${companyId}/new-arrivals/${productId}`, {
-                method: "DELETE",
-            })
-
+            const res = await fetch(`/api/companies/${companyId}/new-arrivals/${productId}`, { method: "DELETE" })
             if (!res.ok) throw new Error("Failed to remove product")
-
             await fetchData()
-            alert("Product removed from New Arrivals!")
         } catch (error) {
             console.error("Error removing product:", error)
             alert("Failed to remove product")
@@ -246,17 +212,11 @@ export default function NewArrivalsPage() {
             const res = await fetch(`/api/companies/${companyId}/new-arrivals/settings`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    isVisible: settings.isVisible,
-                    limit: tempLimit,
-                }),
+                body: JSON.stringify({ isVisible: settings.isVisible, limit: tempLimit }),
             })
-
             if (!res.ok) throw new Error("Failed to update settings")
-
             setSettings({ ...settings, limit: tempLimit })
             setShowSettingsDialog(false)
-            alert("Settings updated successfully!")
         } catch (error) {
             console.error("Error updating settings:", error)
             alert("Failed to update settings")
@@ -276,31 +236,25 @@ export default function NewArrivalsPage() {
     const handleDrop = async (e: React.DragEvent, targetIndex: number) => {
         e.preventDefault()
         if (!draggedItem) return
-
         const draggedIndex = newArrivals.findIndex((item) => item._id === draggedItem)
         if (draggedIndex === targetIndex || draggedIndex === -1) return
 
         const reordered = [...newArrivals]
         const [draggedArrival] = reordered.splice(draggedIndex, 1)
         reordered.splice(targetIndex, 0, draggedArrival)
-
         setNewArrivals(reordered)
         setDraggedItem(null)
 
-        // Save reorder
         try {
             const productIds = reordered.map((item) =>
                 typeof item.productId === "string" ? item.productId : item.productId._id
             )
-
             const res = await fetch(`/api/companies/${companyId}/new-arrivals/reorder`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ productIds }),
             })
-
             if (!res.ok) throw new Error("Failed to reorder")
-            console.log("Products reordered successfully!")
         } catch (error) {
             console.error("Error reordering:", error)
             alert("Failed to reorder products")
@@ -314,16 +268,10 @@ export default function NewArrivalsPage() {
             const res = await fetch(`/api/companies/${companyId}/new-arrivals/settings`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    isVisible: newVisibility,
-                    limit: settings.limit,
-                }),
+                body: JSON.stringify({ isVisible: newVisibility, limit: settings.limit }),
             })
-
             if (!res.ok) throw new Error("Failed to update visibility")
-
             setSettings({ ...settings, isVisible: newVisibility })
-            alert(`New Arrivals section ${newVisibility ? "shown" : "hidden"}!`)
         } catch (error) {
             console.error("Error toggling visibility:", error)
             alert("Failed to update visibility")
@@ -332,147 +280,111 @@ export default function NewArrivalsPage() {
 
     if (loading) {
         return (
-            <main className="min-h-screen bg-background flex items-center justify-center">
-                <p className="text-muted-foreground">Loading New Arrivals...</p>
+            <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="flex items-center gap-2 text-gray-400 text-sm">
+                    <RefreshCw className="w-4 h-4 animate-spin" /> Loading new arrivals...
+                </div>
             </main>
         )
     }
 
     return (
-        <main className="min-h-screen bg-background">
-            <div className="max-w-6xl mx-auto px-4 py-8">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl p-6 mb-8 border border-border">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <Link href="/admin/companies">
-                                <Button variant="outline" size="sm" className="hover:bg-background">
-                                    <ArrowLeft className="w-4 h-4 mr-2" />
-                                    Back to Companies
-                                </Button>
-                            </Link>
+        <main className="min-h-screen bg-gray-50">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+
+                {/* ── Page header ──────────────────────────────────── */}
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="flex items-center gap-4">
+                        <Link href="/admin/companies">
+                            <Button variant="outline" size="icon" className="border-gray-200 text-gray-500 hover:text-gray-900 shrink-0">
+                                <ArrowLeft className="w-4 h-4" />
+                            </Button>
+                        </Link>
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-700 flex items-center justify-center shrink-0">
+                                <Sparkles className="w-5 h-5 text-white" />
+                            </div>
                             <div>
-                                <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-                                    ✨ New Arrivals
-                                </h1>
-                                <p className="text-muted-foreground">Manage and showcase your latest products</p>
+                                <h1 className="text-2xl font-bold text-gray-900">New Arrivals</h1>
+                                <p className="text-sm text-gray-500 mt-0.5">Manage and showcase this brand's latest products</p>
                             </div>
                         </div>
-                        <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                {settings.isVisible ? "Visible" : "Hidden"}
-                            </div>
-                            <span>•</span>
-                            <span>{newArrivals.length} of {settings.limit} products</span>
-                        </div>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            onClick={() => setShowSettingsDialog(true)}
+                            variant="outline"
+                            className="border-gray-200 text-gray-500 hover:text-gray-900"
+                        >
+                            <Settings className="w-4 h-4 mr-2" />
+                            Settings
+                        </Button>
+                        <Button onClick={() => setShowAddDialog(true)} className="bg-emerald-700 hover:bg-emerald-800">
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add product
+                        </Button>
                     </div>
                 </div>
 
-                {/* Quick Stats & Controls */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                    <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-                        <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-blue-700">Total Products</p>
-                                    <p className="text-2xl font-bold text-blue-900">{newArrivals.length}</p>
-                                </div>
-                                <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                                    <span className="text-white font-bold text-lg">{newArrivals.length}</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-                        <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-green-700">Limit</p>
-                                    <p className="text-2xl font-bold text-green-900">{settings.limit}</p>
-                                </div>
-                                <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                                    <span className="text-white font-bold text-lg">{settings.limit}</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-                        <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-purple-700">Status</p>
-                                    <p className="text-lg font-bold text-purple-900">{settings.isVisible ? "Visible" : "Hidden"}</p>
-                                </div>
-                                <Switch
-                                    checked={settings.isVisible}
-                                    onCheckedChange={toggleVisibility}
-                                    className="scale-75"
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 mb-8">
-                    <Button
-                        onClick={() => setShowAddDialog(true)}
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 flex-1 sm:flex-none"
-                        size="lg"
-                    >
-                        <Plus className="w-5 h-5 mr-2" />
-                        Add New Product
-                    </Button>
-                    <Button
-                        onClick={() => setShowSettingsDialog(true)}
-                        variant="outline"
-                        className="border-2 hover:bg-muted/50 transition-all duration-200 flex-1 sm:flex-none"
-                        size="lg"
-                    >
-                        <Settings className="w-5 h-5 mr-2" />
-                        Configure Settings
-                    </Button>
-                </div>
-
-                {/* New Arrivals List */}
-                <Card className="shadow-lg border-2 border-border/50">
-                    <CardHeader className="bg-gradient-to-r from-muted/50 to-muted/30 border-b">
-                        <div className="flex items-center justify-between">
-                            <CardTitle className="text-xl font-bold flex items-center gap-2">
-                                📦 Current Products
-                                <span className="text-sm font-normal text-muted-foreground">
-                                    ({newArrivals.length}/{settings.limit})
-                                </span>
-                            </CardTitle>
-                            <div className="text-xs text-muted-foreground bg-background px-2 py-1 rounded-full border">
-                                Drag to reorder
-                            </div>
+                {/* ── Stats row ────────────────────────────────────── */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <p className="text-xs font-medium text-gray-500">Products shown</p>
                         </div>
-                    </CardHeader>
-                    <CardContent className="p-6">
-                        {newArrivals.length === 0 ? (
-                            <div className="text-center py-12">
-                                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <Plus className="w-8 h-8 text-muted-foreground" />
+                        <p className="text-2xl font-bold text-gray-900 tabular-nums">{newArrivals.length}<span className="text-sm font-medium text-gray-400"> / {settings.limit}</span></p>
+                    </div>
+                    <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                            <p className="text-xs font-medium text-gray-500">Display limit</p>
+                        </div>
+                        <p className="text-2xl font-bold text-gray-900 tabular-nums">{settings.limit}</p>
+                    </div>
+                    <button
+                        onClick={toggleVisibility}
+                        className="bg-white rounded-2xl border border-gray-200 p-4 text-left hover:border-gray-300 transition-colors col-span-2 md:col-span-1"
+                    >
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="flex items-center gap-1.5 mb-1.5">
+                                    <span className={`w-1.5 h-1.5 rounded-full ${settings.isVisible ? "bg-emerald-500" : "bg-gray-400"}`} />
+                                    <p className="text-xs font-medium text-gray-500">Section status</p>
                                 </div>
-                                <h3 className="text-lg font-semibold text-foreground mb-2">No products yet</h3>
-                                <p className="text-muted-foreground mb-6">Start building your New Arrivals showcase</p>
-                                <Button
-                                    onClick={() => setShowAddDialog(true)}
-                                    className="bg-primary hover:bg-primary/90"
-                                >
+                                <p className={`text-lg font-bold ${settings.isVisible ? "text-emerald-700" : "text-gray-500"}`}>
+                                    {settings.isVisible ? "Visible" : "Hidden"}
+                                </p>
+                            </div>
+                            {settings.isVisible ? <Eye className="w-4 h-4 text-gray-300" /> : <EyeOff className="w-4 h-4 text-gray-300" />}
+                        </div>
+                    </button>
+                </div>
+
+                {/* ── List ─────────────────────────────────────────── */}
+                <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/60">
+                        <h2 className="font-semibold text-gray-900">Current products ({newArrivals.length}/{settings.limit})</h2>
+                        <span className="text-xs text-gray-400">Drag to reorder</span>
+                    </div>
+
+                    <div className="p-4">
+                        {newArrivals.length === 0 ? (
+                            <div className="text-center py-16">
+                                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                                    <Sparkles className="w-5 h-5 text-gray-400" />
+                                </div>
+                                <p className="text-sm font-medium text-gray-700">No products yet</p>
+                                <p className="text-xs text-gray-400 mt-1 mb-4">Start building your New Arrivals showcase.</p>
+                                <Button onClick={() => setShowAddDialog(true)} className="bg-emerald-700 hover:bg-emerald-800">
                                     <Plus className="w-4 h-4 mr-2" />
-                                    Add Your First Product
+                                    Add your first product
                                 </Button>
                             </div>
                         ) : (
-                            <div className="space-y-4">
+                            <div className="space-y-2.5">
                                 {newArrivals.map((arrival, index) => {
-                                    const product =
-                                        typeof arrival.productId === "object" ? arrival.productId : null;
+                                    const product = typeof arrival.productId === "object" ? arrival.productId : null
 
                                     return (
                                         <div
@@ -481,122 +393,91 @@ export default function NewArrivalsPage() {
                                             onDragStart={(e) => handleDragStart(e, arrival._id)}
                                             onDragOver={handleDragOver}
                                             onDrop={(e) => handleDrop(e, index)}
-                                            className={`group relative flex items-center gap-4 p-5 border-2 rounded-xl cursor-move transition-all duration-200 hover:shadow-md ${draggedItem === arrival._id
-                                                    ? "bg-muted/80 opacity-50 scale-95 shadow-lg"
-                                                    : "bg-gradient-to-r from-card to-card/80 hover:from-card/90 hover:to-card/70 border-border/50 hover:border-primary/20"
-                                                }`}
+                                            className={`group flex flex-wrap items-center gap-4 border rounded-xl p-3 cursor-move transition-all ${
+                                                draggedItem === arrival._id
+                                                    ? "opacity-50 border-emerald-500 border-2 bg-emerald-50/40"
+                                                    : "border-gray-200 hover:border-gray-300"
+                                            }`}
                                         >
-                                            <GripVertical className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-
-                                            {/* ✅ New Arrival image + title */}
-                                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                <img
-                                                    src={arrival.image || "/placeholder.png"}
-                                                    alt={arrival.title || "New Arrival"}
-                                                    className="w-16 h-16 object-cover rounded-md border"
-                                                />
-
-                                                <div className="min-w-0">
-                                                    <h3 className="font-medium truncate">
-                                                        {arrival.title || "Untitled Arrival"}
-                                                    </h3>
-
-                                                    {arrival.description && (
-                                                        <p className="text-sm text-muted-foreground line-clamp-2">
-                                                            {arrival.description}
-                                                        </p>
-                                                    )}
-                                                </div>
+                                            <div className="flex flex-col items-center gap-1 shrink-0 w-6">
+                                                <GripVertical className="w-4 h-4 text-gray-300" />
+                                                <span className="text-[11px] font-semibold text-gray-400 tabular-nums">{index + 1}</span>
                                             </div>
 
-                                            {/* ➜ arrow + linked product */}
+                                            <img
+                                                src={arrival.image || "/placeholder.png"}
+                                                alt={arrival.title || "New Arrival"}
+                                                className="w-16 h-16 object-cover rounded-lg border border-gray-200 shrink-0"
+                                            />
+
+                                            <div className="min-w-[140px] flex-1">
+                                                <p className="font-medium text-sm text-gray-900 truncate">
+                                                    {arrival.title || <span className="italic text-gray-400">Untitled arrival</span>}
+                                                </p>
+                                                {arrival.description && (
+                                                    <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{arrival.description}</p>
+                                                )}
+                                            </div>
+
                                             {product && (
-                                                <div className="flex items-center gap-3">
-                                                    <ArrowRight className="w-5 h-5 text-muted-foreground" />
-                                                    <div className="flex items-center gap-3">
-                                                        <img
-                                                            src={product.image || "/placeholder.png"}
-                                                            alt={product.name || "Product"}
-                                                            className="w-14 h-14 object-cover rounded-md border"
-                                                        />
-                                                        <div>
-                                                            <Link
-                                                                href={`/shop/${product.company?.name
-                                                                    ?.toLowerCase()
-                                                                    ?.replace(/\s+/g, "-")}/product/${product._id}`}
-                                                                className="text-primary font-medium hover:underline"
-                                                            >
-                                                                {product.name || "Unknown Product"}
-                                                            </Link>
-                                                            {product.price && (
-                                                                <p className="text-sm font-semibold text-primary">
-                                                                    ₹{product.price.toFixed(2)}
-                                                                </p>
-                                                            )}
-                                                        </div>
+                                                <div className="flex items-center gap-3 shrink-0">
+                                                    <ArrowRight className="w-4 h-4 text-gray-300" />
+                                                    <img
+                                                        src={product.image || "/placeholder.png"}
+                                                        alt={product.name || "Product"}
+                                                        className="w-12 h-12 object-cover rounded-lg border border-gray-200"
+                                                    />
+                                                    <div className="min-w-0">
+                                                        <Link
+                                                            href={`/shop/${product.company?.name?.toLowerCase()?.replace(/\s+/g, "-")}/product/${product._id}`}
+                                                            className="text-sm font-medium text-emerald-700 hover:underline truncate block"
+                                                        >
+                                                            {product.name || "Unknown product"}
+                                                        </Link>
+                                                        {product.price != null && (
+                                                            <p className="text-xs font-semibold text-gray-500">₹{product.price.toFixed(2)}</p>
+                                                        )}
                                                     </div>
                                                 </div>
                                             )}
 
-                                            {/* Action Buttons */}
-                                            <div className="flex items-center gap-2 ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                                <Button
-                                                    onClick={() => handleOpenEditDialog(arrival)}
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary"
-                                                    title="Edit product"
-                                                >
+                                            <div className="flex items-center gap-0.5 shrink-0 ml-auto">
+                                                <Button variant="ghost" size="icon" onClick={() => handleOpenEditDialog(arrival)} className="text-gray-400 hover:text-emerald-700" title="Edit">
                                                     <Edit className="w-4 h-4" />
                                                 </Button>
                                                 <Button
-                                                    onClick={() =>
-                                                        handleRemoveProduct(
-                                                            arrival._id,
-                                                            arrival.productId._id || arrival.productId
-                                                        )
-                                                    }
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
-                                                    title="Remove product"
+                                                    variant="ghost" size="icon"
+                                                    onClick={() => handleRemoveProduct(arrival._id, (arrival.productId as any)._id || arrival.productId)}
+                                                    className="text-gray-400 hover:text-red-600" title="Remove"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
                                             </div>
-
-                                            {/* Position indicator */}
-                                            <div className="absolute -left-2 -top-2 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold shadow-lg">
-                                                {index + 1}
-                                            </div>
                                         </div>
-                                    );
+                                    )
                                 })}
                             </div>
                         )}
-                    </CardContent>
+                    </div>
+                </div>
 
-                </Card>
-
-
-
-
-
-
-                {/* Add Product Dialog */}
+                {/* ── Add Product Dialog ───────────────────────────── */}
                 <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="max-w-2xl rounded-2xl">
                         <DialogHeader>
-                            <DialogTitle>Add Product to New Arrivals</DialogTitle>
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-lg bg-emerald-700 flex items-center justify-center shrink-0">
+                                    <Plus className="w-4 h-4 text-white" />
+                                </div>
+                                <DialogTitle>Add product to New Arrivals</DialogTitle>
+                            </div>
                         </DialogHeader>
 
                         <div className="space-y-4 max-h-[70vh] overflow-y-auto">
-                            {/* Product Selection Section */}
                             <div>
-                                <Label className="text-base font-semibold mb-2 block">1. Select Product</Label>
-                                {/* Search Input */}
+                                <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2 block">1. Select product</Label>
                                 <div className="relative mb-3">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                     <Input
                                         type="text"
                                         placeholder="Search by product name or SKU..."
@@ -606,61 +487,42 @@ export default function NewArrivalsPage() {
                                     />
                                 </div>
 
-                                {/* Products List */}
-                                <div className="border rounded-lg max-h-48 overflow-y-auto">
+                                <div className="border border-gray-200 rounded-xl max-h-48 overflow-y-auto">
                                     {filteredProducts.length === 0 ? (
-                                        <div className="p-8 text-center text-muted-foreground text-sm">
-                                            {availableProducts.length === 0
-                                                ? "No products available"
-                                                : "No matching products found"}
+                                        <div className="p-8 text-center text-gray-400 text-sm">
+                                            {availableProducts.length === 0 ? "No products available" : "No matching products found"}
                                         </div>
                                     ) : (
-                                        <div className="divide-y">
+                                        <div className="divide-y divide-gray-100">
                                             {filteredProducts.map((product) => {
                                                 const isAlreadyAdded = newArrivals.some(
-                                                    (item) =>
-                                                        (item.productId._id || item.productId) === product._id
+                                                    (item) => (item.productId._id || item.productId) === product._id
                                                 )
                                                 const isSelected = newArrivalForm.productId === product._id
-
                                                 return (
                                                     <div
                                                         key={product._id}
-                                                        className={`p-3 hover:bg-muted/50 transition-colors cursor-pointer ${isSelected ? "bg-muted" : ""
-                                                            }`}
+                                                        className={`p-3 transition-colors ${
+                                                            isAlreadyAdded ? "opacity-50" : "cursor-pointer hover:bg-emerald-50"
+                                                        } ${isSelected ? "bg-emerald-50" : ""}`}
                                                         onClick={() => {
                                                             if (!isAlreadyAdded) {
-                                                                setNewArrivalForm({
-                                                                    ...newArrivalForm,
-                                                                    productId: product._id,
-                                                                })
+                                                                setNewArrivalForm({ ...newArrivalForm, productId: product._id })
                                                             }
                                                         }}
                                                     >
                                                         <div className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-3 flex-1">
+                                                            <div className="flex items-center gap-3 flex-1 min-w-0">
                                                                 {product.image && (
-                                                                    <img
-                                                                        src={product.image}
-                                                                        alt={product.name}
-                                                                        className="w-10 h-10 object-cover rounded"
-                                                                    />
+                                                                    <img src={product.image} alt={product.name} className="w-10 h-10 object-cover rounded-lg border border-gray-200 shrink-0" />
                                                                 )}
                                                                 <div className="flex-1 min-w-0">
-                                                                    <h4 className="font-medium text-foreground truncate text-sm">
-                                                                        {product.name}
-                                                                    </h4>
-                                                                    <p className="text-xs text-muted-foreground">
-                                                                        {product.sku && `SKU: ${product.sku}`}
-                                                                    </p>
+                                                                    <h4 className="font-medium text-gray-900 truncate text-sm">{product.name}</h4>
+                                                                    <p className="text-xs text-gray-400">{product.sku && `SKU: ${product.sku}`}</p>
                                                                 </div>
                                                             </div>
-                                                            {isAlreadyAdded && (
-                                                                <span className="text-xs text-muted-foreground">Already added</span>
-                                                            )}
-                                                            {isSelected && (
-                                                                <span className="text-xs font-semibold text-primary">Selected</span>
-                                                            )}
+                                                            {isAlreadyAdded && <span className="text-xs text-gray-400 shrink-0">Already added</span>}
+                                                            {isSelected && <span className="text-xs font-semibold text-emerald-700 shrink-0">Selected</span>}
                                                         </div>
                                                     </div>
                                                 )
@@ -670,12 +532,10 @@ export default function NewArrivalsPage() {
                                 </div>
                             </div>
 
-                            {/* Form Fields Section */}
                             {newArrivalForm.productId && (
                                 <>
-                                    <div className="border-t pt-4">
-                                        <Label className="text-base font-semibold mb-3 block">2. Add Title & Image</Label>
-
+                                    <div className="border-t border-gray-100 pt-4">
+                                        <Label className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3 block">2. Add title & image</Label>
                                         <div className="space-y-3">
                                             <div>
                                                 <Label htmlFor="title" className="text-sm">Title *</Label>
@@ -683,35 +543,27 @@ export default function NewArrivalsPage() {
                                                     id="title"
                                                     placeholder="e.g., Luxurious Face Cream"
                                                     value={newArrivalForm.title}
-                                                    onChange={(e) =>
-                                                        setNewArrivalForm({ ...newArrivalForm, title: e.target.value })
-                                                    }
+                                                    onChange={(e) => setNewArrivalForm({ ...newArrivalForm, title: e.target.value })}
                                                     className="mt-1"
                                                 />
                                             </div>
-
                                             <div>
                                                 <ImageUploadField
                                                     label="Image *"
                                                     value={newArrivalForm.image}
-                                                    onChange={(image) =>
-                                                        setNewArrivalForm({ ...newArrivalForm, image })
-                                                    }
+                                                    onChange={(image) => setNewArrivalForm({ ...newArrivalForm, image })}
                                                     folder="arrivals"
                                                     required={true}
                                                     placeholder="https://example.com/image.jpg"
                                                 />
                                             </div>
-
                                             <div>
                                                 <Label htmlFor="description" className="text-sm">Description</Label>
                                                 <Textarea
                                                     id="description"
                                                     placeholder="Add a description for this product..."
                                                     value={newArrivalForm.description}
-                                                    onChange={(e) =>
-                                                        setNewArrivalForm({ ...newArrivalForm, description: e.target.value })
-                                                    }
+                                                    onChange={(e) => setNewArrivalForm({ ...newArrivalForm, description: e.target.value })}
                                                     className="mt-1 resize-none"
                                                     rows={3}
                                                 />
@@ -719,7 +571,7 @@ export default function NewArrivalsPage() {
                                         </div>
                                     </div>
 
-                                    <div className="flex gap-2 justify-end border-t pt-4">
+                                    <div className="flex gap-2 justify-end border-t border-gray-100 pt-4">
                                         <Button
                                             onClick={() => {
                                                 setNewArrivalForm({ title: "", image: "", description: "", productId: "" })
@@ -729,9 +581,9 @@ export default function NewArrivalsPage() {
                                         >
                                             Cancel
                                         </Button>
-                                        <Button onClick={handleAddProduct} className="bg-primary">
+                                        <Button onClick={handleAddProduct} className="bg-emerald-700 hover:bg-emerald-800">
                                             <Plus className="w-4 h-4 mr-2" />
-                                            Add Product
+                                            Add product
                                         </Button>
                                     </div>
                                 </>
@@ -740,17 +592,22 @@ export default function NewArrivalsPage() {
                     </DialogContent>
                 </Dialog>
 
-                {/* Settings Dialog */}
+                {/* ── Settings Dialog ──────────────────────────────── */}
                 <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
-                    <DialogContent>
+                    <DialogContent className="rounded-2xl">
                         <DialogHeader>
-                            <DialogTitle>New Arrivals Settings</DialogTitle>
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-lg bg-emerald-700 flex items-center justify-center shrink-0">
+                                    <Settings className="w-4 h-4 text-white" />
+                                </div>
+                                <DialogTitle>New Arrivals settings</DialogTitle>
+                            </div>
                         </DialogHeader>
 
                         <div className="space-y-6">
                             <div>
-                                <label className="block text-sm font-medium text-foreground mb-2">
-                                    Maximum Products to Display
+                                <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5 block">
+                                    Maximum products to display
                                 </label>
                                 <Input
                                     type="number"
@@ -758,42 +615,28 @@ export default function NewArrivalsPage() {
                                     max="100"
                                     value={tempLimit}
                                     onChange={(e) => setTempLimit(Math.max(1, parseInt(e.target.value) || 1))}
-                                    className="bg-background border-border"
                                 />
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    Only the first {tempLimit} products will be shown in the New Arrivals section
+                                <p className="text-xs text-gray-400 mt-1">
+                                    Only the first {tempLimit} products will be shown in the New Arrivals section.
                                 </p>
                             </div>
 
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
                                 <div>
-                                    <label className="block text-sm font-medium text-foreground">
-                                        Show New Arrivals Section
-                                    </label>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        Toggle the visibility of the entire section
-                                    </p>
+                                    <label className="block text-sm font-medium text-gray-900">Show New Arrivals section</label>
+                                    <p className="text-xs text-gray-400 mt-0.5">Toggle the visibility of the entire section</p>
                                 </div>
                                 <Switch
                                     checked={settings.isVisible}
-                                    onCheckedChange={(checked) =>
-                                        setSettings({ ...settings, isVisible: checked })
-                                    }
+                                    onCheckedChange={(checked) => setSettings({ ...settings, isVisible: checked })}
                                 />
                             </div>
 
-                            <div className="flex gap-3 pt-4">
-                                <Button
-                                    onClick={handleUpdateSettings}
-                                    className="bg-primary text-primary-foreground flex-1"
-                                >
-                                    Save Settings
+                            <div className="flex gap-3 pt-2">
+                                <Button onClick={handleUpdateSettings} className="bg-emerald-700 hover:bg-emerald-800 flex-1">
+                                    Save settings
                                 </Button>
-                                <Button
-                                    onClick={() => setShowSettingsDialog(false)}
-                                    variant="outline"
-                                    className="flex-1"
-                                >
+                                <Button onClick={() => setShowSettingsDialog(false)} variant="outline" className="flex-1">
                                     Cancel
                                 </Button>
                             </div>
@@ -801,34 +644,29 @@ export default function NewArrivalsPage() {
                     </DialogContent>
                 </Dialog>
 
-                {/* Edit Product Dialog */}
+                {/* ── Edit Product Dialog ──────────────────────────── */}
                 <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-                    <DialogContent className="max-w-2xl">
-                        <DialogHeader className="pb-4">
-                            <DialogTitle className="flex items-center gap-2 text-xl">
-                                ✏️ Edit New Arrival
-                            </DialogTitle>
-                            <DialogDescription className="text-base">
-                                Customize how this product appears in your New Arrivals section
+                    <DialogContent className="max-w-2xl rounded-2xl">
+                        <DialogHeader className="pb-2">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-lg bg-emerald-700 flex items-center justify-center shrink-0">
+                                    <Edit className="w-4 h-4 text-white" />
+                                </div>
+                                <DialogTitle>Edit new arrival</DialogTitle>
+                            </div>
+                            <DialogDescription className="pl-10.5">
+                                Customize how this product appears in your New Arrivals section.
                             </DialogDescription>
                         </DialogHeader>
 
                         {selectedArrival && (
                             <div className="space-y-4 max-h-[70vh] overflow-y-auto">
-                                {/* Product Selection */}
                                 <div>
                                     <Label className="text-sm font-medium">Product *</Label>
                                     <select
-                                        value={typeof selectedArrival.productId === "object"
-                                            ? selectedArrival.productId._id
-                                            : selectedArrival.productId}
-                                        onChange={(e) =>
-                                            setSelectedArrival({
-                                                ...selectedArrival,
-                                                productId: e.target.value
-                                            })
-                                        }
-                                        className="w-full mt-1 px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                                        value={typeof selectedArrival.productId === "object" ? selectedArrival.productId._id : selectedArrival.productId}
+                                        onChange={(e) => setSelectedArrival({ ...selectedArrival, productId: e.target.value as any })}
+                                        className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg bg-white text-gray-900"
                                         required
                                     >
                                         <option value="">Select Product</option>
@@ -840,7 +678,6 @@ export default function NewArrivalsPage() {
                                     </select>
                                 </div>
 
-                                {/* Form Fields */}
                                 <div className="space-y-3">
                                     <div>
                                         <Label htmlFor="edit-title" className="text-sm">Title *</Label>
@@ -848,53 +685,42 @@ export default function NewArrivalsPage() {
                                             id="edit-title"
                                             placeholder="e.g., Luxurious Face Cream"
                                             value={selectedArrival.title}
-                                            onChange={(e) =>
-                                                setSelectedArrival({ ...selectedArrival, title: e.target.value })
-                                            }
+                                            onChange={(e) => setSelectedArrival({ ...selectedArrival, title: e.target.value })}
                                             className="mt-1"
                                         />
                                     </div>
-
                                     <div>
                                         <ImageUploadField
                                             label="Image *"
                                             value={selectedArrival.image}
-                                            onChange={(image) =>
-                                                setSelectedArrival({ ...selectedArrival, image })
-                                            }
+                                            onChange={(image) => setSelectedArrival({ ...selectedArrival, image })}
                                             folder="arrivals"
                                             required={true}
                                             placeholder="https://example.com/image.jpg"
                                         />
                                     </div>
-
                                     <div>
                                         <Label htmlFor="edit-description" className="text-sm">Description</Label>
                                         <Textarea
                                             id="edit-description"
                                             placeholder="Add a description for this product..."
                                             value={selectedArrival.description || ""}
-                                            onChange={(e) =>
-                                                setSelectedArrival({ ...selectedArrival, description: e.target.value })
-                                            }
+                                            onChange={(e) => setSelectedArrival({ ...selectedArrival, description: e.target.value })}
                                             className="mt-1 resize-none"
                                             rows={3}
                                         />
                                     </div>
                                 </div>
 
-                                <div className="flex gap-2 justify-end border-t pt-4">
+                                <div className="flex gap-2 justify-end border-t border-gray-100 pt-4">
                                     <Button
-                                        onClick={() => {
-                                            setShowEditDialog(false)
-                                            setSelectedArrival(null)
-                                        }}
+                                        onClick={() => { setShowEditDialog(false); setSelectedArrival(null) }}
                                         variant="outline"
                                     >
                                         Cancel
                                     </Button>
-                                    <Button onClick={handleEditArrival} className="bg-primary">
-                                        Save Changes
+                                    <Button onClick={handleEditArrival} className="bg-emerald-700 hover:bg-emerald-800">
+                                        Save changes
                                     </Button>
                                 </div>
                             </div>

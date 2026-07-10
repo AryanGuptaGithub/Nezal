@@ -7,10 +7,12 @@
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ArrowLeft, X, Upload, Plus, GripVertical } from "lucide-react"
+import {
+  ArrowLeft, X, Upload, Plus, GripVertical, Flower2, Image as ImageIcon,
+  Package, Search, ListOrdered, Tag, CheckCircle2, AlertCircle, Loader2,
+} from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -59,9 +61,11 @@ export default function EditRitualPage() {
   useEffect(() => {
     if (!session) { router.push("/auth/login"); return }
     fetchRitual()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, originalSlug])
 
   const fetchRitual = async () => {
+    setLoading(true)
     try {
       const res = await fetch(`/api/admin/rituals/${originalSlug}`)
       const data = await res.json()
@@ -84,7 +88,7 @@ export default function EditRitualPage() {
         _id: p._id, name: p.name, image: p.image, price: p.price,
       })))
     } catch (e) {
-      setMessage("Error loading ritual.")
+      setMessage("error:Error loading ritual.")
     } finally {
       setLoading(false)
     }
@@ -115,12 +119,12 @@ export default function EditRitualPage() {
       const res = await fetch("/api/upload", { method: "POST", body: fd })
       const data = await res.json()
       if (data.urls?.[0]) setHeroImage(data.urls[0])
-    } catch { setMessage("Error uploading image.") }
+    } catch { setMessage("error:Error uploading image.") }
     finally { setUploading(false); e.target.value = "" }
   }
 
   const addStep = () => {
-    if (!stepInput.title.trim()) { setMessage("Step title is required."); return }
+    if (!stepInput.title.trim()) { setMessage("error:Step title is required."); return }
     setSteps((prev) => [...prev, { stepNumber: prev.length + 1, title: stepInput.title, description: stepInput.description }])
     setStepInput({ title: "", description: "" })
     setMessage("")
@@ -139,7 +143,7 @@ export default function EditRitualPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim() || !slug.trim()) { setMessage("Name and slug are required."); return }
+    if (!name.trim() || !slug.trim()) { setMessage("error:Name and slug are required."); return }
     setSubmitting(true); setMessage("")
     try {
       const res = await fetch(`/api/rituals/${originalSlug}`, {
@@ -154,294 +158,302 @@ export default function EditRitualPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Failed to update ritual")
-      setMessage("Ritual updated successfully!")
+      setMessage("success:Ritual updated successfully!")
       setTimeout(() => router.push("/admin/rituals"), 1200)
     } catch (err: any) {
-      setMessage(err.message || "Error updating ritual.")
+      setMessage(err.message || "error:Error updating ritual.")
     } finally { setSubmitting(false) }
   }
 
+  const isSuccess = message.startsWith("success:")
+  const displayMessage = message.replace(/^(success|error):/, "")
+
   if (loading) {
     return (
-      <main className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading ritual...</p>
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex items-center gap-2 text-gray-400 text-sm">
+          <Loader2 className="w-4 h-4 animate-spin" /> Loading ritual...
+        </div>
       </main>
     )
   }
 
   return (
-    <main className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto px-4 py-8">
+    <main className="min-h-screen bg-gray-50">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+
         <Link href="/admin/rituals">
-          <Button variant="ghost" className="mb-6 bg-transparent"><ArrowLeft className="w-4 h-4 mr-2" />Back to Rituals</Button>
-        </Link>
-        <h1 className="text-3xl font-bold text-foreground mb-8">Edit Ritual</h1>
-
-        <Card>
-          <CardHeader><CardTitle>Ritual Information</CardTitle></CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Ritual Name *</label>
-                  <Input value={name} onChange={(e) => setName(e.target.value)} required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Slug *</label>
-                  <Input value={slug} onChange={(e) => setSlug(e.target.value)} required />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Tagline</label>
-                <Input value={tagline} onChange={(e) => setTagline(e.target.value)} />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Description</label>
-                <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full px-3 py-2 border border-border rounded-md bg-background" />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <div>
-  <label className="block text-sm font-medium mb-2">Hero Image</label>
-  <div className="space-y-3 border border-border rounded-lg p-4 bg-muted/50">
-    
-    {/* URL input */}
-    <div>
-      <label className="block text-xs text-muted-foreground mb-1">Paste Image URL</label>
-      <div className="flex gap-2">
-        <Input
-          type="url"
-          placeholder="https://example.com/image.jpg"
-          value={heroImage}
-          onChange={(e) => setHeroImage(e.target.value)}
-          className="flex-1"
-        />
-        {heroImage && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setHeroImage("")}
-          >
-            <X className="w-4 h-4" />
+          <Button variant="ghost" className="-ml-2 text-gray-500 hover:text-gray-900">
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to rituals
           </Button>
-        )}
-      </div>
-    </div>
+        </Link>
 
-    {/* Divider */}
-    <div className="flex items-center gap-2">
-      <div className="flex-1 h-px bg-border" />
-      <span className="text-xs text-muted-foreground">or</span>
-      <div className="flex-1 h-px bg-border" />
-    </div>
-
-    {/* File upload */}
-    <label className="flex items-center justify-center border-2 border-dashed border-border rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition">
-      <div className="text-center">
-        <Upload className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
-        <p className="text-xs font-medium">
-          {uploading ? "Uploading..." : "Upload from device"}
-        </p>
-        <p className="text-xs text-muted-foreground mt-0.5">PNG, JPG up to 5MB</p>
-      </div>
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handleHeroUpload}
-        disabled={uploading}
-        className="hidden"
-      />
-    </label>
-
-    {/* Preview */}
-    {heroImage && (
-      <div className="relative h-32 w-full rounded-lg overflow-hidden border border-border">
-        <Image src={heroImage} alt="Hero preview" fill className="object-cover" />
-        <div className="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full">
-          Preview
+        {/* ── Page header ──────────────────────────────────── */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-700 flex items-center justify-center shrink-0">
+            <Flower2 className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Edit ritual</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Update this curated routine.</p>
+          </div>
         </div>
-      </div>
-    )}
-  </div>
-</div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Background Color (hex)</label>
-                  <Input value={color} onChange={(e) => setColor(e.target.value)} />
-                  <div className="h-8 w-full rounded mt-2 border" style={{ backgroundColor: color }} />
+
+        {/* ── Form card ────────────────────────────────────── */}
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5 block">
+                  Ritual Name *
+                </label>
+                <Input value={name} onChange={(e) => setName(e.target.value)} required />
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5 block">
+                  Slug *
+                </label>
+                <Input value={slug} onChange={(e) => setSlug(e.target.value)} required className="font-mono" />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5 block">
+                Tagline <span className="font-normal normal-case text-gray-400">(shown on homepage card)</span>
+              </label>
+              <Input value={tagline} onChange={(e) => setTagline(e.target.value)} />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5 block">
+                Description <span className="font-normal normal-case text-gray-400">(shown on ritual page)</span>
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700"
+              />
+            </div>
+
+            {/* Hero image + color */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <div className="flex items-center gap-1.5 mb-3">
+                  <ImageIcon className="w-3.5 h-3.5 text-gray-400" />
+                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Hero image</span>
                 </div>
+
+                <label className="text-xs font-medium text-gray-500 mb-1.5 block">Paste image URL</label>
+                <div className="flex gap-2">
+                  <Input
+                    type="url"
+                    placeholder="https://example.com/image.jpg"
+                    value={heroImage}
+                    onChange={(e) => setHeroImage(e.target.value)}
+                    className="flex-1 bg-white"
+                  />
+                  {heroImage && (
+                    <Button type="button" variant="outline" size="icon" onClick={() => setHeroImage("")} className="shrink-0">
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 my-3">
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <span className="text-xs text-gray-400">or</span>
+                  <div className="flex-1 h-px bg-gray-200" />
+                </div>
+
+                <label className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-lg p-4 cursor-pointer hover:bg-white hover:border-gray-300 transition-colors">
+                  <div className="text-center">
+                    <Upload className="w-5 h-5 mx-auto mb-1 text-gray-400" />
+                    <p className="text-xs font-medium text-gray-600">
+                      {uploading ? "Uploading..." : "Upload from device"}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">PNG, JPG up to 5MB</p>
+                  </div>
+                  <input type="file" accept="image/*" onChange={handleHeroUpload} disabled={uploading} className="hidden" />
+                </label>
+
+                {heroImage && (
+                  <div className="relative h-28 w-full rounded-lg overflow-hidden border border-gray-200 mt-3">
+                    <Image src={heroImage} alt="Hero preview" fill className="object-cover" />
+                    <div className="absolute top-2 left-2 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full">
+                      Preview
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Ideal For <span className="text-muted-foreground font-normal">(one per line — shown as pills)</span></label>
+                <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5 block">
+                  Background color (hex)
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    type="color"
+                    value={/^#[0-9A-Fa-f]{6}$/.test(color) ? color : "#F3F5EF"}
+                    onChange={(e) => setColor(e.target.value)}
+                    className="w-11 h-10 p-1 shrink-0"
+                  />
+                  <Input value={color} onChange={(e) => setColor(e.target.value)} className="flex-1 font-mono text-sm" />
+                </div>
+                <div className="h-24 w-full rounded-lg mt-2 border border-gray-200" style={{ backgroundColor: color }} />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5 block">
+                Ideal For <span className="font-normal normal-case text-gray-400">(one per line — shown as pills)</span>
+              </label>
+              <div className="relative">
+                <Tag className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
                 <textarea
                   value={idealFor}
                   onChange={(e) => setIdealFor(e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-2 border border-border rounded-md bg-background"
+                  className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700"
                   placeholder={"Oily skin\nAcne-prone skin\nTeenagers & young professionals"}
                 />
               </div>
+            </div>
 
-             <div className="border rounded-xl overflow-hidden">
-  <div className="bg-muted/60 px-4 py-3 border-b">
-    <h2 className="text-sm font-semibold">Routine Steps</h2>
-  </div>
+            {/* Routine steps */}
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+              <div className="flex items-center gap-1.5 mb-3">
+                <ListOrdered className="w-3.5 h-3.5 text-gray-400" />
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Routine steps</span>
+              </div>
 
-  <div className="p-4 h-[250px] flex flex-col">
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <Input
-          value={stepInput.title}
-          onChange={(e) =>
-            setStepInput((p) => ({ ...p, title: e.target.value }))
-          }
-          placeholder="Step title, e.g. Cleanse"
-          className="border-2 border-[#35b308]"
-        />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Input
+                  value={stepInput.title}
+                  onChange={(e) => setStepInput((p) => ({ ...p, title: e.target.value }))}
+                  placeholder="Step title, e.g. Cleanse"
+                  className="bg-white"
+                />
+                <Input
+                  value={stepInput.description}
+                  onChange={(e) => setStepInput((p) => ({ ...p, description: e.target.value }))}
+                  placeholder="Short description"
+                  className="bg-white"
+                />
+              </div>
 
-        <Input
-          value={stepInput.description}
-          onChange={(e) =>
-            setStepInput((p) => ({ ...p, description: e.target.value }))
-          }
-          placeholder="Short description"
-          className="border-2 border-[#35b308]"
-        />
-      </div>
+              <Button type="button" onClick={addStep} variant="outline" size="sm" className="w-full mt-3 bg-white">
+                <Plus className="w-4 h-4 mr-1" /> Add step
+              </Button>
 
-      <Button
-        type="button"
-        onClick={addStep}
-        variant="outline"
-        size="sm"
-        className="w-full"
-      >
-        <Plus className="w-4 h-4 mr-1" />
-        Add Step
-      </Button>
-    </div>
-
-    {steps.length > 0 && (
-      <div className="mt-3 flex-1 overflow-y-auto border-t pt-2 space-y-2 scroll-smooth scrollbar-hide">
-        {steps.map((step, i) => (
-          <div
-            key={i}
-            className="flex items-start gap-3 bg-background border rounded-lg px-3 py-2"
-          >
-            <GripVertical className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-
-            <div className="flex-1 text-sm">
-              <span className="font-bold">
-                {step.stepNumber}. {step.title}
-              </span>
-
-              {step.description && (
-                <p className="text-muted-foreground text-xs mt-0.5">
-                  {step.description}
-                </p>
+              {steps.length > 0 && (
+                <div className="space-y-2 mt-3 pt-3 border-t border-gray-200 max-h-56 overflow-y-auto">
+                  {steps.map((step, i) => (
+                    <div key={i} className="flex items-start gap-3 bg-white border border-gray-200 rounded-lg px-3 py-2">
+                      <GripVertical className="w-4 h-4 text-gray-300 mt-0.5 shrink-0" />
+                      <div className="flex-1 text-sm min-w-0">
+                        <span className="font-semibold text-gray-900">{step.stepNumber}. {step.title}</span>
+                        {step.description && (
+                          <p className="text-gray-400 text-xs mt-0.5">{step.description}</p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeStep(i)}
+                        className="text-gray-400 hover:text-red-600 shrink-0"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 
-            <button
-              type="button"
-              onClick={() => removeStep(i)}
-              className="text-muted-foreground hover:text-destructive"
-            >
-              <X className="w-5 h-5 text-white rounded-xl p-1 bg-[#e96262] hover:bg-[#ee0606]" />
-            </button>
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
-</div>
+            {/* Curated products */}
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+              <div className="flex items-center gap-1.5 mb-3">
+                <Package className="w-3.5 h-3.5 text-gray-400" />
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Curated products</span>
+              </div>
 
-<div className="border rounded-xl overflow-visible">
-  <div className="bg-muted/60 px-4 py-3 border-b">
-    <h2 className="text-sm font-semibold">Curated Products</h2>
-  </div>
-
-  <div className="p-4 h-[250px] flex flex-col">
-    <div className="relative">
-      <Input
-        value={productSearch}
-        onChange={(e) => setProductSearch(e.target.value)}
-        placeholder="Search products by name..."
-        className="border-2 border-[#35b308]"
-      />
-
-      {searchResults.length > 0 && (
-        <div className="absolute z-10 left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
-          {searchResults.map((p) => (
-            <button
-              key={p._id}
-              type="button"
-              onClick={() => addProduct(p)}
-              className="flex w-full items-center gap-3 px-3 py-2 hover:bg-muted text-left"
-            >
-              <div className="relative h-8 w-8 shrink-0 rounded overflow-hidden bg-muted">
-                {p.image && (
-                  <Image src={p.image} alt={p.name} fill className="object-cover" />
+              <div className="relative">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Input
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  placeholder="Search products by name..."
+                  className="bg-white pl-9"
+                />
+                {searchResults.length > 0 && (
+                  <div className="absolute z-10 left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-lg shadow-md max-h-60 overflow-y-auto">
+                    {searchResults.map((p) => (
+                      <button
+                        key={p._id}
+                        type="button"
+                        onClick={() => addProduct(p)}
+                        className="w-full text-left px-3 py-2.5 hover:bg-emerald-50 flex items-center gap-3 text-sm border-b border-gray-100 last:border-0 transition-colors"
+                      >
+                        <div className="relative h-8 w-8 shrink-0 rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                          {p.image && <Image src={p.image} alt={p.name} fill className="object-cover" />}
+                        </div>
+                        <span className="font-medium text-gray-900 truncate flex-1">{p.name}</span>
+                        <span className="text-xs text-gray-400">₹{p.price}</span>
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
 
-              <span className="text-sm">{p.name}</span>
-
-              <span className="text-xs text-muted-foreground ml-auto">
-                ₹{p.price}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-
-    {selectedProducts.length > 0 && (
-      <div className="mt-3 flex-1 overflow-y-auto border-t pt-2 space-y-2 scroll-smooth scrollbar-hide">
-        {selectedProducts.map((p) => (
-          <div
-            key={p._id}
-            className="flex items-center gap-3 bg-background border rounded-lg px-3 py-2"
-          >
-            <div className="relative h-8 w-8 shrink-0 rounded overflow-hidden bg-muted">
-              {p.image && (
-                <Image src={p.image} alt={p.name} fill className="object-cover" />
+              {selectedProducts.length > 0 && (
+                <div className="space-y-2 mt-3 pt-3 border-t border-gray-200 max-h-56 overflow-y-auto">
+                  {selectedProducts.map((p) => (
+                    <div key={p._id} className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-3 py-2">
+                      <div className="relative h-8 w-8 shrink-0 rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                        {p.image && <Image src={p.image} alt={p.name} fill className="object-cover" />}
+                      </div>
+                      <span className="text-sm text-gray-900 flex-1 truncate">{p.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeProduct(p._id)}
+                        className="text-gray-400 hover:text-red-600 shrink-0"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 
-            <span className="text-sm flex-1">{p.name}</span>
+            <div className="flex items-center gap-2.5 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-3">
+              <input
+                type="checkbox"
+                id="isActive"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+                className="w-4 h-4 accent-emerald-700"
+              />
+              <label htmlFor="isActive" className="text-sm font-medium text-gray-800">
+                Active — visible on the homepage
+              </label>
+            </div>
 
-            <button
-              type="button"
-              onClick={() => removeProduct(p._id)}
-              className="text-muted-foreground hover:text-destructive"
-            >
-              <X className="w-5 h-5 text-white rounded-xl p-1 bg-[#e96262] hover:bg-[#ee0606]" />
-            </button>
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
-</div>
-
-              <div className="flex items-center gap-2">
-                <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="w-4 h-4" />
-                <label className="text-sm font-medium">Active (visible on homepage)</label>
+            {message && (
+              <div className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-sm ${
+                isSuccess ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"
+              }`}>
+                {isSuccess ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+                {displayMessage}
               </div>
+            )}
 
-              {message && (
-                <div className={`p-3 rounded text-sm ${message.includes("successfully") ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>{message}</div>
-              )}
-
-              <Button type="submit" disabled={submitting} className="w-full">{submitting ? "Updating..." : "Update Ritual"}</Button>
-            </form>
-          </CardContent>
-        </Card>
+            <Button type="submit" disabled={submitting} className="w-full bg-emerald-700 hover:bg-emerald-800">
+              {submitting ? "Updating..." : "Update ritual"}
+            </Button>
+          </form>
+        </div>
       </div>
     </main>
   )

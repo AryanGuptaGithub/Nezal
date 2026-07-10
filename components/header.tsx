@@ -422,20 +422,20 @@ function MegaMenu({
 
   {activeCategory.collections.length > 0 ? (
     <div
-      className="grid grid-cols-2 gap-1 overflow-y-auto scrollbar-hide pr-1"
-      style={{ maxHeight: "320px" }}
-    >
-      {activeCategory.collections.map((col) => (
-        <CollectionCard
-          key={col.slug}
-          label={col.label}
-          slug={col.slug}
-          tagline={col.tagline}
-          onClick={onClose}
-          href={(col as any).href}
-        />
-      ))}
-    </div>
+  className="grid grid-cols-2 gap-1 overflow-y-auto custom-scroll pr-1"
+  style={{ maxHeight: "320px" }}
+>
+  {activeCategory.collections.map((col) => (
+    <CollectionCard
+      key={col.slug}
+      label={col.label}
+      slug={col.slug}
+      tagline={col.tagline}
+      onClick={onClose}
+      href={(col as any).href}
+    />
+  ))}
+</div>
   ) : (
             (activeCategory as any).emptyState && (
               <Link
@@ -469,7 +469,7 @@ function MegaMenu({
           <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] px-1 mb-3">
             By Concern
           </p>
-          <div className="flex flex-col gap-1 overflow-y-auto scrollbar-hide pr-1" style={{ maxHeight: "320px" }}>
+          <div className="flex flex-col gap-1 overflow-y-auto custom-scroll pr-1" style={{ maxHeight: "320px" }}>
             {concerns.map((concern) => (
               <Link
                 key={concern.slug}
@@ -485,9 +485,9 @@ function MegaMenu({
             <Link
               href="/concerns"
               onClick={onClose}
-              className="text-xs font-semibold text-[var(--color-brand-primary)] hover:underline"
+              className="text-xs font-semibold text-[var(--color-brand-primary)] border p-1 rounded-xl hover:text-white hover:bg-[#1fc706] "
             >
-              View all concerns →
+              All Concerns →
             </Link>
           </div>
         </div>
@@ -497,7 +497,7 @@ function MegaMenu({
           <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] px-1 mb-3">
             By Ingredient
           </p>
-          <div className="flex flex-col gap-1 overflow-y-auto scrollbar-hide pr-1" style={{ maxHeight: "260px" }}>
+          <div className="flex flex-col gap-1 overflow-y-auto custom-scroll pr-1" style={{ maxHeight: "260px" }}>
             {INGREDIENTS.map((ing) => (
               <Link
                 key={ing.slug}
@@ -513,9 +513,9 @@ function MegaMenu({
             <Link
               href="/ingredients"
               onClick={onClose}
-              className="text-xs font-semibold text-[var(--color-brand-primary)] hover:underline"
+              className="text-xs font-semibold  text-[var(--color-brand-primary)] border p-1 rounded-xl hover:text-white hover:bg-[#1fc706]"
             >
-              View all ingredients →
+              All Ingredients →
             </Link>
           </div>
 

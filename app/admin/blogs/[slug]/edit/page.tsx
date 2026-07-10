@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { ImageUploadField } from "@/components/admin/image-upload-field"
+import { RichTextEditor } from "@/components/admin/rich-text-editor"
 import { ArrowLeft, Newspaper, Building2, Tag, Trash2, Loader2 } from "lucide-react"
 
 interface Company {
@@ -123,6 +124,14 @@ export default function EditBlogPage() {
       alert("Missing slug")
       return
     }
+
+    // Content lives in a contentEditable div, not a native form field, so
+    // the browser's built-in "required" validation can't see it — check manually.
+    if (!formData.content || !formData.content.replace(/<[^>]+>/g, "").trim()) {
+      alert("Content is required")
+      return
+    }
+
     setSaving(true)
 
     try {
@@ -257,13 +266,10 @@ export default function EditBlogPage() {
                 <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5 block">
                   Content *
                 </label>
-                <Textarea
-                  name="content"
+                <RichTextEditor
                   value={formData.content}
-                  onChange={handleChange}
-                  placeholder="Write the blog post..."
-                  rows={10}
-                  required
+                  onChange={(html) => setFormData((prev) => ({ ...prev, content: html }))}
+                  placeholder="Write the blog post, or paste it in from Word or Google Docs..."
                 />
               </div>
 

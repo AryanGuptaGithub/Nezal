@@ -6,9 +6,8 @@ import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import Image from "next/image"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Trash2, Edit2, Eye, Plus, GripVertical } from "lucide-react"
+import { Trash2, Edit2, Eye, Plus, GripVertical, Flower2, RefreshCw, Power } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -50,18 +49,18 @@ function SortableRow({
   children: ReactNode
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: ritual._id })   // must reference `ritual`, not `concern`
+    useSortable({ id: ritual._id })
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    background: isDragging ? "hsl(var(--muted))" : undefined,
+    background: isDragging ? "rgb(249 250 251)" : undefined,
   }
 
   return (
-    <tr ref={setNodeRef} style={style} className="border-b hover:bg-muted/40 transition">
-      <td className="py-3 px-2 w-10 text-muted-foreground cursor-grab active:cursor-grabbing" {...attributes} {...listeners}>
+    <tr ref={setNodeRef} style={style} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60 transition-colors">
+      <td className="py-3.5 pl-6 pr-1 w-10 text-gray-300 cursor-grab active:cursor-grabbing" {...attributes} {...listeners}>
         <GripVertical className="w-4 h-4" />
       </td>
       {children}
@@ -90,6 +89,7 @@ export default function AdminRitualsPage() {
   }, [status])
 
   const fetchRituals = async () => {
+    setLoading(true)
     try {
       const res = await fetch("/api/rituals?all=true")
       const data = await res.json()
@@ -163,199 +163,171 @@ export default function AdminRitualsPage() {
 
   if (status === "loading" || loading) {
     return (
-      <main className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading rituals...</p>
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex items-center gap-2 text-gray-400 text-sm">
+          <RefreshCw className="w-4 h-4 animate-spin" /> Loading rituals...
+        </div>
       </main>
     )
   }
 
+  const activeCount = rituals.filter((r) => r.isActive).length
+
   return (
-    <main className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-foreground">Rituals Management</h1>
-          <Link href="/admin/rituals/add">
-            <Button><Plus className="w-4 h-4 mr-2" />Add Ritual</Button>
-          </Link>
+    <main className="min-h-screen bg-gray-50">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+
+        {/* ── Page header ──────────────────────────────────── */}
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-700 flex items-center justify-center shrink-0">
+              <Flower2 className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Rituals</h1>
+              <p className="text-sm text-gray-500 mt-0.5">Curated routines, in the order they appear.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {savingOrder && (
+              <span className="flex items-center gap-1.5 text-xs text-gray-400">
+                <RefreshCw className="w-3 h-3 animate-spin" /> Saving order...
+              </span>
+            )}
+            <Link href="/admin/rituals/add">
+              <Button className="bg-emerald-700 hover:bg-emerald-800">
+                <Plus className="w-4 h-4 mr-2" /> Add ritual
+              </Button>
+            </Link>
+          </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>All Rituals</CardTitle>
-              {savingOrder && (
-                <span className="text-xs text-muted-foreground">Saving order...</span>
-              )}
+        {/* ── Stats row ────────────────────────────────────── */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white rounded-2xl border border-gray-200 p-4">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+              <p className="text-xs font-medium text-gray-500">Total rituals</p>
             </div>
-          </CardHeader>
-          <CardContent>
-
-
-<CardContent>
-  <div className="overflow-x-auto">
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragEnd={handleDragEnd}
-    >
-      <SortableContext
-        items={rituals.map((r) => r._id)}
-        strategy={verticalListSortingStrategy}
-      >
-        <table className="w-full table-auto border-collapse">
-          <thead>
-            <tr className="text-left text-sm text-muted-foreground border-b">
-              <th className="py-3 px-2 w-10"></th>
-              <th className="py-3 px-2 w-16">Image</th>
-              <th className="py-3 px-2">Name</th>
-              <th className="py-3 px-2">Tagline</th>
-              <th className="py-3 px-2">Status</th>
-              <th className="py-3 px-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rituals.length === 0 ? (
-              <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">No rituals yet</td></tr>
-            ) : (
-              rituals.map((ritual) => (
-                <SortableRow key={ritual._id} ritual={ritual}>
-                  <td className="py-3 px-2">
-                    <div className="w-16 h-12 relative rounded overflow-hidden bg-muted">
-                      {ritual.heroImage ? (
-                        <Image src={ritual.heroImage} alt={ritual.name} fill className="object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">No image</div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-3 px-2 font-semibold">{ritual.name}</td>
-                  <td className="py-3 px-2 text-sm text-muted-foreground">{ritual.tagline}</td>
-                  <td className="py-3 px-2">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${ritual.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                      {ritual.isActive ? "Active" : "Draft"}
-                    </span>
-                  </td>
-                  <td className="py-3 px-2">
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleToggleActive(ritual)}
-                        disabled={togglingId === ritual._id}
-                        className={ritual.isActive
-                          ? "border-amber-300 text-amber-700 hover:bg-amber-50"
-                          : "border-green-300 text-green-700 hover:bg-green-50"}
-                      >
-                        {togglingId === ritual._id ? "..." : ritual.isActive ? "Deactivate" : "Activate"}
-                      </Button>
-                      <Link href={`/rituals/${ritual.slug}`} target="_blank">
-                        <Button size="sm" variant="ghost"><Eye className="w-4 h-4" /></Button>
-                      </Link>
-                      <Link href={`/admin/rituals/edit/${ritual.slug}`}>
-                        <Button size="sm" variant="outline"><Edit2 className="w-4 h-4" /></Button>
-                      </Link>
-                      <Button size="sm" variant="destructive" onClick={() => setDeleteTarget(ritual)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </SortableRow>
-              ))
-            )}
-          </tbody>
-        </table>
-      </SortableContext>
-    </DndContext>
-  </div>
-</CardContent>
-
-
-
-            <div className="overflow-x-auto">
-              <table className="w-full table-auto border-collapse">
-                <thead>
-                  <tr className="text-left text-sm text-muted-foreground border-b">
-                    <th className="py-3 px-2 w-10"></th>
-                    <th className="py-3 px-2 w-16">Image</th>
-                    <th className="py-3 px-2">Name</th>
-                    <th className="py-3 px-2">Tagline</th>
-                    <th className="py-3 px-2">Status</th>
-                    <th className="py-3 px-2">Actions</th>
-                  </tr>
-                </thead>
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext
-                    items={rituals.map((r) => r._id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <tbody>
-                      {rituals.length === 0 ? (
-                        <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">No rituals yet</td></tr>
-                      ) : (
-                        rituals.map((ritual) => (
-                          <SortableRow key={ritual._id} ritual={ritual}>
-                            <td className="py-3 px-2">
-                              <div className="w-16 h-12 relative rounded overflow-hidden bg-muted">
-                                {ritual.heroImage ? (
-                                  <Image src={ritual.heroImage} alt={ritual.name} fill className="object-cover" />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">No image</div>
-                                )}
-                              </div>
-                            </td>
-                            <td className="py-3 px-2 font-semibold">{ritual.name}</td>
-                            <td className="py-3 px-2 text-sm text-muted-foreground">{ritual.tagline}</td>
-                            <td className="py-3 px-2">
-                              <span className={`text-xs font-semibold px-2 py-1 rounded-full ${ritual.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                                {ritual.isActive ? "Active" : "Draft"}
-                              </span>
-                            </td>
-                            <td className="py-3 px-2">
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleToggleActive(ritual)}
-                                  disabled={togglingId === ritual._id}
-                                  className={ritual.isActive
-                                    ? "border-amber-300 text-amber-700 hover:bg-amber-50"
-                                    : "border-green-300 text-green-700 hover:bg-green-50"}
-                                >
-                                  {togglingId === ritual._id ? "..." : ritual.isActive ? "Deactivate" : "Activate"}
-                                </Button>
-                                <Link href={`/rituals/${ritual.slug}`} target="_blank">
-                                  <Button size="sm" variant="ghost"><Eye className="w-4 h-4" /></Button>
-                                </Link>
-                                <Link href={`/admin/rituals/edit/${ritual.slug}`}>
-                                  <Button size="sm" variant="outline"><Edit2 className="w-4 h-4" /></Button>
-                                </Link>
-                                <Button size="sm" variant="destructive" onClick={() => setDeleteTarget(ritual)}>
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </td>
-                          </SortableRow>
-                        ))
-                      )}
-                    </tbody>
-                  </SortableContext>
-                </DndContext>
-              </table>
+            <p className="text-2xl font-bold tabular-nums text-gray-900">{rituals.length}</p>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-200 p-4">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <p className="text-xs font-medium text-gray-500">Active</p>
             </div>
-          </CardContent>
-        </Card>
+            <p className="text-2xl font-bold tabular-nums text-emerald-700">{activeCount}</p>
+          </div>
+        </div>
+
+        {/* ── Table ────────────────────────────────────────── */}
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/60">
+            <h2 className="font-semibold text-gray-900">All rituals</h2>
+            <span className="text-xs text-gray-400">Drag the handle to reorder</span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={rituals.map((r) => r._id)} strategy={verticalListSortingStrategy}>
+                <table className="w-full table-auto border-collapse">
+                  <thead>
+                    <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-400 border-b border-gray-100">
+                      <th className="py-3 pl-6 pr-1 w-10"></th>
+                      <th className="py-3 px-3 w-20">Image</th>
+                      <th className="py-3 px-3">Name</th>
+                      <th className="py-3 px-3">Tagline</th>
+                      <th className="py-3 px-3">Status</th>
+                      <th className="py-3 px-6 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rituals.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-16 text-center">
+                          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                            <Flower2 className="w-5 h-5 text-gray-400" />
+                          </div>
+                          <p className="text-sm font-medium text-gray-700">No rituals yet</p>
+                          <p className="text-xs text-gray-400 mt-1">Create your first ritual to get started.</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      rituals.map((ritual) => (
+                        <SortableRow key={ritual._id} ritual={ritual}>
+                          <td className="py-3.5 px-3">
+                            <div className="w-16 h-11 relative rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                              {ritual.heroImage ? (
+                                <Image src={ritual.heroImage} alt={ritual.name} fill className="object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-gray-400 text-[10px]">No image</div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-3">
+                            <p className="font-medium text-sm text-gray-900">{ritual.name}</p>
+                          </td>
+                          <td className="py-3.5 px-3 text-sm text-gray-500 max-w-xs truncate">{ritual.tagline}</td>
+                          <td className="py-3.5 px-3">
+                            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${
+                              ritual.isActive ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${ritual.isActive ? "bg-emerald-500" : "bg-gray-400"}`} />
+                              {ritual.isActive ? "Active" : "Draft"}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-6">
+                            <div className="flex gap-1.5 justify-end items-center">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleToggleActive(ritual)}
+                                disabled={togglingId === ritual._id}
+                                className={`h-8 text-xs ${
+                                  ritual.isActive
+                                    ? "border-amber-200 text-amber-700 hover:bg-amber-50"
+                                    : "border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                                }`}
+                              >
+                                <Power className="w-3 h-3 mr-1" />
+                                {togglingId === ritual._id ? "..." : ritual.isActive ? "Deactivate" : "Activate"}
+                              </Button>
+                              <Link href={`/rituals/${ritual.slug}`} target="_blank">
+                                <Button size="icon" variant="ghost" className="text-gray-400 hover:text-blue-700" title="View">
+                                  <Eye className="w-3.5 h-3.5" />
+                                </Button>
+                              </Link>
+                              <Link href={`/admin/rituals/edit/${ritual.slug}`}>
+                                <Button size="icon" variant="ghost" className="text-gray-400 hover:text-emerald-700" title="Edit">
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </Link>
+                              <Button size="icon" variant="ghost" onClick={() => setDeleteTarget(ritual)} className="text-gray-400 hover:text-red-600" title="Delete">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </td>
+                        </SortableRow>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </SortableContext>
+            </DndContext>
+          </div>
+        </div>
       </div>
 
+      {/* Delete confirm */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
         <DialogContent className="sm:max-w-[420px] rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Delete Ritual?</DialogTitle>
+            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mb-2">
+              <Trash2 className="w-4.5 h-4.5 text-red-600" />
+            </div>
+            <DialogTitle>Delete ritual?</DialogTitle>
             <DialogDescription>
-              This will permanently delete <strong>{deleteTarget?.name}</strong>. This cannot be undone.
+              This will permanently delete <strong className="text-gray-800">{deleteTarget?.name}</strong>. This cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="flex gap-2 justify-end mt-4">
