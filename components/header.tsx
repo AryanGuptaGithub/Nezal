@@ -415,26 +415,28 @@ function MegaMenu({
           </div>
         </div>
 
-        {/* Zone 2 — Collection cards */}
-        <div className="p-5">
-          <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-3">
-            {activeCategory.heading} Collections
-          </p>
+      <div className="p-5">
+  <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-3">
+    {activeCategory.heading} Collections
+  </p>
 
-          {activeCategory.collections.length > 0 ? (
-            <div className="grid grid-cols-2 gap-1">
-              {activeCategory.collections.map((col) => (
-                 <CollectionCard
-    key={col.slug}
-    label={col.label}
-    slug={col.slug}
-    tagline={col.tagline}
-    onClick={onClose}
-    href={(col as any).href}
-  />
-              ))}
-            </div>
-          ) : (
+  {activeCategory.collections.length > 0 ? (
+    <div
+      className="grid grid-cols-2 gap-1 overflow-y-auto scrollbar-hide pr-1"
+      style={{ maxHeight: "320px" }}
+    >
+      {activeCategory.collections.map((col) => (
+        <CollectionCard
+          key={col.slug}
+          label={col.label}
+          slug={col.slug}
+          tagline={col.tagline}
+          onClick={onClose}
+          href={(col as any).href}
+        />
+      ))}
+    </div>
+  ) : (
             (activeCategory as any).emptyState && (
               <Link
                 href={(activeCategory as any).viewAllHref ?? "#"}

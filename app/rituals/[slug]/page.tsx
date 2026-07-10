@@ -299,7 +299,7 @@ export default function RitualPage() {
     className="ritual-cta inline-flex items-center justify-center gap-2.5 px-9 py-4 rounded-2xl font-bold text-base text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
   >
     <ShoppingBag className="h-5 w-5" />
-    Add Full Ritual to Cart
+    Add Ritual to Cart
     <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-full bg-white/25 text-xs font-extrabold">
       {ritual.products.length}
     </span>
