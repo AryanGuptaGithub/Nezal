@@ -98,6 +98,31 @@ function CheckoutPageInner() {
     discountValue: number
     discountAmount: number
   } | null>(null)
+  const [gstMap, setGstMap] = useState<Record<string, number>>({})
+
+      useEffect(() => {
+        if (items.length === 0) { setGstMap({}); return }
+        const ids = items.map((i) => i.productId).join(",")
+        fetch(`/api/products?ids=${ids}`)
+          .then((res) => (res.ok ? res.json() : { products: [] }))
+          .then((data) => {
+            const map: Record<string, number> = {}
+            ;(data.products || []).forEach((p: any) => {
+              if (typeof p.gstPercent === "number") map[p._id] = p.gstPercent
+            })
+            setGstMap(map)
+          })
+          .catch(() => {})
+      }, [items.map((i) => i.productId).join(",")])
+
+      const totalGST = items.reduce((sum, item) => {
+        const rate = gstMap[item.productId]
+        if (!rate) return sum
+        const itemTotal = (item.discountPrice || item.price) * item.quantity
+        const base = itemTotal / (1 + rate / 100)
+        return sum + (itemTotal - base)
+      }, 0)
+
 
   const { pendingOrder, setPendingOrder, clearPendingOrder } = useCheckoutStore()
 
@@ -695,6 +720,27 @@ function CheckoutPageInner() {
           <span className="text-[#a4a4a4]">Subtotal</span>
           <span className="font-medium text-[#2d8116]">₹{totalPrice.toFixed(2)}</span>
         </div>
+        {(() => {
+  const ratesInCart = [...new Set(
+    items
+      .map((item) => gstMap[item.productId])
+      .filter((rate): rate is number => typeof rate === "number" && rate > 0)
+  )].sort((a, b) => a - b)
+
+  const gstLabel =
+    ratesInCart.length === 0
+      ? "GST (included in price)"
+      : ratesInCart.length === 1
+      ? `GST (${ratesInCart[0]}% inclusive)`
+      : `GST (${ratesInCart[0]}%–${ratesInCart[ratesInCart.length - 1]}% incl.)`
+
+  return (
+    <div className="flex justify-between text-sm">
+      <span className="text-muted-foreground">{gstLabel}</span>
+      <span className="font-semibold text-foreground">₹{totalGST.toFixed(2)}</span>
+    </div>
+  )
+})()}
 
         {flashSavings > 0 && (
           <div className="flex justify-between text-sm">
@@ -714,6 +760,9 @@ function CheckoutPageInner() {
             <span className="font-medium text-green-600">−₹{discountAmount.toFixed(2)}</span>
           </div>
         )}
+
+
+
 
         <div className="flex justify-between items-center text-sm">
           <span className="flex items-center gap-1.5 text-[#858585]">

@@ -51,6 +51,15 @@ amazonUrl: {
   trim: true,
 },
 
+// ─── GST ────────────────────────────────────────────────────────────────
+// Percentage. Prices (`price`, `sizes[].price`) are GST-inclusive — this
+// field is used only to compute the tax breakdown shown in cart/checkout.
+gstPercent: {
+  type: Number,
+  default: null,
+  min: 0,
+  max: 28,
+},
 
     // ─── Legacy fields (kept for backward compatibility) ───────────────────
     ingredients: [String],

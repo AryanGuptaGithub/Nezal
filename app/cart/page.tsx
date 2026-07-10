@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 import Image from "next/image"
 import { Trash2, Phone, Zap, Sparkles } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import {
@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { BULK_ORDER_LIMIT } from "@/lib/config"
 
 export default function CartPage() {
 const { items, removeItem, removeRitual, updateQuantity, getTotalPrice, getTotalItems } = useCartStore()
@@ -24,11 +25,40 @@ const { items, removeItem, removeRitual, updateQuantity, getTotalPrice, getTotal
   const totalPrice = getTotalPrice()
   const router = useRouter()
   const [showBulkOrderModal, setShowBulkOrderModal] = useState(false)
+  const [gstMap, setGstMap] = useState<Record<string, number>>({})
+
+
+
+  useEffect(() => {
+  if (items.length === 0) { setGstMap({}); return }
+  const ids = items.map((i) => i.productId).join(",")
+  fetch(`/api/products?ids=${ids}`)
+    .then((res) => (res.ok ? res.json() : { products: [] }))
+    .then((data) => {
+      const map: Record<string, number> = {}
+      ;(data.products || []).forEach((p: any) => {
+        if (typeof p.gstPercent === "number") map[p._id] = p.gstPercent
+      })
+      setGstMap(map)
+    })
+    .catch(() => {})
+}, [items.map((i) => i.productId).join(",")])
+
+const totalGST = items.reduce((sum, item) => {
+  const rate = gstMap[item.productId]
+  if (!rate) return sum
+  const itemTotal = (item.discountPrice || item.price) * item.quantity
+  const base = itemTotal / (1 + rate / 100)
+  return sum + (itemTotal - base)
+}, 0)
 
   const totalSavings = items.reduce((sum, item) => {
-  if (!item.discountPrice) return sum
-  return sum + (item.price - item.discountPrice) * item.quantity
-}, 0)
+        if (!item.discountPrice) return sum
+        return sum + (item.price - item.discountPrice) * item.quantity
+    }, 0)
+
+
+
 
 
 // ===== Not logged in state =====
@@ -166,7 +196,7 @@ const { items, removeItem, removeRitual, updateQuantity, getTotalPrice, getTotal
                       </span>
                       <button
                         onClick={() => {
-                          if (getTotalItems() >= 5) {
+                          if (getTotalItems() >= BULK_ORDER_LIMIT) {
                             setShowBulkOrderModal(true)
                           } else {
                             updateQuantity(item.productId, item.quantity + 1, item.selectedSize)
@@ -266,7 +296,7 @@ const { items, removeItem, removeRitual, updateQuantity, getTotalPrice, getTotal
                         </span>
                         <button
                           onClick={() => {
-                            if (getTotalItems() >= 5) {
+                            if (getTotalItems() >= BULK_ORDER_LIMIT) {
                               setShowBulkOrderModal(true)
                             } else {
                               updateQuantity(item.productId, item.quantity + 1, item.selectedSize)
@@ -323,12 +353,29 @@ const { items, removeItem, removeRitual, updateQuantity, getTotalPrice, getTotal
   )}
   <div className="flex justify-between text-sm">
     <span className="text-muted-foreground">Shipping</span>
-    <span className="font-semibold text-primary">Free</span>
+    <span className="font-thin italic font-[#76ef74]"> Proceed to see</span>
   </div>
-  <div className="flex justify-between text-sm">
-    <span className="text-muted-foreground">Tax</span>
-    <span className="font-semibold text-foreground">₹0</span>
-  </div>
+  {(() => {
+  const ratesInCart = [...new Set(
+    items
+      .map((item) => gstMap[item.productId])
+      .filter((rate): rate is number => typeof rate === "number" && rate > 0)
+  )].sort((a, b) => a - b)
+
+  const gstLabel =
+    ratesInCart.length === 0
+      ? "GST (included in price)"
+      : ratesInCart.length === 1
+      ? `GST (${ratesInCart[0]}% inclusive)`
+      : `GST (${ratesInCart[0]}%–${ratesInCart[ratesInCart.length - 1]}% incl.)`
+
+  return (
+    <div className="flex justify-between text-sm">
+      <span className="text-muted-foreground">{gstLabel}</span>
+      <span className="font-semibold text-foreground">₹{totalGST.toFixed(2)}</span>
+    </div>
+  )
+})()}
 </div>
 
                 <div className="flex justify-between text-lg font-bold">
@@ -361,7 +408,7 @@ const { items, removeItem, removeRitual, updateQuantity, getTotalPrice, getTotal
             <DialogHeader>
               <DialogTitle className="text-xl font-bold text-center text-foreground">Want to do a bulk order?</DialogTitle>
               <DialogDescription className="text-center pt-4 text-muted-foreground">
-                You've reached the maximum limit of 5 products in your cart. For bulk orders, please contact our team.
+                You've reached the maximum limit of {BULK_ORDER_LIMIT} products in your cart. For bulk orders, please contact our team.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3 py-4">

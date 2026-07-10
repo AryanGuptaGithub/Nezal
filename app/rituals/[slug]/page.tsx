@@ -14,6 +14,7 @@ import RitualProductCard from "@/components/RitualProductCard"
 import { useCartStore } from "@/lib/store/cart-store"
 import { useToast } from "@/hooks/use-toast"
 import { ShoppingBag, Phone } from "lucide-react"
+import { BULK_ORDER_LIMIT } from "@/lib/config"
 import {
   Dialog,
   DialogContent,
@@ -314,7 +315,7 @@ export default function RitualPage() {
     <DialogHeader>
       <DialogTitle>This ritual is a bulk order</DialogTitle>
       <DialogDescription>
-        Adding every product in this ritual would put you over the 5-item cart
+        Adding every product in this ritual would put you over the {BULK_ORDER_LIMIT}-item cart
         limit. For bulk orders, please contact our team directly.
       </DialogDescription>
     </DialogHeader>

@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { BULK_ORDER_LIMIT } from "@/lib/config";
 
 import { useCartStore } from "@/lib/store/cart-store";
 import { useToast } from "@/hooks/use-toast";
@@ -106,7 +107,7 @@ export default function ProductCard({
 
     const totalItems = getTotalItems();
 
-    if (totalItems >= 5) {
+    if (totalItems >= BULK_ORDER_LIMIT) {
       setShowBulkOrderModal(true);
       return;
     }

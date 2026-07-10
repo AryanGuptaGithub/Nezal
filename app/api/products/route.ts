@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       const products = await Product.find({ _id: { $in: idList } })
         .populate("company", "name slug")
         .populate("category", "name slug")
-        .select("name slug image images sizes company category stock price discountPrice")
+      .select("name slug image images sizes company category stock price discountPrice gstPercent")
         .lean();
 
       // Flash-sale pricing shows up in the wishlist too, not just the shop grid
@@ -243,6 +243,7 @@ export async function POST(request: Request) {
       results,
       sizes,
       isActive,
+      gstPercent,
     } = body;
 
     // ── FIX: resolve category — prefer subcategory, fall back to mainCategory ──
@@ -274,6 +275,7 @@ export async function POST(request: Request) {
       results,
       sizes,
       isActive: isActive ?? true,
+      gstPercent: gstPercent !== undefined && gstPercent !== "" ? Number(gstPercent) : null,
     });
 
     await product.save();

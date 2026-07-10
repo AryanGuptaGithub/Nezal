@@ -916,6 +916,10 @@ const currentImage =
                   {product.sizes?.map((size, idx) => {
                     const isSel = selectedSize?.size === size.size && selectedSize?.unit === size.unit
                     const oos = size.stock <= 0
+                   const displaySize = size.size.includes(size.unit)
+  ? size.size
+  : `${size.size}${size.unit}`;
+                  
                     return (
                       <button
                         key={idx}
@@ -931,7 +935,7 @@ const currentImage =
                           cursor: oos ? "not-allowed" : "pointer",
                         }}
                       >
-                       {size.size.replace(/[a-zA-Z]+$/, "").trim()}{size.unit}
+                       {displaySize}
                         {product.flashSale
                           ? ` – ₹${getFlashPrice(size.price, product.flashSale)}`
                           : size.discountPrice ? ` – ₹${size.discountPrice}` : ` – ₹${size.price}`}

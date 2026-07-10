@@ -56,6 +56,7 @@ interface FormData {
   stock: number; sku: string
    weight: number
     amazonUrl: string
+    gstPercent: number | ""
   ingredients: string[]; benefits: string[]; usage: string; suitableFor: string[]
   results: Result[]; isActive: boolean
   
@@ -95,6 +96,7 @@ export default function EditProductPage() {
     whyYoullLoveIt: [], fragranceExp: [],
     whoIsItFor: "", skinHairConcern: "", expectedResults: "",
     keyIngredients: [],
+    gstPercent: "",
   })
   const [results, setResults] = useState<Result[]>([])
   const [resultInput, setResultInput] = useState({ image: "", title: "", text: "" })
@@ -160,6 +162,7 @@ export default function EditProductPage() {
         sku: productData.sku || "",
         weight: productData.weight ?? 0.3,
         amazonUrl: productData.amazonUrl || "",
+        gstPercent: typeof productData.gstPercent === "number" ? productData.gstPercent : "",
         ingredients: normalizeStringArray(productData.ingredients),
         benefits: normalizeStringArray(productData.benefits),
         usage: productData.usage || "",
@@ -306,6 +309,7 @@ export default function EditProductPage() {
         suitableFor: normalizeByNewlineOnly(formData.suitableFor),
         usage: formData.usage, isActive: formData.isActive, results,
         weight: Number(formData.weight) || 0.3,
+        gstPercent: formData.gstPercent !== "" ? Number(formData.gstPercent) : undefined,
         sizes: sizes.map((s) => ({ ...s, quantity: Number(s.quantity), price: Number(s.price), discountPrice: s.discountPrice ? Number(s.discountPrice) : undefined, stock: Number(s.stock) })),
         // ── New structured fields ──
         whyYoullLoveIt: normalizeByNewlineOnly(formData.whyYoullLoveIt),
@@ -399,24 +403,30 @@ fragranceExp: normalizeByNewlineOnly(formData.fragranceExp),
 
               {/* Pricing */}
              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-  <div>
-    <label className="block text-sm font-medium text-foreground mb-2">Price (₹) *</label>
-    <Input type="number" name="price" value={formData.price} onChange={handleChange} required placeholder="0" className="bg-background border-border" />
-  </div>
-  <div>
-    <label className="block text-sm font-medium text-foreground mb-2">Discount Price (₹)</label>
-    <Input type="number" name="discountPrice" value={formData.discountPrice || ""} onChange={handleChange} placeholder="0" className="bg-background border-border" />
-  </div>
-  <div>
-    <label className="block text-sm font-medium text-foreground mb-2">Stock *</label>
-    <Input type="number" name="stock" value={formData.stock} onChange={handleChange} required placeholder="0" className="bg-background border-border" />
-  </div>
-  <div>
-    <label className="block text-sm font-medium text-foreground mb-2">Weight (kg) *</label>
-    <Input type="number" step="0.01" name="weight" value={formData.weight} onChange={handleChange} required placeholder="0.3" className="bg-background border-border" />
-    <p className="text-xs text-muted-foreground mt-1">Used for shipping cost calculation</p>
-  </div>
-</div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">Price (₹) *</label>
+                    <Input type="number" name="price" value={formData.price} onChange={handleChange} required placeholder="0" className="bg-background border-border" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">Discount Price (₹)</label>
+                    <Input type="number" name="discountPrice" value={formData.discountPrice || ""} onChange={handleChange} placeholder="0" className="bg-background border-border" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">Stock *</label>
+                    <Input type="number" name="stock" value={formData.stock} onChange={handleChange} required placeholder="0" className="bg-background border-border" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">Weight (kg) *</label>
+                    <Input type="number" step="0.01" name="weight" value={formData.weight} onChange={handleChange} required placeholder="0.3" className="bg-background border-border" />
+                    <p className="text-xs text-muted-foreground mt-1">Used for shipping cost calculation</p>
+                  </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">GST % *</label>
+                <Input type="number" step="0.01" name="gstPercent" value={formData.gstPercent} onChange={handleChange} required placeholder="18" className="bg-background border-border" />
+                <p className="text-xs text-muted-foreground mt-1">Price above already includes this GST %</p>
+              </div>
 
               {/* Images */}
               <div>

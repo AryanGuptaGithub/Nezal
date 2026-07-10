@@ -62,6 +62,7 @@ export default function AddProductPage() {
     whoIsItFor: "",
     skinHairConcern: "",
     expectedResults: "",
+    gstPercent: "",
   })
   const [keyIngredients, setKeyIngredients] = useState<KeyIngredient[]>([])
   const [keyIngInput, setKeyIngInput] = useState<KeyIngredient>({ name: "", benefit: "" })
@@ -215,6 +216,7 @@ fragranceExp: normalizeByNewlineOnly(formData.fragranceExp),
         skinHairConcern: formData.skinHairConcern,
         expectedResults: formData.expectedResults,
         keyIngredients,
+        gstPercent: formData.gstPercent ? Number(formData.gstPercent) : undefined,
       }
       const res = await fetch("/api/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(bodyData) })
       const responseData = await res.json()
@@ -289,6 +291,11 @@ setTimeout(() => router.push("/admin/products"), 1500)
                 <div><label className="block text-sm font-medium text-foreground mb-2">Stock *</label><Input type="number" name="stock" value={formData.stock} onChange={handleChange} required placeholder="0" className="bg-background border-border" /></div>
               </div>
 
+              <div>
+              <label className="block text-sm font-medium text-foreground mb-2">GST % *</label>
+              <Input type="number" step="0.01" name="gstPercent" value={formData.gstPercent} onChange={handleChange} required placeholder="18" className="bg-background border-border" />
+              <p className="text-xs text-muted-foreground mt-1">Price above already includes this GST %</p>
+            </div>
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div><label className="block text-sm font-medium text-foreground mb-2">Price (₹) *</label><Input type="number" name="price" value={formData.price} onChange={handleChange} required placeholder="0" className="bg-background border-border" /></div>
