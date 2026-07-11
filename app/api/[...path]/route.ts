@@ -1,163 +1,89 @@
-// import { NextRequest, NextResponse } from 'next/server';
-// import { readFile } from 'fs/promises';
-// import path from 'path';
-// import { existsSync } from 'fs';
-
-// export async function GET(
-//   request: NextRequest,
-//   context: { params: Promise<{ path: string[] }> }
-// ) {
-//   try {
-//     const params = await context.params;
-//     const filePath = params.path.map(segment => decodeURIComponent(segment)).join('/');
-    
-//     console.log('========== FILE REQUEST DEBUG ==========');
-//     console.log('Requested file path:', filePath);
-    
-//     const possiblePaths = [
-//       path.join(process.cwd(), 'public', 'uploads', filePath),
-//       path.join(process.cwd(), 'public', 'arrivals', filePath),
-//       path.join(process.cwd(), 'public', 'blogs', filePath),
-//       path.join(process.cwd(), 'public', 'carousel', filePath),
-//       path.join(process.cwd(), 'public', 'fonts', filePath),
-//       path.join(process.cwd(), 'public', 'shop-by-concern', filePath),
-//       path.join(process.cwd(), 'public', filePath),
-//     ];
-
-//     let fullPath = '';
-//     let foundPath = false;
-
-//     for (const possiblePath of possiblePaths) {
-//       console.log('Checking:', possiblePath);
-//       if (existsSync(possiblePath)) {
-//         fullPath = possiblePath;
-//         foundPath = true;
-//         console.log('✓ Found file at:', fullPath);
-//         break;
-//       }
-//     }
-
-//     console.log('========================================');
-
-//     if (!foundPath) {
-//       console.log('❌ File not found in any location');
-//       return new NextResponse('File not found', { status: 404 });
-//     }
-
-//     const fileBuffer = await readFile(fullPath);
-//     const ext = path.extname(filePath).toLowerCase();
-
-//     const contentTypes: Record<string, string> = {
-//       '.jpg': 'image/jpeg',
-//       '.jpeg': 'image/jpeg',
-//       '.png': 'image/png',
-//       '.gif': 'image/gif',
-//       '.webp': 'image/webp',
-//       '.svg': 'image/svg+xml',
-//       '.ico': 'image/x-icon',
-//       '.woff': 'font/woff',
-//       '.woff2': 'font/woff2',
-//       '.ttf': 'font/ttf',
-//       '.otf': 'font/otf',
-//       '.txt': 'text/plain',
-//     };
-
-//     return new NextResponse(fileBuffer, {
-//       status: 200,
-//       headers: {
-//         'Content-Type': contentTypes[ext] || 'application/octet-stream',
-//         'Cache-Control': 'public, max-age=31536000, immutable',
-//       },
-//     });
-//   } catch (error) {
-//     console.error('❌ Error serving file:', error);
-//     return new NextResponse('Internal Server Error', { status: 500 });
-//   }
-// }
-
-
-
+// app/api/[...path]/route.ts  (and identically for app/api/serve-upload/[...path]/route.ts)
 import { NextRequest, NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import path from 'path';
 import { existsSync } from 'fs';
+
+const SEARCH_FOLDERS = [
+  'uploads',
+  'arrivals',
+  'blogs',
+  'carousel',
+  'fonts',
+  'shop-by-concern',
+  '', // root of public
+];
+
+const CONTENT_TYPES: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.otf': 'font/otf',
+  '.txt': 'text/plain',
+};
+
+// Resolves candidate + segment safely; returns null if it would escape base
+function safeResolve(baseDir: string, relPath: string): string | null {
+  const resolved = path.normalize(path.join(baseDir, relPath));
+  if (resolved !== baseDir && !resolved.startsWith(baseDir + path.sep)) {
+    return null; // traversal attempt
+  }
+  return resolved;
+}
 
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> }
 ) {
   try {
-    // Await the params (Next.js 15+ requirement)
     const params = await context.params;
-    
-    // Decode URL-encoded characters (e.g., %20 for spaces)
     const filePath = params.path.map(segment => decodeURIComponent(segment)).join('/');
-    
-    console.log('========== FILE REQUEST DEBUG ==========');
-    console.log('Original URL:', request.url);
-    console.log('Decoded file path:', filePath);
-    console.log('Params received:', params.path);
-    
-    // Try to find the file in different public folders
-    const possiblePaths = [
-      path.join(process.cwd(), 'public', 'uploads', filePath),
-      path.join(process.cwd(), 'public', 'arrivals', filePath),
-      path.join(process.cwd(), 'public', 'blogs', filePath),
-      path.join(process.cwd(), 'public', 'carousel', filePath),
-      path.join(process.cwd(), 'public', 'fonts', filePath),
-      path.join(process.cwd(), 'public', 'shop-by-concern', filePath),
-      path.join(process.cwd(), 'public', filePath), // Root public folder
-    ];
 
-    let fullPath = '';
-    let foundPath = false;
+    // Reject anything containing traversal sequences outright
+    if (filePath.includes('..') || path.isAbsolute(filePath)) {
+      return new NextResponse('Not found', { status: 404 });
+    }
 
-    // Check which path exists
-    for (const possiblePath of possiblePaths) {
-      console.log('Checking:', possiblePath);
-      if (existsSync(possiblePath)) {
-        fullPath = possiblePath;
-        foundPath = true;
-        console.log('✓ Found file at:', fullPath);
+    const publicRoot = path.join(process.cwd(), 'public');
+    let fullPath: string | null = null;
+
+    for (const folder of SEARCH_FOLDERS) {
+      const baseDir = folder ? path.join(publicRoot, folder) : publicRoot;
+      const candidate = safeResolve(baseDir, filePath);
+      if (candidate && existsSync(candidate)) {
+        fullPath = candidate;
         break;
       }
     }
 
-    console.log('========================================');
-
-    if (!foundPath) {
-      console.log('❌ File not found in any location');
+    if (!fullPath) {
       return new NextResponse('File not found', { status: 404 });
     }
 
+    const ext = path.extname(fullPath).toLowerCase();
+    const contentType = CONTENT_TYPES[ext];
+    if (!contentType) {
+      // Only ever serve known-safe file types
+      return new NextResponse('Not found', { status: 404 });
+    }
+
     const fileBuffer = await readFile(fullPath);
-    const ext = path.extname(filePath).toLowerCase();
-
-    const contentTypes: Record<string, string> = {
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.png': 'image/png',
-      '.gif': 'image/gif',
-      '.webp': 'image/webp',
-      '.svg': 'image/svg+xml',
-      '.ico': 'image/x-icon',
-      '.woff': 'font/woff',
-      '.woff2': 'font/woff2',
-      '.ttf': 'font/ttf',
-      '.otf': 'font/otf',
-      '.txt': 'text/plain',
-    };
-
     return new NextResponse(fileBuffer, {
       status: 200,
       headers: {
-        'Content-Type': contentTypes[ext] || 'application/octet-stream',
+        'Content-Type': contentType,
         'Cache-Control': 'public, max-age=31536000, immutable',
       },
     });
   } catch (error) {
-    console.error('❌ Error serving file:', error);
+    console.error('Error serving file:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
-

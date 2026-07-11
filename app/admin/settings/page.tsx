@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  CreditCard, Banknote, Landmark, Wallet, Info, CheckCircle2, AlertCircle, Loader2,
+  CreditCard, Banknote, Landmark, Wallet, Info, CheckCircle2, AlertCircle, Loader2, Truck,
 } from "lucide-react"
 
 interface PaymentSettings {
@@ -18,6 +18,8 @@ interface PaymentSettings {
   enableCCAvenue: boolean
   minCODAmount: number
   maxCODAmount: number
+  freeShippingEnabled: boolean
+  freeShippingThreshold: number
 }
 
 export default function SettingsPage() {
@@ -29,6 +31,8 @@ export default function SettingsPage() {
     enableCCAvenue: true,
     minCODAmount: 0,
     maxCODAmount: 100000,
+    freeShippingEnabled: false,
+  freeShippingThreshold: 0,
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -282,6 +286,57 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+
+        {/* ── Free shipping card ───────────────────────────── */}
+<div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+  <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/60">
+    <h2 className="font-semibold text-gray-900">Free shipping</h2>
+    <p className="text-xs text-gray-500 mt-0.5">
+      Waive shipping charges once a customer's order crosses a set amount.
+    </p>
+  </div>
+
+  <div className="p-6 space-y-4">
+    <div className={`flex items-center gap-3.5 rounded-xl border px-4 py-3.5 transition-colors ${
+      settings.freeShippingEnabled ? "border-emerald-200 bg-emerald-50/40" : "border-gray-200 bg-gray-50"
+    }`}>
+      <div className="w-9 h-9 rounded-lg bg-white border border-gray-200 flex items-center justify-center shrink-0">
+        <Truck className="w-4 h-4 text-gray-500" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <Label htmlFor="freeShipping" className="text-sm font-semibold text-gray-900 cursor-pointer">
+          Enable free shipping
+        </Label>
+        <p className="text-xs text-gray-500 mt-0.5">
+          Shipping is waived once the order subtotal (after coupon) meets the threshold below
+        </p>
+      </div>
+      <Switch
+        id="freeShipping"
+        checked={settings.freeShippingEnabled}
+        onCheckedChange={(checked) => handleChange("freeShippingEnabled", checked)}
+      />
+    </div>
+
+    {settings.freeShippingEnabled && (
+      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+        <label className="text-xs font-medium text-gray-500 mb-1.5 block">
+          Free shipping threshold (₹)
+        </label>
+        <Input
+          type="number"
+          value={settings.freeShippingThreshold}
+          onChange={(e) => handleChange("freeShippingThreshold", Number(e.target.value))}
+          min={0}
+          className="bg-white max-w-xs"
+        />
+        <p className="text-xs text-gray-400 mt-1">
+          Orders of ₹{settings.freeShippingThreshold || 0} or more get free shipping.
+        </p>
+      </div>
+    )}
+  </div>
+</div>
       </div>
     </main>
   )

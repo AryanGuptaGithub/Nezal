@@ -8,6 +8,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { buildCCAvenueRequest } from "@/lib/ccavenue";
+import { connectDB } from "@/lib/db";
+import { Order } from "@/lib/models/order";
 
 // CCAvenue transaction URLs (use the test one only if you're explicitly in sandbox mode)
 const CCAVENUE_LIVE_URL =
@@ -17,26 +19,20 @@ const CCAVENUE_TEST_URL =
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const {
-      orderId,
-      amount,
-      billingName,
-      billingEmail,
-      billingPhone,
-      billingAddress,
-      billingCity,
-      billingState,
-      billingZip,
-      billingCountry,
-    } = body;
+     const body = await req.json();
+    const { orderId, billingName, billingEmail, billingPhone, billingAddress, billingCity, billingState, billingZip, billingCountry } = body;
 
-    if (!orderId || !amount) {
-      return NextResponse.json(
-        { error: "orderId and amount are required" },
-        { status: 400 }
-      );
+    if (!orderId) {
+      return NextResponse.json({ error: "orderId is required" }, { status: 400 });
     }
+
+    await connectDB();
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    const amount = order.totalAmount; 
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 

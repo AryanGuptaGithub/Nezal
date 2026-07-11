@@ -47,6 +47,22 @@ function normalizeStringArray(val: any): string[] {
   return [];
 }
 
+function getSortStage(sort: string): Record<string, 1 | -1> {
+  switch (sort) {
+    case "price_asc":
+      return { price: 1 };
+    case "price_desc":
+      return { price: -1 };
+    case "name_asc":
+      return { name: 1 };
+    case "newest":
+    default:
+      return { createdAt: -1 };
+  }
+}
+
+
+
 export async function GET(request: NextRequest) {
   try {
     await connectDB();
@@ -84,6 +100,7 @@ export async function GET(request: NextRequest) {
     const page = Number.parseInt(searchParams.get("page") || "1");
     const limit = Number.parseInt(searchParams.get("limit") || "12");
     const exclude = searchParams.get("exclude");
+    const sort = searchParams.get("sort") || "newest";
     const includeInactiveParam = searchParams.get("includeInactive") === "true";
 
     // Only an authenticated admin can actually see inactive products
@@ -93,7 +110,7 @@ export async function GET(request: NextRequest) {
       includeInactive = !!session?.user && session.user.role === "admin";
     }
 
-    const cacheKey = getCacheKey({ company, category, search, page, limit, exclude, includeInactive: String(includeInactive) });
+    const cacheKey = getCacheKey({ company, category, search, page, limit, exclude, sort, includeInactive: String(includeInactive) });
     const cachedResponse = getCachedResponse(cacheKey);
     if (cachedResponse) {
       return NextResponse.json(cachedResponse);
@@ -159,6 +176,16 @@ export async function GET(request: NextRequest) {
   });
 
   const fuzzyResults = fuse.search(search).map((r) => r.item);
+
+  if (sort === "price_asc") {
+  fuzzyResults.sort((a: any, b: any) => (a.price ?? 0) - (b.price ?? 0));
+} else if (sort === "price_desc") {
+  fuzzyResults.sort((a: any, b: any) => (b.price ?? 0) - (a.price ?? 0));
+} else if (sort === "name_asc") {
+  fuzzyResults.sort((a: any, b: any) => a.name.localeCompare(b.name));
+}
+
+
   total = fuzzyResults.length;
   products = fuzzyResults.slice(skip, skip + limit);
 } else {
@@ -169,7 +196,7 @@ export async function GET(request: NextRequest) {
       .select("name slug price discountPrice image images stock company category isActive createdAt")
       .skip(skip)
       .limit(limit)
-      .sort({ createdAt: -1 })
+       .sort(getSortStage(sort))
       .lean(),
     Product.countDocuments(query),
   ]);

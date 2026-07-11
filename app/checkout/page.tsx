@@ -23,6 +23,8 @@ interface PaymentSettings {
   enableCOD: boolean
   enableRazorpay: boolean
   enableCCAvenue?: boolean
+   freeShippingEnabled?: boolean
+  freeShippingThreshold?: number
 }
 
 // ===== Loader components (unchanged) =====
@@ -298,9 +300,23 @@ function CheckoutPageInner() {
     setCouponError("")
   }
 
-  const discountAmount = couponData?.discountAmount ?? 0
-  const shippingCharge = shippingRate ?? 0
-  const finalTotal = Math.max(0, totalPrice - discountAmount) + shippingCharge
+const discountAmount = couponData?.discountAmount ?? 0
+const orderSubtotal = Math.max(0, totalPrice - discountAmount)
+
+// Free shipping is earned on the raw cart subtotal — a coupon applied later
+// doesn't take it away, it's just an extra benefit stacked on top.
+const freeShippingApplied =
+  !!paymentSettings?.freeShippingEnabled &&
+  (paymentSettings?.freeShippingThreshold ?? 0) > 0 &&
+  totalPrice >= (paymentSettings!.freeShippingThreshold as number)
+
+const shippingCharge = freeShippingApplied ? 0 : (shippingRate ?? 0)
+const finalTotal = orderSubtotal + shippingCharge
+
+const amountLeftForFreeShipping =
+  !!paymentSettings?.freeShippingEnabled && (paymentSettings?.freeShippingThreshold ?? 0) > 0
+    ? Math.max(0, (paymentSettings!.freeShippingThreshold as number) - totalPrice)
+    : 0
 
   const handleCheckout = async (shippingAddress: any, paymentMethod: string) => {
     setIsLoading(true)
@@ -765,18 +781,26 @@ function CheckoutPageInner() {
 
 
         <div className="flex justify-between items-center text-sm">
-          <span className="flex items-center gap-1.5 text-[#858585]">
+           <span className="flex items-center gap-1.5 text-[#858585]">
             <Truck className="w-3.5 h-3.5" /> Shipping
           </span>
           {shippingLoading ? (
             <span className="text-xs text-[#858585] animate-pulse">Calculating…</span>
+          ) : freeShippingApplied ? (
+            <span className="font-medium text-[#2d8116]">FREE</span>
           ) : shippingRate !== null ? (
             <span className="font-medium text-[#2d8116]">₹{shippingRate.toFixed(2)}</span>
           ) : (
             <span className="text-xs text-[#858585]">Enter pincode to calculate</span>
           )}
         </div>
-        {shippingError && <p className="text-xs text-red-500"> <span className="border">+</span>{shippingError}</p>}
+        {shippingError && <p className="text-xs text-red-500"><span className="border">+</span>{shippingError}</p>}
+
+        {!freeShippingApplied && amountLeftForFreeShipping > 0 && (
+          <p className="text-xs text-[#2d8116] bg-[#ebffe6] border border-[#2d8116]/30 rounded-lg px-3 py-2">
+            Add ₹{amountLeftForFreeShipping.toFixed(2)} more to get FREE shipping!
+          </p>
+        )}
       </div>
 
       {/* Final total */}

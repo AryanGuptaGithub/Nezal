@@ -23,7 +23,10 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData()
     const files = formData.getAll("files") as File[]
-    const folder = (formData.get("folder") as string) || "uploads"
+    const ALLOWED_FOLDERS = new Set(['products', 'blogs', 'carousel', 'arrivals', 'shop-by-concern', 'uploads']);
+const folder = ALLOWED_FOLDERS.has(formData.get('folder') as string)
+  ? (formData.get('folder') as string)
+  : 'uploads';
 
     if (!files || files.length === 0) {
       return NextResponse.json(
@@ -34,9 +37,17 @@ export async function POST(request: NextRequest) {
 
     const uploadedUrls: string[] = []
 
+    const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+
     for (const file of files) {
       if (!file) continue
-
+        if (!ALLOWED_TYPES.has(file.type)) {
+            return NextResponse.json({ error: `Unsupported file type: ${file.type}` }, { status: 400 });
+          }
+          if (file.size > MAX_SIZE) {
+            return NextResponse.json({ error: `File too large: ${file.name}` }, { status: 400 });
+          }
       const bytes = await file.arrayBuffer()
       const buffer = Buffer.from(bytes)
 

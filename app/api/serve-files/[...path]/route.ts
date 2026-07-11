@@ -2,77 +2,80 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import path from 'path';
 import { existsSync } from 'fs';
-// can u create the image management page for the admin panel
 
-// so in the admin panel and i hv to add one more pages to manage the images in the public folders as u can see we hv the images in the public folder and also u can see we hv the other folders like arrivals blogs carousel shop-by-concern uploads
+// Only these top-level public subfolders may be served through this route
+const ALLOWED_FOLDERS = new Set([
+  'arrivals',
+  'blogs',
+  'carousel',
+  'ingredients',
+  'oldlogo',
+  'products',
+  'shop-by-concern',
+  'uploads',
+  'fonts',
+]);
 
-// so on our manage images we can deletes the images which are not used or related to any product or enetity
+const CONTENT_TYPES: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.otf': 'font/otf',
+  '.txt': 'text/plain',
+};
+
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> }
 ) {
   try {
     const params = await context.params;
-    
-    // First element is the folder, rest is the file path
     const folder = params.path[0];
     const filePath = params.path.slice(1).map(segment => decodeURIComponent(segment)).join('/');
-    
-    console.log('========== FILE SERVE DEBUG ==========');
-    console.log('Folder:', folder);
-    console.log('File path:', filePath);
-    
-    const fullPath = path.join(process.cwd(), 'public', folder, filePath);
-    console.log('Full path:', fullPath);
+
+    // 1. Folder must be an explicitly allowed one
+    if (!folder || !ALLOWED_FOLDERS.has(folder)) {
+      return new NextResponse('Not found', { status: 404 });
+    }
+
+    const publicRoot = path.join(process.cwd(), 'public');
+    const baseDir = path.join(publicRoot, folder);
+    const fullPath = path.normalize(path.join(baseDir, filePath));
+
+    // 2. Resolved path must stay inside baseDir — this is what blocks ../ traversal
+    if (fullPath !== baseDir && !fullPath.startsWith(baseDir + path.sep)) {
+      return new NextResponse('Not found', { status: 404 });
+    }
+
+    // 3. Extension must be a known-safe type — never serve .php, .env, etc.
+    const ext = path.extname(fullPath).toLowerCase();
+    const contentType = CONTENT_TYPES[ext];
+    if (!contentType) {
+      return new NextResponse('Not found', { status: 404 });
+    }
 
     if (!existsSync(fullPath)) {
-  console.log('❌ File not found');
-  try {
-    const { readdir } = await import('fs/promises');
-    const folderPath = path.join(process.cwd(), 'public', folder);
-    if (existsSync(folderPath)) {
-      const filesInFolder = await readdir(folderPath);
-      console.log(`📂 Files actually in /public/${folder}:`, filesInFolder);
-    } else {
-      console.log(`📂 Folder /public/${folder} does not exist at all`);
+      return new NextResponse('File not found', { status: 404 });
     }
-  } catch (e) {
-    console.log('Could not list folder contents:', e);
-  }
-  console.log('========================================');
-  return new NextResponse('File not found', { status: 404 });
-}
-
-    console.log('✓ File found, serving...');
-    console.log('========================================');
 
     const fileBuffer = await readFile(fullPath);
-    const ext = path.extname(filePath).toLowerCase();
-
-    const contentTypes: Record<string, string> = {
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.png': 'image/png',
-      '.gif': 'image/gif',
-      '.webp': 'image/webp',
-      '.svg': 'image/svg+xml',
-      '.ico': 'image/x-icon',
-      '.woff': 'font/woff',
-      '.woff2': 'font/woff2',
-      '.ttf': 'font/ttf',
-      '.otf': 'font/otf',
-      '.txt': 'text/plain',
-    };
 
     return new NextResponse(fileBuffer, {
       status: 200,
       headers: {
-        'Content-Type': contentTypes[ext] || 'application/octet-stream',
+        'Content-Type': contentType,
         'Cache-Control': 'public, max-age=31536000, immutable',
       },
     });
   } catch (error) {
-    console.error('❌ Error serving file:', error);
+    console.error('Error serving file:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

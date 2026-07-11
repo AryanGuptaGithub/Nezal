@@ -6,10 +6,11 @@
  * This route:
  *   1. Decrypts encResp
  *   2. Verifies order_status
- *   3. Updates the Order in MongoDB (order was already created as "pending"
+ *   3. Cross-checks the paid amount against the order's real totalAmount
+ *   4. Updates the Order in MongoDB (order was already created as "pending"
  *      by /api/orders before redirecting to CCAvenue)
- *   4. Sends confirmation emails on success
- *   5. Redirects the browser to /order-success/[id] or /checkout?error=...
+ *   5. Sends confirmation emails on success
+ *   6. Redirects the browser to /order-success/[id] or /checkout?error=...
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -36,17 +37,24 @@ export async function POST(req: NextRequest) {
 
     console.log("CCAvenue response:", JSON.stringify(data));
 
-    const {
-      order_id, // OUR order id we sent at initiation
-      order_status,
-      tracking_id, // CCAvenue's transaction id
-      bank_ref_no,
-      failure_message,
-    } = data;
+    const { order_id, order_status, tracking_id, bank_ref_no, failure_message, amount } = data;
 
     await connectDB();
 
     if (order_status === "Success") {
+      const existingOrder = await Order.findById(order_id);
+      if (!existingOrder) {
+        return NextResponse.redirect(`${siteUrl}/checkout?error=order_not_found`);
+      }
+
+      const paidAmount = parseFloat(amount);
+      if (Math.abs(paidAmount - existingOrder.totalAmount) > 0.01) {
+        console.error(
+          `CCAvenue amount mismatch: order ${order_id} expected ${existingOrder.totalAmount}, got ${paidAmount}`
+        );
+        return NextResponse.redirect(`${siteUrl}/checkout?error=amount_mismatch`);
+      }
+
       const updatedOrder = await Order.findByIdAndUpdate(
         order_id,
         {
@@ -59,8 +67,7 @@ export async function POST(req: NextRequest) {
       );
 
       if (updatedOrder) {
-        // Send confirmation emails, same pattern as COD path in /api/orders
-         await autoCreateShiprocketOrder(order_id);
+        await autoCreateShiprocketOrder(order_id);
         try {
           const populatedOrder = await Order.findById(updatedOrder._id)
             .populate("items.product")
@@ -130,46 +137,46 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.redirect(`${siteUrl}/order-success/${order_id}`);
     } else {
-  // Aborted, Failure, Invalid, etc.
-  const updatedOrder = await Order.findByIdAndUpdate(
-    order_id,
-    { paymentStatus: "failed" },
-    { new: true }
-  ).catch(() => null);
+      // Aborted, Failure, Invalid, etc.
+      const updatedOrder = await Order.findByIdAndUpdate(
+        order_id,
+        { paymentStatus: "failed" },
+        { new: true }
+      ).catch(() => null);
 
-  if (updatedOrder) {
-    try {
-      const recipientEmail =
-        (updatedOrder as any).guestEmail ??
-        (updatedOrder as any).shippingAddress?.email ??
-        "";
-      const recipientName =
-        (updatedOrder as any).guestName ??
-        (updatedOrder as any).shippingAddress?.name ??
-        "Customer";
+      if (updatedOrder) {
+        try {
+          const recipientEmail =
+            (updatedOrder as any).guestEmail ??
+            (updatedOrder as any).shippingAddress?.email ??
+            "";
+          const recipientName =
+            (updatedOrder as any).guestName ??
+            (updatedOrder as any).shippingAddress?.name ??
+            "Customer";
 
-      if (recipientEmail) {
-        const failedEmailHtml = getPaymentFailedEmail({
-          customerName: recipientName,
-          orderId: (updatedOrder as any).orderNumber,
-          totalAmount: (updatedOrder as any).totalAmount,
-          reason: failure_message || order_status,
-        });
+          if (recipientEmail) {
+            const failedEmailHtml = getPaymentFailedEmail({
+              customerName: recipientName,
+              orderId: (updatedOrder as any).orderNumber,
+              totalAmount: (updatedOrder as any).totalAmount,
+              reason: failure_message || order_status,
+            });
 
-        await sendEmail({
-          to: recipientEmail,
-          subject: `Payment Failed - Order ${(updatedOrder as any).orderNumber}`,
-          html: failedEmailHtml,
-        });
+            await sendEmail({
+              to: recipientEmail,
+              subject: `Payment Failed - Order ${(updatedOrder as any).orderNumber}`,
+              html: failedEmailHtml,
+            });
+          }
+        } catch (emailError) {
+          console.error("Failed to send CCAvenue payment-failed email:", emailError);
+        }
       }
-    } catch (emailError) {
-      console.error("Failed to send CCAvenue payment-failed email:", emailError);
-    }
-  }
 
-  const reason = encodeURIComponent(failure_message || order_status || "payment_failed");
-  return NextResponse.redirect(`${siteUrl}/checkout?error=${reason}`);
-}
+      const reason = encodeURIComponent(failure_message || order_status || "payment_failed");
+      return NextResponse.redirect(`${siteUrl}/checkout?error=${reason}`);
+    }
   } catch (err: any) {
     console.error("CCAvenue response error:", err.message);
     return NextResponse.redirect(`${siteUrl}/checkout?error=processing_error`);

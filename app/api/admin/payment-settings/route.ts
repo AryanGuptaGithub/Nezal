@@ -20,6 +20,8 @@ export async function GET(request: NextRequest) {
         enableCCAvenue: true,
         minCODAmount: 0,
         maxCODAmount: 100000,
+        freeShippingEnabled: false,
+         freeShippingThreshold: 0,
       });
     }
 
@@ -50,7 +52,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Access denied. Admin privileges required." }, { status: 403 });
     }
 
-    const { enableCOD, enableRazorpay, enableCCAvenue, minCODAmount, maxCODAmount } =
+    const { enableCOD, enableRazorpay, enableCCAvenue, minCODAmount, maxCODAmount, freeShippingEnabled, freeShippingThreshold, } =
       await request.json();
 
     let settings = await PaymentSettings.findOne();
@@ -62,6 +64,8 @@ export async function PUT(request: NextRequest) {
         enableCCAvenue,
         minCODAmount,
         maxCODAmount,
+        freeShippingEnabled,
+        freeShippingThreshold,
       });
     } else {
       settings.enableCOD = enableCOD;
@@ -69,6 +73,8 @@ export async function PUT(request: NextRequest) {
       settings.enableCCAvenue = enableCCAvenue;
       settings.minCODAmount = minCODAmount;
       settings.maxCODAmount = maxCODAmount;
+      settings.freeShippingEnabled = freeShippingEnabled;
+      settings.freeShippingThreshold = freeShippingThreshold;
       await settings.save();
     }
 

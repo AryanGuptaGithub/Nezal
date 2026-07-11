@@ -8,6 +8,14 @@ import { type NextRequest, NextResponse } from "next/server"
 import crypto from "crypto"
 import { sendEmail, getOrderConfirmationEmail, getAdminOrderNotificationEmail } from "@/lib/email"
 import { autoCreateShiprocketOrder } from "@/lib/shiprocket"
+import Razorpay from "razorpay" 
+
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID!,
+  key_secret: process.env.RAZORPAY_KEY_SECRET!,
+})
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,6 +27,36 @@ export async function POST(request: NextRequest) {
     if (expectedSignature !== razorpaySignature) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 })
     }
+
+     const razorpayOrder = await razorpay.orders.fetch(razorpayOrderId)
+
+     let computedTotal = 0
+const verifiedItems = []
+for (const item of items) {
+  const product = await Product.findById(item.product)
+  if (!product) {
+    return NextResponse.json({ error: `Product not found: ${item.product}` }, { status: 400 })
+  }
+  if (product.stock < item.quantity) {
+    return NextResponse.json({ error: `Insufficient stock for ${product.name}` }, { status: 400 })
+  }
+  const realPrice = product.price
+  computedTotal += realPrice * item.quantity
+  verifiedItems.push({
+    product: product._id,
+    quantity: item.quantity,
+    price: realPrice,
+    selectedSize: item.selectedSize,
+  })
+}
+const realShipping = shippingAmount ?? 0
+const realTotal = computedTotal + realShipping
+
+    const expectedAmountPaise = Math.round(realTotal * 100)
+if (razorpayOrder.amount !== expectedAmountPaise) {
+  console.error(`Amount mismatch: real total ${expectedAmountPaise}, Razorpay paid ${razorpayOrder.amount}`)
+  return NextResponse.json({ error: "Payment amount mismatch" }, { status: 400 })
+}
 
     await connectDB()
 
@@ -86,9 +124,9 @@ export async function POST(request: NextRequest) {
     guestEmail: user ? undefined : shippingAddress.email,
     guestName: user ? undefined : shippingAddress.name,
     guestPhone: user ? undefined : shippingAddress.phone,
-    items,
-    totalAmount,
-    shippingAmount: shippingAmount ?? 0,   // ← add this
+     items: verifiedItems,
+  totalAmount: realTotal,
+  shippingAmount: realShipping,
     shippingAddress: mappedAddress,
     paymentMethod: "razorpay",
     paymentStatus: "completed",

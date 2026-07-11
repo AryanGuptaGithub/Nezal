@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const paymentSettingsSchema = new mongoose.Schema(
   {
-    enableCOD: {
+    enableCOD: { 
       type: Boolean,
       default: true,
     },
@@ -21,6 +21,15 @@ const paymentSettingsSchema = new mongoose.Schema(
     maxCODAmount: {
       type: Number,
       default: 100000, // Maximum order amount for COD
+    },
+     // ── Free shipping ──────────────────────────────
+    freeShippingEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    freeShippingThreshold: {
+      type: Number,
+      default: 0, // order subtotal (after discount, before shipping) must be >= this
     },
   },
   { timestamps: true }

@@ -27,6 +27,30 @@ const { items, removeItem, removeRitual, updateQuantity, getTotalPrice, getTotal
   const [showBulkOrderModal, setShowBulkOrderModal] = useState(false)
   const [gstMap, setGstMap] = useState<Record<string, number>>({})
 
+  // ── Free shipping ──────────────────────────────
+  const [freeShipping, setFreeShipping] = useState<{ enabled: boolean; threshold: number } | null>(null)
+
+  useEffect(() => {
+    fetch("/api/admin/payment-settings")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) {
+          setFreeShipping({
+            enabled: !!data.freeShippingEnabled,
+            threshold: data.freeShippingThreshold ?? 0,
+          })
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const freeShippingApplied =
+    !!freeShipping?.enabled && freeShipping.threshold > 0 && totalPrice >= freeShipping.threshold
+
+  const amountLeftForFreeShipping =
+    !!freeShipping?.enabled && freeShipping.threshold > 0
+      ? Math.max(0, freeShipping.threshold - totalPrice)
+      : 0
 
 
   useEffect(() => {
@@ -351,10 +375,30 @@ const totalGST = items.reduce((sum, item) => {
       </span>
     </div>
   )}
+
   <div className="flex justify-between text-sm">
-    <span className="text-muted-foreground">Shipping</span>
-    <span className="font-thin italic font-[#76ef74]"> Proceed to see</span>
+  <span className="text-muted-foreground">Shipping</span>
+  {freeShippingApplied ? (
+    <span className="font-semibold" style={{ color: "#2d8116" }}>FREE</span>
+  ) : (
+    <span className="font-thin italic font-[#76ef74]">Proceed to see</span>
+  )}
+</div>
+
+{!freeShippingApplied && amountLeftForFreeShipping > 0 && (
+  <div className="text-xs font-medium rounded-lg px-3 py-2 border" style={{ color: "#2d8116", borderColor: "#2d811640", backgroundColor: "#ebffe6" }}>
+    Add ₹{amountLeftForFreeShipping.toFixed(2)} more to get FREE shipping!
   </div>
+)}
+
+{freeShippingApplied && (
+  <div className="text-xs font-medium rounded-lg px-3 py-2 border" style={{ color: "#2d8116", borderColor: "#2d811640", backgroundColor: "#ebffe6" }}>
+    🎉 You've unlocked FREE shipping!
+  </div>
+)}
+
+
+
   {(() => {
   const ratesInCart = [...new Set(
     items

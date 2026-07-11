@@ -7,14 +7,19 @@ import { type NextRequest, NextResponse } from "next/server";
 import { sendEmail, getOrderConfirmationEmail, getAdminOrderNotificationEmail } from "@/lib/email";
 import "@/lib/models/product"
 import "@/lib/models/user"
-
+import { Product } from "@/lib/models/product";
 import { autoCreateShiprocketOrder } from "@/lib/shiprocket";
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession();
     const body = await request.json();
+      
+
+
     const { items, shippingAddress, totalAmount, paymentMethod, shippingAmount } = body;
+
+
 
     await connectDB();
 
@@ -36,6 +41,34 @@ export async function POST(request: NextRequest) {
       }
     }
 
+
+    let computedTotal = 0;
+const verifiedItems = [];
+
+for (const item of items) {
+  const product = await Product.findById(item.product);
+  if (!product) {
+    return NextResponse.json({ error: `Product not found: ${item.product}` }, { status: 400 });
+  }
+  if (product.stock < item.quantity) {
+    return NextResponse.json({ error: `Insufficient stock for ${product.name}` }, { status: 400 });
+  }
+
+  const realPrice = product.price; // adjust field name to match your schema
+  computedTotal += realPrice * item.quantity;
+
+  verifiedItems.push({
+    product: product._id,
+    quantity: item.quantity,
+    price: realPrice,           // server-verified price, not client's
+    selectedSize: item.selectedSize,
+  });
+}
+
+const realShipping = shippingAmount ?? 0; // ideally also recompute via your shipping-rate logic rather than trust client
+const realTotal = computedTotal + realShipping;
+
+
     const orderNumber = `ORD-${Date.now()}`;
 
     const mappedAddress = {
@@ -51,19 +84,19 @@ export async function POST(request: NextRequest) {
     };
 
     const order = await Order.create({
-  orderNumber,
-  user: user?._id,
-  guestEmail: user ? undefined : shippingAddress.email,
-  guestName: user ? undefined : shippingAddress.name,
-  guestPhone: user ? undefined : shippingAddress.phone,
-  items,
-  totalAmount,
-  shippingAmount: shippingAmount ?? 0,   // ← add this
-  shippingAddress: mappedAddress,
-  paymentMethod: paymentMethod || "cod",
-  paymentStatus: "pending",
-  orderStatus: "pending",
-});
+      orderNumber,
+      user: user?._id,
+      guestEmail: user ? undefined : shippingAddress.email,
+      guestName: user ? undefined : shippingAddress.name,
+      guestPhone: user ? undefined : shippingAddress.phone,
+      items: verifiedItems,
+      totalAmount: realTotal,
+      shippingAmount: realShipping,   // ← add this
+      shippingAddress: mappedAddress,
+      paymentMethod: paymentMethod || "cod",
+      paymentStatus: "pending",
+      orderStatus: "pending",
+    });
 
     const recipientEmail = user?.email || shippingAddress.email;
     const recipientName = user?.name || shippingAddress.name;
