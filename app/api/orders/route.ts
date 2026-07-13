@@ -43,27 +43,40 @@ export async function POST(request: NextRequest) {
 
 
     let computedTotal = 0;
-const verifiedItems = [];
+    let totalTaxableValue = 0;
+    let totalGstAmount = 0;
+    const verifiedItems = [];
 
-for (const item of items) {
-  const product = await Product.findById(item.product);
-  if (!product) {
-    return NextResponse.json({ error: `Product not found: ${item.product}` }, { status: 400 });
-  }
-  if (product.stock < item.quantity) {
-    return NextResponse.json({ error: `Insufficient stock for ${product.name}` }, { status: 400 });
-  }
+      for (const item of items) {
+        const product = await Product.findById(item.product);
+        if (!product) {
+          return NextResponse.json({ error: `Product not found: ${item.product}` }, { status: 400 });
+        }
+        if (product.stock < item.quantity) {
+          return NextResponse.json({ error: `Insufficient stock for ${product.name}` }, { status: 400 });
+        }
 
-  const realPrice = product.price; // adjust field name to match your schema
-  computedTotal += realPrice * item.quantity;
+        const realPrice = product.price; // GST-inclusive unit price
+        const gstPercent = product.gstPercent ?? 0;
 
-  verifiedItems.push({
-    product: product._id,
-    quantity: item.quantity,
-    price: realPrice,           // server-verified price, not client's
-    selectedSize: item.selectedSize,
-  });
-}
+        const lineTotal = realPrice * item.quantity;
+        const lineTaxableValue = gstPercent > 0 ? lineTotal / (1 + gstPercent / 100) : lineTotal;
+        const lineGstAmount = lineTotal - lineTaxableValue;
+
+        computedTotal += lineTotal;
+        totalTaxableValue += lineTaxableValue;
+        totalGstAmount += lineGstAmount;
+
+        verifiedItems.push({
+          product: product._id,
+          quantity: item.quantity,
+          price: realPrice,
+          gstPercent,
+          taxableValue: Math.round(lineTaxableValue * 100) / 100,
+          gstAmount: Math.round(lineGstAmount * 100) / 100,
+          selectedSize: item.selectedSize,
+        });
+      }
 
 const realShipping = shippingAmount ?? 0; // ideally also recompute via your shipping-rate logic rather than trust client
 const realTotal = computedTotal + realShipping;
@@ -96,6 +109,8 @@ const realTotal = computedTotal + realShipping;
       paymentMethod: paymentMethod || "cod",
       paymentStatus: "pending",
       orderStatus: "pending",
+      totalTaxableValue: Math.round(totalTaxableValue * 100) / 100,
+      totalGstAmount: Math.round(totalGstAmount * 100) / 100,
     });
 
     const recipientEmail = user?.email || shippingAddress.email;

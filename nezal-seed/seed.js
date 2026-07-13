@@ -321,7 +321,7 @@ async function seed() {
       "Nezal Herbocare is a cosmetics venture of Healthcare Medical Centre, a large import and export house based in Mumbai, India. We provide 100% natural, handmade, organic skin care products adhering to USFDA guidelines.",
     logo: "/companylogo.jpg",
     banner: "/carousel/banner1.jpg",
-    email: "info@nezal.com",
+    email: "info@nezalherbocare.com",
     phone: "+918122629655",
     website: "https://nezalherbocare.com",
     position: 1,

@@ -28,6 +28,9 @@ interface OrderItem {
   productName?: string
   quantity?: number
   price?: number
+  gstPercent?: number       // ← add
+  taxableValue?: number     // ← add
+  gstAmount?: number        // ← add
   selectedSize?: {
     size: string
     unit: string
@@ -52,25 +55,22 @@ interface ShippingAddress {
 interface Order {
   _id: string
   orderNumber?: string
-  user?: {
-    _id?: string
-    name?: string
-    email?: string
-    phone?: string
-  }
+  user?: { _id?: string; name?: string; email?: string; phone?: string }
   guestName?: string
   guestEmail?: string
   guestPhone?: string
   items: OrderItem[]
   shippingAddress?: ShippingAddress
   totalAmount: number
+  shippingAmount?: number        // ← add
+  totalTaxableValue?: number     // ← add
+  totalGstAmount?: number        // ← add
   paymentStatus?: string
   paymentMethod?: string
   orderStatus?: string
   razorpayOrderId?: string
   razorpayPaymentId?: string
   createdAt?: string
-  // Shiprocket fields
   shiprocketOrderId?: number
   shiprocketShipmentId?: number
   awbCode?: string
@@ -251,7 +251,7 @@ export default function AdminOrdersPage() {
                       <th className="text-left py-3 px-4 font-semibold">Amount</th>
                       <th className="text-left py-3 px-4 font-semibold">Payment</th>
                       <th className="text-left py-3 px-4 font-semibold">Method</th>
-                      
+                      <th className="text-left py-3 px-4 font-semibold">GST</th>
                       <th className="text-left py-3 px-4 font-semibold">Shipping</th>
                       <th className="text-left py-3 px-4 font-semibold">Date</th>
                       <th className="text-left py-3 px-4 font-semibold">Actions</th>
@@ -307,24 +307,9 @@ export default function AdminOrdersPage() {
       : "Razorpay"}
   </Badge>
 </td>
-                        {/* <td className="py-3 px-4">
-                          <Select
-                            value={order.orderStatus || "pending"}
-                            onValueChange={(value) => updateOrderStatus(order._id, value)}
-                            disabled={updatingId === order._id}
-                          >
-                            <SelectTrigger className="w-32 h-8">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="processing">Processing</SelectItem>
-                              <SelectItem value="shipped">Shipped</SelectItem>
-                              <SelectItem value="delivered">Delivered</SelectItem>
-                              <SelectItem value="cancelled">Cancelled</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </td> */}
+                     <td className="py-3 px-4 text-xs text-muted-foreground">
+  ₹{(order.totalGstAmount ?? 0).toFixed(2)}
+</td>
 
                         {/* Shiprocket column */}
                         <td className="py-3 px-4">
@@ -424,26 +409,32 @@ export default function AdminOrdersPage() {
                   Items ({selectedOrder.items?.length || 0})
                 </h3>
                 <div className="space-y-3">
-                  {(selectedOrder.items || []).map((item, idx) => (
-                    <div key={idx} className="bg-background p-3 rounded border border-border">
-                      <p className="font-medium">{item.productName || item.product?.name || `Item ${idx + 1}`}</p>
-                      {(() => {
-                        const sel = item.selectedSize ?? item.product?.sizes?.[0];
-                        if (!sel) return null;
-                        return (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Size: {sel.size} ({sel.quantity}{sel.unit})
-                          </p>
-                        );
-                      })()}
-                      <div className="flex justify-between text-sm mt-2">
-                        <span className="text-muted-foreground">
-                          Qty: {item.quantity} × ₹{(item.price || 0).toFixed(2)}
-                        </span>
-                        <span className="font-medium">₹{((item.quantity || 0) * (item.price || 0)).toFixed(2)}</span>
-                      </div>
-                    </div>
-                  ))}
+                 {(selectedOrder.items || []).map((item, idx) => (
+  <div key={idx} className="bg-background p-3 rounded border border-border">
+    <p className="font-medium">{item.productName || item.product?.name || `Item ${idx + 1}`}</p>
+    {(() => {
+      const sel = item.selectedSize ?? item.product?.sizes?.[0];
+      if (!sel) return null;
+      return (
+        <p className="text-xs text-muted-foreground mt-1">
+          Size: {sel.size} ({sel.quantity}{sel.unit})
+        </p>
+      );
+    })()}
+    <div className="flex justify-between text-sm mt-2">
+      <span className="text-muted-foreground">
+        Qty: {item.quantity} × ₹{(item.price || 0).toFixed(2)}
+      </span>
+      <span className="font-medium">₹{((item.quantity || 0) * (item.price || 0)).toFixed(2)}</span>
+    </div>
+    {typeof item.gstPercent === "number" && item.gstPercent > 0 && (
+      <div className="flex justify-between text-xs text-muted-foreground mt-1 pt-1 border-t border-border">
+        <span>Taxable: ₹{(item.taxableValue ?? 0).toFixed(2)} + GST {item.gstPercent}%</span>
+        <span>GST: ₹{(item.gstAmount ?? 0).toFixed(2)}</span>
+      </div>
+    )}
+  </div>
+))}
                 </div>
               </div>
 
@@ -494,37 +485,53 @@ export default function AdminOrdersPage() {
                 </div>
               )}
 
-              {/* Payment Information */}
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <CreditCard className="w-4 h-4" />
-                  Payment Information
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Amount</p>
-                    <p className="font-medium text-lg">₹{(selectedOrder.totalAmount || 0).toFixed(2)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Payment Method</p>
-                   <p className="font-medium">
-  {selectedOrder.paymentMethod === "cod"
-    ? "Cash on Delivery"
-    : selectedOrder.paymentMethod === "ccavenue"
-    ? "CCAvenue"
-    : "Razorpay"}
-</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Payment Status</p>
-                    <Badge variant="outline">{selectedOrder.paymentStatus || "pending"}</Badge>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Order Status</p>
-                    <Badge variant="outline">{selectedOrder.orderStatus || "pending"}</Badge>
-                  </div>
-                </div>
-              </div>
+             <div className="bg-muted/50 p-4 rounded-lg">
+  <h3 className="font-semibold mb-3 flex items-center gap-2">
+    <CreditCard className="w-4 h-4" />
+    Payment Information
+  </h3>
+
+  {/* Price breakdown */}
+  <div className="space-y-1.5 text-sm mb-4 pb-4 border-b border-border">
+    <div className="flex justify-between text-muted-foreground">
+      <span>Taxable Value</span>
+      <span>₹{(selectedOrder.totalTaxableValue ?? 0).toFixed(2)}</span>
+    </div>
+    <div className="flex justify-between text-muted-foreground">
+      <span>GST</span>
+      <span>₹{(selectedOrder.totalGstAmount ?? 0).toFixed(2)}</span>
+    </div>
+    <div className="flex justify-between text-muted-foreground">
+      <span>Shipping</span>
+      <span>₹{(selectedOrder.shippingAmount ?? 0).toFixed(2)}</span>
+    </div>
+    <div className="flex justify-between font-semibold text-foreground pt-1.5 border-t border-border">
+      <span>Total</span>
+      <span>₹{(selectedOrder.totalAmount || 0).toFixed(2)}</span>
+    </div>
+  </div>
+
+  <div className="grid grid-cols-2 gap-4">
+    <div>
+      <p className="text-xs text-muted-foreground">Payment Method</p>
+      <p className="font-medium">
+        {selectedOrder.paymentMethod === "cod"
+          ? "Cash on Delivery"
+          : selectedOrder.paymentMethod === "ccavenue"
+          ? "CCAvenue"
+          : "Razorpay"}
+      </p>
+    </div>
+    <div>
+      <p className="text-xs text-muted-foreground">Payment Status</p>
+      <Badge variant="outline">{selectedOrder.paymentStatus || "pending"}</Badge>
+    </div>
+    <div>
+      <p className="text-xs text-muted-foreground">Order Status</p>
+      <Badge variant="outline">{selectedOrder.orderStatus || "pending"}</Badge>
+    </div>
+  </div>
+</div>
 
               {/* Shiprocket / Shipping Info */}
               <div className="bg-muted/50 p-4 rounded-lg">

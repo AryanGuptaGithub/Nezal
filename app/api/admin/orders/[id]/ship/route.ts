@@ -37,13 +37,20 @@ export async function POST(
   const addr = order.shippingAddress;
 
   // Build items array from order
-  const items = order.items.map((item: any) => ({
-    name: item.product?.name ?? "Product",
-    sku: item.product?.sku ?? "SKU",
-    units: item.quantity,
-    selling_price: item.price,
-    weight: item.product?.weight ?? 0.3,
-  }));
+ const items = order.items.map((item: any) => ({
+  name: item.product?.name ?? "Product",
+  sku: item.product?.sku ?? "SKU",
+  units: item.quantity,
+  selling_price: item.price,
+  weight: item.product?.weight ?? 0.3,
+  gstPercent: item.product?.gstPercent ?? 0,
+  hsn: item.product?.hsn ?? "",
+}));
+
+const goodsTotal = order.items.reduce(
+  (sum: number, item: any) => sum + item.price * item.quantity,
+  0
+);
 
   const shippingAddress = {
     name: addr?.name ?? order.guestName ?? "Customer",
@@ -58,16 +65,16 @@ export async function POST(
 
   try {
     const result = await createShiprocketOrder({
-      orderId: order._id.toString(),
-      orderDate: new Date(order.createdAt).toISOString().split("T")[0],
-      items,
-      shipping: shippingAddress,
-      billing: shippingAddress,
-      paymentMethod: order.paymentMethod === "cod" ? "COD" : "Prepaid",
-      subTotal: order.totalAmount,
-      shippingCharges: 0,
-      totalDiscount: order.discountAmount ?? 0,
-    });
+  orderId: order._id.toString(),
+  orderDate: new Date(order.createdAt).toISOString().split("T")[0],
+  items,
+  shipping: shippingAddress,
+  billing: shippingAddress,
+  paymentMethod: order.paymentMethod === "cod" ? "COD" : "Prepaid",
+  subTotal: goodsTotal,
+  shippingCharges: order.shippingAmount ?? 0,   // ← was hardcoded 0
+  totalDiscount: order.discountAmount ?? 0,
+});
 
     // Save Shiprocket IDs back to order
     await Order.findByIdAndUpdate(id, {

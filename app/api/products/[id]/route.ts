@@ -168,6 +168,7 @@ export async function PUT(
   expectedResults,
   keyIngredients,
   gstPercent,
+  hsn,
     } = body;
 
     // ── FIX: resolve category — prefer subcategory, fall back to mainCategory ──
@@ -205,6 +206,7 @@ export async function PUT(
   expectedResults: expectedResults ?? "",
   keyIngredients:  Array.isArray(keyIngredients) ? keyIngredients : [],
   gstPercent: gstPercent !== undefined && gstPercent !== "" ? Number(gstPercent) : null,
+  hsn: typeof hsn === "string" ? hsn.trim() : "",
     };
 
     // Only set category if we resolved one — avoids wiping an existing category

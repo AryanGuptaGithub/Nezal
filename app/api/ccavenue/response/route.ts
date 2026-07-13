@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     const encResp = formData.get("encResp") as string | null;
 
     if (!encResp) {
-      return NextResponse.redirect(`${siteUrl}/checkout?error=missing_response`);
+      return NextResponse.redirect(`${siteUrl}/checkout?error=missing_response`, 303);
     }
 
     const decrypted = decrypt(encResp);
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     if (order_status === "Success") {
       const existingOrder = await Order.findById(order_id);
       if (!existingOrder) {
-        return NextResponse.redirect(`${siteUrl}/checkout?error=order_not_found`);
+        return NextResponse.redirect(`${siteUrl}/checkout?error=order_not_found`, 303);
       }
 
       const paidAmount = parseFloat(amount);
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
         console.error(
           `CCAvenue amount mismatch: order ${order_id} expected ${existingOrder.totalAmount}, got ${paidAmount}`
         );
-        return NextResponse.redirect(`${siteUrl}/checkout?error=amount_mismatch`);
+       return NextResponse.redirect(`${siteUrl}/checkout?error=amount_mismatch`, 303);
       }
 
       const updatedOrder = await Order.findByIdAndUpdate(
@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
             });
 
             await sendEmail({
-              to: process.env.GMAIL_EMAIL || "nezal@gmail.com",
+              to: process.env.GMAIL_EMAIL || "nezalsoaps@gmail.com",
               subject: `🚨 NEW ORDER - ${(populatedOrder as any).orderNumber}`,
               html: adminEmailHtml,
             });
@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      return NextResponse.redirect(`${siteUrl}/order-success/${order_id}`);
+      return NextResponse.redirect(`${siteUrl}/order-success/${order_id}`, 303);
     } else {
       // Aborted, Failure, Invalid, etc.
       const updatedOrder = await Order.findByIdAndUpdate(
@@ -175,10 +175,10 @@ export async function POST(req: NextRequest) {
       }
 
       const reason = encodeURIComponent(failure_message || order_status || "payment_failed");
-      return NextResponse.redirect(`${siteUrl}/checkout?error=${reason}`);
+      return NextResponse.redirect(`${siteUrl}/checkout?error=${reason}`, 303);
     }
   } catch (err: any) {
-    console.error("CCAvenue response error:", err.message);
-    return NextResponse.redirect(`${siteUrl}/checkout?error=processing_error`);
-  }
+  console.error("CCAvenue response error:", err.message);
+  return NextResponse.redirect(`${siteUrl}/checkout?error=processing_error`, 303);
+}
 }

@@ -141,7 +141,7 @@ export default function NotFound() {
                 </Link>
 
                 <a
-                  href="mailto:info@nezal.com?subject=Broken%20link%20on%20site%20404"
+                  href="mailto:info@nezalherbocare.com?subject=Broken%20link%20on%20site%20404"
                   className="px-4 py-2 text-sm text-neutral-600 hover:underline dark:text-neutral-400"
                 >
                   Report this page

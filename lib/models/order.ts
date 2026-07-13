@@ -1,3 +1,4 @@
+// lib/models/order.ts
 import mongoose from "mongoose"
 
 const orderSchema = new mongoose.Schema(
@@ -22,6 +23,9 @@ const orderSchema = new mongoose.Schema(
         product:  { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
         quantity: Number,
         price:    Number,
+        gstPercent:   { type: Number, default: 0 },  
+        taxableValue: { type: Number, default: 0 },  
+        gstAmount:    { type: Number, default: 0 },  
         selectedSize: {
           size:         String,
           unit:         { type: String, enum: ["ml", "l", "g", "kg"] },
@@ -34,6 +38,9 @@ const orderSchema = new mongoose.Schema(
 
     totalAmount: { type: Number, required: true },
     shippingAmount: { type: Number, default: 0 }, 
+
+    totalTaxableValue: { type: Number, default: 0 },  // ← add
+    totalGstAmount:    { type: Number, default: 0 },  // ← add
 
     abandonedEmailSentAt: { type: Date, default: null },
 

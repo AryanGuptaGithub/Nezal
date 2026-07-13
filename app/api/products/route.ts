@@ -271,6 +271,7 @@ export async function POST(request: Request) {
       sizes,
       isActive,
       gstPercent,
+      hsn,
     } = body;
 
     // ── FIX: resolve category — prefer subcategory, fall back to mainCategory ──
@@ -303,6 +304,7 @@ export async function POST(request: Request) {
       sizes,
       isActive: isActive ?? true,
       gstPercent: gstPercent !== undefined && gstPercent !== "" ? Number(gstPercent) : null,
+      hsn: typeof hsn === "string" ? hsn.trim() : "",
     });
 
     await product.save();

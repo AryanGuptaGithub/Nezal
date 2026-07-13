@@ -25,6 +25,8 @@ export async function autoCreateShiprocketOrder(orderId: string) {
     units: item.quantity,
     selling_price: item.price,
     weight: item.product?.weight ?? 0.3,
+    gstPercent: item.product?.gstPercent ?? 0,  
+    hsn: item.product?.hsn ?? "",                 
   }));
 
   const shippingAddress = {
@@ -39,15 +41,22 @@ export async function autoCreateShiprocketOrder(orderId: string) {
   };
 
   try {
-    const result = await createShiprocketOrder({
+// Shiprocket's sub_total must be GOODS VALUE ONLY.
+// order.totalAmount already includes shipping — that's the bug.
+const goodsTotal = order.items.reduce(
+  (sum: number, item: any) => sum + item.price * item.quantity,
+  0
+);
+
+const result = await createShiprocketOrder({
   orderId: order._id.toString(),
   orderDate: new Date(order.createdAt).toISOString().split("T")[0],
   items,
   shipping: shippingAddress,
   billing: shippingAddress,
   paymentMethod: order.paymentMethod === "cod" ? "COD" : "Prepaid",
-  subTotal: order.totalAmount,
-  shippingCharges: order.shippingAmount ?? 0,   // ← was hardcoded 0
+  subTotal: goodsTotal,                         // ← was order.totalAmount
+  shippingCharges: order.shippingAmount ?? 0,
   totalDiscount: order.discountAmount ?? 0,
 });
 
@@ -118,7 +127,9 @@ export interface ShiprocketOrderItem {
   sku: string;
   units: number;
   selling_price: number;
-  weight: number; // kg
+  weight: number;
+  gstPercent?: number;   // ← add
+  hsn?: string;           // ← add
 }
 
 export interface ShiprocketAddress {
@@ -196,14 +207,14 @@ export async function createShiprocketOrder(
     shipping_phone: params.shipping.phone,
 
     order_items: params.items.map((item) => ({
-      name: item.name,
-      sku: item.sku,
-      units: item.units,
-      selling_price: item.selling_price,
-      discount: 0,
-      tax: "",
-      hsn: "",
-    })),
+  name: item.name,
+  sku: item.sku,
+  units: item.units,
+  selling_price: item.selling_price,
+  discount: 0,
+  tax: item.gstPercent ?? 0,   // ← was ""
+  hsn: item.hsn ?? "",         // ← was ""
+})),
 
     payment_method: params.paymentMethod,
     shipping_charges: params.shippingCharges ?? 0,

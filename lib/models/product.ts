@@ -41,6 +41,11 @@ weight: {
   type: Number,
   default: 0.3, // kg — used for Shiprocket shipment weight calculation
 },
+hsn: {
+  type: String,
+  default: "",
+  trim: true,
+},
 
 // ─── Amazon marketplace link ───────────────────────────────────────────
 // Raw Amazon product URL, entered in the admin panel. Optional — the

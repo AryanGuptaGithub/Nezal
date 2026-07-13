@@ -67,6 +67,7 @@ interface FormData {
   skinHairConcern: string
   expectedResults: string
   keyIngredients: KeyIngredient[]
+  hsn: string
 }
 
 export default function EditProductPage() {
@@ -97,6 +98,7 @@ export default function EditProductPage() {
     whoIsItFor: "", skinHairConcern: "", expectedResults: "",
     keyIngredients: [],
     gstPercent: "",
+    hsn: ""
   })
   const [results, setResults] = useState<Result[]>([])
   const [resultInput, setResultInput] = useState({ image: "", title: "", text: "" })
@@ -163,6 +165,7 @@ export default function EditProductPage() {
         weight: productData.weight ?? 0.3,
         amazonUrl: productData.amazonUrl || "",
         gstPercent: typeof productData.gstPercent === "number" ? productData.gstPercent : "",
+        hsn: productData.hsn || "",
         ingredients: normalizeStringArray(productData.ingredients),
         benefits: normalizeStringArray(productData.benefits),
         usage: productData.usage || "",
@@ -310,6 +313,7 @@ export default function EditProductPage() {
         usage: formData.usage, isActive: formData.isActive, results,
         weight: Number(formData.weight) || 0.3,
         gstPercent: formData.gstPercent !== "" ? Number(formData.gstPercent) : undefined,
+        hsn: formData.hsn.trim(),
         sizes: sizes.map((s) => ({ ...s, quantity: Number(s.quantity), price: Number(s.price), discountPrice: s.discountPrice ? Number(s.discountPrice) : undefined, stock: Number(s.stock) })),
         // ── New structured fields ──
         whyYoullLoveIt: normalizeByNewlineOnly(formData.whyYoullLoveIt),
@@ -422,11 +426,18 @@ fragranceExp: normalizeByNewlineOnly(formData.fragranceExp),
                   </div>
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">GST % *</label>
                 <Input type="number" step="0.01" name="gstPercent" value={formData.gstPercent} onChange={handleChange} required placeholder="18" className="bg-background border-border" />
                 <p className="text-xs text-muted-foreground mt-1">Price above already includes this GST %</p>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">HSN Code *</label>
+                <Input type="text" name="hsn" value={formData.hsn} onChange={handleChange} required placeholder="3401" className="bg-background border-border" />
+                <p className="text-xs text-muted-foreground mt-1">Required for Shiprocket invoice tax breakdown</p>
+              </div>
+            </div>
 
               {/* Images */}
               <div>

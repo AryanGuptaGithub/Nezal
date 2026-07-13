@@ -121,11 +121,11 @@ export default function Footer() {
             <ul className="space-y-2.5">
               <li>
                 <a
-                  href={`mailto:info@Nezal.com`}
+                  href={`mailto:info@nezalherbocare.com`}
                   className="text-[13px] transition-colors hover:text-white"
                   style={{ color: "var(--color-text-footer)" }}
                 >
-                  Email: info@Nezal.com
+                  Email: info@nezalherbocare.com
                 </a>
               </li>
               <li>
