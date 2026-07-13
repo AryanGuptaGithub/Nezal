@@ -359,14 +359,36 @@ const totalGST = items.reduce((sum, item) => {
                 <CardTitle className="text-xl font-bold text-foreground">Order Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-               <div className="space-y-2 border-b border-border pb-4">
-  <div className="flex justify-between text-sm">
-    <span className="text-muted-foreground">Subtotal</span>
-    <span className="font-semibold text-foreground">₹{totalPrice.toFixed(2)}</span>
-  </div>
+  <div className="space-y-2 border-b border-border pb-4">
+  {(() => {
+    const taxableValue = totalPrice - totalGST
+    const cgst = totalGST / 2
+    const sgst = totalGST / 2
+    return (
+      <>
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">Product Real Cost</span>
+          <span className="font-semibold text-foreground">₹{taxableValue.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">CGST</span>
+          <span className="font-semibold text-foreground">₹{cgst.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">SGST</span>
+          <span className="font-semibold text-foreground">₹{sgst.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between text-sm pt-2 border-t border-border">
+          <span className="font-medium text-foreground">Total Product Cost</span>
+          <span className="font-semibold text-foreground">₹{totalPrice.toFixed(2)}</span>
+        </div>
+      </>
+    )
+  })()}
+
   {totalSavings > 0 && (
-    <div className="flex justify-between text-sm border p-2 rounded-lg border-[#E4432B] ">
-      <span className="flex items-center gap-1 " style={{ color: "#E4432B" }}>
+    <div className="flex justify-between text-sm border p-2 rounded-lg border-[#E4432B]">
+      <span className="flex items-center gap-1" style={{ color: "#E4432B" }}>
         <Zap className="w-3.5 h-3.5 fill-current" />
         Flash Sale Savings
       </span>
@@ -376,56 +398,36 @@ const totalGST = items.reduce((sum, item) => {
     </div>
   )}
 
-  <div className="flex justify-between text-sm">
-  <span className="text-muted-foreground">Shipping</span>
-  {freeShippingApplied ? (
-    <span className="font-semibold" style={{ color: "#2d8116" }}>FREE</span>
-  ) : (
-    <span className="font-thin italic font-[#76ef74]">Proceed to see</span>
+  <div className="flex justify-between text-sm pt-2">
+    <span className="text-muted-foreground">Shipping</span>
+    {freeShippingApplied ? (
+      <span className="font-semibold" style={{ color: "#2d8116" }}>FREE</span>
+    ) : (
+      <span className="font-thin italic">Calculated at checkout</span>
+    )}
+  </div>
+
+  {!freeShippingApplied && amountLeftForFreeShipping > 0 && (
+    <div className="text-xs font-medium rounded-lg px-3 py-2 border" style={{ color: "#2d8116", borderColor: "#2d811640", backgroundColor: "#ebffe6" }}>
+      Add ₹{amountLeftForFreeShipping.toFixed(2)} more to get FREE shipping!
+    </div>
+  )}
+
+  {freeShippingApplied && (
+    <div className="text-xs font-medium rounded-lg px-3 py-2 border" style={{ color: "#2d8116", borderColor: "#2d811640", backgroundColor: "#ebffe6" }}>
+      🎉 You've unlocked FREE shipping!
+    </div>
   )}
 </div>
 
-{!freeShippingApplied && amountLeftForFreeShipping > 0 && (
-  <div className="text-xs font-medium rounded-lg px-3 py-2 border" style={{ color: "#2d8116", borderColor: "#2d811640", backgroundColor: "#ebffe6" }}>
-    Add ₹{amountLeftForFreeShipping.toFixed(2)} more to get FREE shipping!
-  </div>
-)}
-
-{freeShippingApplied && (
-  <div className="text-xs font-medium rounded-lg px-3 py-2 border" style={{ color: "#2d8116", borderColor: "#2d811640", backgroundColor: "#ebffe6" }}>
-    🎉 You've unlocked FREE shipping!
-  </div>
-)}
-
-
-
-  {(() => {
-  const ratesInCart = [...new Set(
-    items
-      .map((item) => gstMap[item.productId])
-      .filter((rate): rate is number => typeof rate === "number" && rate > 0)
-  )].sort((a, b) => a - b)
-
-  const gstLabel =
-    ratesInCart.length === 0
-      ? "GST (included in price)"
-      : ratesInCart.length === 1
-      ? `GST (${ratesInCart[0]}% inclusive)`
-      : `GST (${ratesInCart[0]}%–${ratesInCart[ratesInCart.length - 1]}% incl.)`
-
-  return (
-    <div className="flex justify-between text-sm">
-      <span className="text-muted-foreground">{gstLabel}</span>
-      <span className="font-semibold text-foreground">₹{totalGST.toFixed(2)}</span>
-    </div>
-  )
-})()}
-</div>
-
                 <div className="flex justify-between text-lg font-bold">
-                  <span className="text-foreground">Total</span>
-                  <span className="text-foreground">₹{totalPrice.toFixed(2)}</span>
-                </div>
+  <span className="text-foreground">Total</span>
+  <span className="text-foreground">
+    {freeShippingApplied
+      ? `₹${totalPrice.toFixed(2)}`
+      : `₹${totalPrice.toFixed(2)} + shipping`}
+  </span>
+</div>
 
                 <Button
                   className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-5 rounded-xl text-base"

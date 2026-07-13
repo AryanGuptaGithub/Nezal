@@ -730,78 +730,74 @@ const amountLeftForFreeShipping =
         )}
       </div>
 
-      {/* Price breakdown */}
-      <div className="border-t border-[#2d8116] pt-4 space-y-2.5">
+     <div className="border-t border-[#2d8116] pt-4 space-y-2.5">
+  {(() => {
+    const taxableValue = totalPrice - totalGST
+    const cgst = totalGST / 2
+    const sgst = totalGST / 2
+    return (
+      <>
         <div className="flex justify-between text-sm">
-          <span className="text-[#a4a4a4]">Subtotal</span>
-          <span className="font-medium text-[#2d8116]">₹{totalPrice.toFixed(2)}</span>
+          <span className="text-[#a4a4a4]">Product Real Cost</span>
+          <span className="font-medium text-[#2d8116]">₹{taxableValue.toFixed(2)}</span>
         </div>
-        {(() => {
-  const ratesInCart = [...new Set(
-    items
-      .map((item) => gstMap[item.productId])
-      .filter((rate): rate is number => typeof rate === "number" && rate > 0)
-  )].sort((a, b) => a - b)
+        <div className="flex justify-between text-sm">
+          <span className="text-[#a4a4a4]">CGST</span>
+          <span className="font-medium text-[#2d8116]">₹{cgst.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-[#a4a4a4]">SGST</span>
+          <span className="font-medium text-[#2d8116]">₹{sgst.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between text-sm pt-1.5 border-t border-[#2d8116]/20">
+          <span className="font-semibold text-[#024a21]">Total Product Cost</span>
+          <span className="font-semibold text-[#2d8116]">₹{totalPrice.toFixed(2)}</span>
+        </div>
+      </>
+    )
+  })()}
 
-  const gstLabel =
-    ratesInCart.length === 0
-      ? "GST (included in price)"
-      : ratesInCart.length === 1
-      ? `GST (${ratesInCart[0]}% inclusive)`
-      : `GST (${ratesInCart[0]}%–${ratesInCart[ratesInCart.length - 1]}% incl.)`
-
-  return (
+  {flashSavings > 0 && (
     <div className="flex justify-between text-sm">
-      <span className="text-muted-foreground">{gstLabel}</span>
-      <span className="font-semibold text-foreground">₹{totalGST.toFixed(2)}</span>
+      <span className="flex items-center gap-1" style={{ color: "#E4432B" }}>
+        <Zap className="w-3.5 h-3.5 fill-current" />
+        Flash Sale Savings
+      </span>
+      <span className="font-medium" style={{ color: "#E4432B" }}>
+        − ₹{flashSavings.toFixed(2)}
+      </span>
     </div>
-  )
-})()}
+  )}
 
-        {flashSavings > 0 && (
-          <div className="flex justify-between text-sm">
-            <span className="flex items-center gap-1" style={{ color: "#E4432B" }}>
-              <Zap className="w-3.5 h-3.5 fill-current" />
-              Flash Sale Savings
-            </span>
-            <span className="font-medium" style={{ color: "#E4432B" }}>
-              − ₹{flashSavings.toFixed(2)}
-            </span>
-          </div>
-        )}
+  {couponData && (
+    <div className="flex justify-between text-sm">
+      <span className="text-green-600 font-medium">Coupon ({couponData.code})</span>
+      <span className="font-medium text-green-600">−₹{discountAmount.toFixed(2)}</span>
+    </div>
+  )}
 
-        {couponData && (
-          <div className="flex justify-between text-sm">
-            <span className="text-green-600 font-medium">Coupon ({couponData.code})</span>
-            <span className="font-medium text-green-600">−₹{discountAmount.toFixed(2)}</span>
-          </div>
-        )}
+  <div className="flex justify-between items-center text-sm">
+    <span className="flex items-center gap-1.5 text-[#858585]">
+      <Truck className="w-3.5 h-3.5" /> Shipping Cost
+    </span>
+    {shippingLoading ? (
+      <span className="text-xs text-[#858585] animate-pulse">Calculating…</span>
+    ) : freeShippingApplied ? (
+      <span className="font-medium text-[#2d8116]">FREE</span>
+    ) : shippingRate !== null ? (
+      <span className="font-medium text-[#2d8116]">₹{shippingRate.toFixed(2)}</span>
+    ) : (
+      <span className="text-xs text-[#858585]">Enter pincode to calculate</span>
+    )}
+  </div>
+  {shippingError && <p className="text-xs text-red-500"><span className="border">+</span>{shippingError}</p>}
 
-
-
-
-        <div className="flex justify-between items-center text-sm">
-           <span className="flex items-center gap-1.5 text-[#858585]">
-            <Truck className="w-3.5 h-3.5" /> Shipping
-          </span>
-          {shippingLoading ? (
-            <span className="text-xs text-[#858585] animate-pulse">Calculating…</span>
-          ) : freeShippingApplied ? (
-            <span className="font-medium text-[#2d8116]">FREE</span>
-          ) : shippingRate !== null ? (
-            <span className="font-medium text-[#2d8116]">₹{shippingRate.toFixed(2)}</span>
-          ) : (
-            <span className="text-xs text-[#858585]">Enter pincode to calculate</span>
-          )}
-        </div>
-        {shippingError && <p className="text-xs text-red-500"><span className="border">+</span>{shippingError}</p>}
-
-        {!freeShippingApplied && amountLeftForFreeShipping > 0 && (
-          <p className="text-xs text-[#2d8116] bg-[#ebffe6] border border-[#2d8116]/30 rounded-lg px-3 py-2">
-            Add ₹{amountLeftForFreeShipping.toFixed(2)} more to get FREE shipping!
-          </p>
-        )}
-      </div>
+  {!freeShippingApplied && amountLeftForFreeShipping > 0 && (
+    <p className="text-xs text-[#2d8116] bg-[#ebffe6] border border-[#2d8116]/30 rounded-lg px-3 py-2">
+      Add ₹{amountLeftForFreeShipping.toFixed(2)} more to get FREE shipping!
+    </p>
+  )}
+</div>
 
       {/* Final total */}
       <div className="rounded-xl bg-[--color-bg-cream] px-4 py-3.5 flex justify-between items-center">
