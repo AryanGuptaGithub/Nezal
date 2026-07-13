@@ -730,28 +730,55 @@ const amountLeftForFreeShipping =
         )}
       </div>
 
-     <div className="border-t border-[#2d8116] pt-4 space-y-2.5">
+<div className="border-t border-[#2d8116] pt-4 space-y-2.5">
   {(() => {
     const taxableValue = totalPrice - totalGST
     const cgst = totalGST / 2
     const sgst = totalGST / 2
+
+    const ratesInCart = [...new Set(
+      items
+        .map((item) => gstMap[item.productId])
+        .filter((rate): rate is number => typeof rate === "number" && rate > 0)
+    )].sort((a, b) => a - b)
+
+    const fullLabel =
+      ratesInCart.length === 0
+        ? ""
+        : ratesInCart.length === 1
+        ? ` (${ratesInCart[0]}%)`
+        : ` (${ratesInCart[0]}%–${ratesInCart[ratesInCart.length - 1]}%)`
+
+    const halfLabel =
+      ratesInCart.length === 0
+        ? ""
+        : ratesInCart.length === 1
+        ? ` (${ratesInCart[0] / 2}%)`
+        : ` (${ratesInCart[0] / 2}%–${ratesInCart[ratesInCart.length - 1] / 2}%)`
+
     return (
       <>
         <div className="flex justify-between text-sm">
-          <span className="text-[#a4a4a4]">Product Real Cost</span>
+          <span className="text-[#a4a4a4]">Real Product Cost</span>
           <span className="font-medium text-[#2d8116]">₹{taxableValue.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-[#a4a4a4]">CGST</span>
+          <span className="text-[#a4a4a4]">CGST{halfLabel}</span>
           <span className="font-medium text-[#2d8116]">₹{cgst.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-[#a4a4a4]">SGST</span>
+          <span className="text-[#a4a4a4]">SGST{halfLabel}</span>
           <span className="font-medium text-[#2d8116]">₹{sgst.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-[#a4a4a4]">Total GST{fullLabel}</span>
+          <span className="font-medium text-[#2d8116]">₹{totalGST.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm pt-1.5 border-t border-[#2d8116]/20">
           <span className="font-semibold text-[#024a21]">Total Product Cost</span>
-          <span className="font-semibold text-[#2d8116]">₹{totalPrice.toFixed(2)}</span>
+          <span className="font-semibold text-[#2d8116]">
+            ₹{taxableValue.toFixed(2)} + ₹{totalGST.toFixed(2)} = ₹{totalPrice.toFixed(2)}
+          </span>
         </div>
       </>
     )

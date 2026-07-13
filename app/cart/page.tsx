@@ -359,28 +359,55 @@ const totalGST = items.reduce((sum, item) => {
                 <CardTitle className="text-xl font-bold text-foreground">Order Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-  <div className="space-y-2 border-b border-border pb-4">
+<div className="space-y-2 border-b border-border pb-4">
   {(() => {
     const taxableValue = totalPrice - totalGST
     const cgst = totalGST / 2
     const sgst = totalGST / 2
+
+    const ratesInCart = [...new Set(
+      items
+        .map((item) => gstMap[item.productId])
+        .filter((rate): rate is number => typeof rate === "number" && rate > 0)
+    )].sort((a, b) => a - b)
+
+    const fullLabel =
+      ratesInCart.length === 0
+        ? ""
+        : ratesInCart.length === 1
+        ? ` (${ratesInCart[0]}%)`
+        : ` (${ratesInCart[0]}%–${ratesInCart[ratesInCart.length - 1]}%)`
+
+    const halfLabel =
+      ratesInCart.length === 0
+        ? ""
+        : ratesInCart.length === 1
+        ? ` (${ratesInCart[0] / 2}%)`
+        : ` (${ratesInCart[0] / 2}%–${ratesInCart[ratesInCart.length - 1] / 2}%)`
+
     return (
       <>
         <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Product Real Cost</span>
+          <span className="text-muted-foreground">Real Product Cost</span>
           <span className="font-semibold text-foreground">₹{taxableValue.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">CGST</span>
+          <span className="text-muted-foreground">CGST{halfLabel}</span>
           <span className="font-semibold text-foreground">₹{cgst.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">SGST</span>
+          <span className="text-muted-foreground">SGST{halfLabel}</span>
           <span className="font-semibold text-foreground">₹{sgst.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">Total GST{fullLabel}</span>
+          <span className="font-semibold text-foreground">₹{totalGST.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm pt-2 border-t border-border">
           <span className="font-medium text-foreground">Total Product Cost</span>
-          <span className="font-semibold text-foreground">₹{totalPrice.toFixed(2)}</span>
+          <span className="font-semibold text-foreground">
+            ₹{taxableValue.toFixed(2)} + ₹{totalGST.toFixed(2)} = ₹{totalPrice.toFixed(2)}
+          </span>
         </div>
       </>
     )
@@ -399,7 +426,7 @@ const totalGST = items.reduce((sum, item) => {
   )}
 
   <div className="flex justify-between text-sm pt-2">
-    <span className="text-muted-foreground">Shipping</span>
+    <span className="text-muted-foreground">Shipping Cost</span>
     {freeShippingApplied ? (
       <span className="font-semibold" style={{ color: "#2d8116" }}>FREE</span>
     ) : (
