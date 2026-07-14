@@ -2,12 +2,12 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useState } from "react" 
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useCheckoutStore } from "@/lib/store/checkout-store"
-import Link from "next/link"  
+import Link from "next/link"
 
 interface CheckoutFormProps {
   totalAmount: number
@@ -167,6 +167,23 @@ type AddressData = {
   country: string
 }
 
+type AddressSuggestion = {
+  display_name: string
+  address: {
+    house_number?: string
+    road?: string
+    suburb?: string
+    neighbourhood?: string
+    city?: string
+    town?: string
+    village?: string
+    county?: string
+    state?: string
+    postcode?: string
+    country?: string
+  }
+}
+
 export function CheckoutForm({
   totalAmount,
   onSubmit,
@@ -208,6 +225,86 @@ export function CheckoutForm({
       : availablePaymentMethods[0] || "ccavenue",
   )
 
+  // ---- Address autocomplete state ----
+  const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false)
+  const suggestionBoxRef = useRef<HTMLDivElement>(null)
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const abortController = useRef<AbortController | null>(null)
+
+  // Close the suggestions dropdown when clicking outside of it
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (suggestionBoxRef.current && !suggestionBoxRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  // Debounced address search (uses OpenStreetMap's free Nominatim API — no key required)
+  const searchAddress = (query: string) => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current)
+
+    if (query.trim().length < 4) {
+      setAddressSuggestions([])
+      setShowSuggestions(false)
+      return
+    }
+
+    debounceTimer.current = setTimeout(async () => {
+      abortController.current?.abort()
+      abortController.current = new AbortController()
+      setIsSearchingAddress(true)
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&countrycodes=in&limit=5&q=${encodeURIComponent(
+            query,
+          )}`,
+          { signal: abortController.current.signal, headers: { Accept: "application/json" } },
+        )
+        const data: AddressSuggestion[] = await res.json()
+        setAddressSuggestions(data)
+        setShowSuggestions(data.length > 0)
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") {
+          setAddressSuggestions([])
+        }
+      } finally {
+        setIsSearchingAddress(false)
+      }
+    }, 400)
+  }
+
+  const handleSelectSuggestion = (suggestion: AddressSuggestion) => {
+    const addr = suggestion.address
+    const streetLine =
+      [addr.house_number, addr.road].filter(Boolean).join(" ") ||
+      addr.suburb ||
+      addr.neighbourhood ||
+      suggestion.display_name.split(",")[0]
+    const city = addr.city || addr.town || addr.village || addr.suburb || ""
+    const zip = addr.postcode || ""
+
+    setFormData((prev) => ({
+      ...prev,
+      street: streetLine,
+      city,
+      state: addr.state || prev.state,
+      zipCode: zip || prev.zipCode,
+      country: "India",
+    }))
+
+    if (/^\d{6}$/.test(zip)) {
+      onZipCodeChange?.(zip)
+    }
+
+    setAddressSuggestions([])
+    setShowSuggestions(false)
+  }
+
   useEffect(() => {
   if (/^\d{6}$/.test(formData.zipCode)) {
     onZipCodeChange?.(formData.zipCode)
@@ -220,6 +317,9 @@ export function CheckoutForm({
     setFormData((prev) => ({ ...prev, [name]: value }))
     if (name === "zipCode" && /^\d{6}$/.test(value)) {
       onZipCodeChange?.(value)
+    }
+    if (name === "street") {
+      searchAddress(value)
     }
   }
 
@@ -372,13 +472,39 @@ export function CheckoutForm({
                   />
                 </div>
 
-                <div>
+                <div className="relative" ref={suggestionBoxRef}>
                   <FieldLabel>Street Address</FieldLabel>
                   <StyledInput
                     name="street" value={formData.street} onChange={handleChange}
+                    onFocus={() => {
+                      if (addressSuggestions.length > 0) setShowSuggestions(true)
+                    }}
                     placeholder="123 Brigade Road, Apt 4B" required
+                    autoComplete="off"
                     icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>}
                   />
+                  {isSearchingAddress && (
+                    <p className="text-[11px] text-(--color-text-muted) mt-1.5">Searching addresses…</p>
+                  )}
+                  {showSuggestions && addressSuggestions.length > 0 && (
+                    <div className="absolute z-20 left-0 right-0 mt-1.5 bg-white border border-(--color-border) rounded-xl shadow-lg overflow-hidden max-h-64 overflow-y-auto">
+                      {addressSuggestions.map((s, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleSelectSuggestion(s)}
+                          className="w-full flex items-start gap-2.5 text-left px-3.5 py-2.5 hover:bg-(--color-bg-cream) transition-colors border-b border-(--color-border) last:border-b-0"
+                        >
+                          <span className="text-(--color-text-muted) mt-0.5 flex-shrink-0">
+                            <MapPinIcon />
+                          </span>
+                          <span className="text-xs text-(--color-text-body) leading-relaxed">
+                            {s.display_name}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
