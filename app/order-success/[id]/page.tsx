@@ -4,9 +4,9 @@
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle } from "lucide-react"
+import { CheckCircle2, Package, Truck, Mail, ArrowRight, Copy, Check } from "lucide-react"
 import { trackPurchase } from "@/lib/facebook-pixel"
 import { useSession } from "next-auth/react"
 import { useCartStore } from "@/lib/store/cart-store"
@@ -18,22 +18,39 @@ declare global {
   }
 }
 
+interface OrderItem {
+  product?: { _id?: string; name?: string; image?: string }
+  productName?: string
+  image?: string
+  quantity?: number
+  price?: number
+  selectedSize?: { size: string; unit: string }
+}
+
+interface OrderData {
+  _id: string
+  items?: OrderItem[]
+  totalAmount?: number
+  paymentMethod?: string
+  shippingAddress?: { name?: string; city?: string; state?: string }
+  user?: { email?: string }
+  guestEmail?: string
+}
+
 export default function OrderSuccessPage() {
   const params = useParams()
   const orderId = params.id as string
   const { data: session } = useSession()
-  const [orderData, setOrderData] = useState<any>(null)
-    const { clearCart } = useCartStore() 
-    const { clearPendingOrder } = useCheckoutStore()
+  const [orderData, setOrderData] = useState<OrderData | null>(null)
+  const [copied, setCopied] = useState(false)
+  const { clearCart } = useCartStore()
+  const { clearPendingOrder } = useCheckoutStore()
 
-
-      // Landing on this page at all means the order succeeded — clear unconditionally.
- useEffect(() => {
-  clearCart()
-  clearPendingOrder()
-}, [])
-
-
+  // Landing on this page at all means the order succeeded — clear unconditionally.
+  useEffect(() => {
+    clearCart()
+    clearPendingOrder()
+  }, [])
 
   useEffect(() => {
     if (window.gtag) {
@@ -43,8 +60,6 @@ export default function OrderSuccessPage() {
       })
     }
   }, [orderId])
-
-  
 
   useEffect(() => {
     const fetchOrderData = async () => {
@@ -75,43 +90,174 @@ export default function OrderSuccessPage() {
     }
   }, [orderId, session?.user?.email])
 
+  const handleCopyOrderId = () => {
+    navigator.clipboard.writeText(orderId)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const itemCount = orderData?.items?.length || 0
+  const customerEmail = orderData?.user?.email || orderData?.guestEmail
+
   return (
-    <main className="min-h-screen bg-[--color-bg-page] flex items-center justify-center p-4">
-      <Card className="w-full max-w-md border-2 border-green-800  rounded-2xl shadow-sm bg-white">
-        <CardHeader className="text-center pb-2">
-          <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle className="w-10 h-10 text-green-600" />
+    <main className="min-h-screen py-10 lg:py-16 px-4" style={{ backgroundColor: "#f7faf7" }}>
+      <div className="max-w-2xl mx-auto">
+
+        {/* ── Success header ─────────────────────────────── */}
+        <div className="text-center mb-8">
+          <div
+            className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5 relative"
+            style={{ backgroundColor: "#e0f0e4" }}
+          >
+            <div
+              className="absolute inset-0 rounded-full animate-ping opacity-40"
+              style={{ backgroundColor: "#2a5c3a", animationDuration: "2s", animationIterationCount: "2" }}
+            />
+            <CheckCircle2 className="w-11 h-11 relative" style={{ color: "#1e6636" }} strokeWidth={2} />
+          </div>
+          <h1 className="text-2xl lg:text-3xl font-bold mb-2" style={{ color: "#1e3a28" }}>
+            Order placed successfully!
+          </h1>
+          <p className="text-sm lg:text-base" style={{ color: "#6b7c70" }}>
+            Thank you for shopping with us — your order has been confirmed.
+          </p>
+        </div>
+
+        {/* ── Order ID card ──────────────────────────────── */}
+        <div
+          className="rounded-2xl border p-5 mb-5 flex items-center justify-between gap-4 flex-wrap"
+          style={{ backgroundColor: "#ffffff", borderColor: "#dde8de" }}
+        >
+          <div>
+            <p className="text-xs font-medium mb-1" style={{ color: "#6b7c70" }}>Order ID</p>
+            <p className="font-mono font-bold text-lg" style={{ color: "#1e3a28" }}>{orderId}</p>
+          </div>
+          <button
+            onClick={handleCopyOrderId}
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border transition-colors shrink-0"
+            style={{
+              borderColor: copied ? "#1e6636" : "#c8dac9",
+              backgroundColor: copied ? "#e0f0e4" : "#ffffff",
+              color: copied ? "#1e6636" : "#1e3a28",
+            }}
+          >
+            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? "Copied" : "Copy"}
+          </button>
+        </div>
+
+        {/* ── Order summary (only if data loaded) ───────── */}
+        {orderData && itemCount > 0 && (
+          <div
+            className="rounded-2xl border p-5 mb-5"
+            style={{ backgroundColor: "#ffffff", borderColor: "#dde8de" }}
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Package className="w-4 h-4" style={{ color: "#1e3a28" }} />
+              <h2 className="text-sm font-semibold" style={{ color: "#1e3a28" }}>
+                Order summary · {itemCount} item{itemCount !== 1 ? "s" : ""}
+              </h2>
+            </div>
+
+            <div className="space-y-3">
+              {orderData.items!.slice(0, 4).map((item, idx) => {
+                const image = item.image || item.product?.image
+                const name = item.productName || item.product?.name || `Item ${idx + 1}`
+                return (
+                  <div key={idx} className="flex items-center gap-3">
+                    <div
+                      className="w-12 h-12 rounded-lg overflow-hidden border shrink-0 relative bg-gray-50"
+                      style={{ borderColor: "#dde8de" }}
+                    >
+                      {image ? (
+                        <Image src={image} alt={name} fill className="object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package className="w-4 h-4 text-gray-300" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate" style={{ color: "#1e3a28" }}>{name}</p>
+                      <p className="text-xs" style={{ color: "#9cad9e" }}>
+                        Qty {item.quantity || 1}
+                        {item.selectedSize ? ` · ${item.selectedSize.size}${item.selectedSize.unit}` : ""}
+                      </p>
+                    </div>
+                    <p className="text-sm font-semibold shrink-0" style={{ color: "#1e3a28" }}>
+                      ₹{((item.price || 0) * (item.quantity || 1)).toFixed(0)}
+                    </p>
+                  </div>
+                )
+              })}
+              {itemCount > 4 && (
+                <p className="text-xs text-center pt-1" style={{ color: "#9cad9e" }}>
+                  +{itemCount - 4} more item{itemCount - 4 !== 1 ? "s" : ""}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between pt-4 mt-4 border-t" style={{ borderColor: "#e8f0e9" }}>
+              <span className="text-sm font-medium" style={{ color: "#6b7c70" }}>Total paid</span>
+              <span className="text-lg font-bold" style={{ color: "#1e3a28" }}>
+                ₹{(orderData.totalAmount || 0).toFixed(0)}
+              </span>
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-[--color-text-heading]">Order Placed Successfully!</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 text-center">
-          <p className="text-[--color-text-body]">Thank you for your purchase. Your order has been confirmed.</p>
+        )}
 
-          <div className="bg-[--color-bg-cream] p-4 rounded-xl">
-            <p className="text-sm text-[--color-text-muted]">Order ID</p>
-            <p className="font-mono font-semibold text-[--color-text-heading]">{orderId}</p>
+        {/* ── What happens next ──────────────────────────── */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <div
+            className="rounded-2xl border p-4 flex flex-col items-center text-center gap-2"
+            style={{ backgroundColor: "#ffffff", borderColor: "#dde8de" }}
+          >
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: "#e0f0e4" }}>
+              <Mail className="w-4 h-4" style={{ color: "#1e3a28" }} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold" style={{ color: "#1e3a28" }}>Confirmation email</p>
+              <p className="text-xs mt-0.5" style={{ color: "#9cad9e" }}>
+                {customerEmail ? `Sent to ${customerEmail}` : "On its way to your inbox"}
+              </p>
+            </div>
           </div>
-
-          <p className="text-sm text-[--color-text-muted]">
-            You will receive an email confirmation shortly with tracking information.
-          </p>
-
-          <div className="space-y-3 pt-4">
-            <Link href={`/profile/orders/${orderId}`} className="block">
-              <Button className="w-full bg-black hover:bg-green-800 text-white font-semibold py-5 rounded-xl">
-                View Your Order Details
-              </Button>
-            </Link>
-            <Link href="/shop" className="block">
-              <Button variant="outline" className="w-full border-green-800 text-green-800 hover:bg-green-800 hover:text-white py-4 rounded-xl">
-                Continue Shopping
-              </Button>
-            </Link>
+          <div
+            className="rounded-2xl border p-4 flex flex-col items-center text-center gap-2"
+            style={{ backgroundColor: "#ffffff", borderColor: "#dde8de" }}
+          >
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: "#e0f0e4" }}>
+              <Truck className="w-4 h-4" style={{ color: "#1e3a28" }} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold" style={{ color: "#1e3a28" }}>Tracking details</p>
+              <p className="text-xs mt-0.5" style={{ color: "#9cad9e" }}>Shared once shipped</p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* ── CTAs ────────────────────────────────────────── */}
+        <div className="space-y-3">
+          <Link href={`/profile/orders/${orderId}`} className="block">
+            <Button
+              className="w-full py-6 rounded-xl text-base font-semibold flex items-center justify-center gap-2"
+              style={{ backgroundColor: "#1e3a28", color: "#ffffff" }}
+            >
+              View order details
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </Link>
+          <Link href="/shop" className="block">
+            <Button
+              variant="outline"
+              className="w-full py-5 rounded-xl text-base font-semibold"
+              style={{ borderColor: "#1e3a28", color: "#1e3a28" }}
+            >
+              Continue shopping
+            </Button>
+          </Link>
+        </div>
+      </div>
     </main>
   )
 }

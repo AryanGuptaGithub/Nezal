@@ -571,18 +571,19 @@ export default function OrderDetailsPage() {
                     </p>
                   )}
                   <div className="text-[--color-text-body] space-y-1 pt-1">
-                    {[order.shippingAddress.street, order.shippingAddress.address].filter(Boolean).map((line, idx) => (
-                      <p key={`addr-line-${idx}`}>{line}</p>
-                    ))}
-                    <p>
-                      {[order.shippingAddress.city, order.shippingAddress.state].filter(Boolean).join(", ")}
-                    </p>
-                    <p>
-                      {[order.shippingAddress.pincode ?? order.shippingAddress.zipCode, order.shippingAddress.country]
-                        .filter(Boolean)
-                        .join(" ")}
-                    </p>
-                  </div>
+  {(() => {
+    const line = order.shippingAddress.address || order.shippingAddress.street;
+    return line ? <p>{line}</p> : null;
+  })()}
+  <p>
+    {[order.shippingAddress.city, order.shippingAddress.state].filter(Boolean).join(", ")}
+  </p>
+  <p>
+    {[order.shippingAddress.pincode ?? order.shippingAddress.zipCode, order.shippingAddress.country]
+      .filter(Boolean)
+      .join(" ")}
+  </p>
+</div>
                 </div>
               ) : (
                 <p className="text-sm text-[--color-text-muted]">No shipping address available.</p>

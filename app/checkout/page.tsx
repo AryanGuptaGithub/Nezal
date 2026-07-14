@@ -764,20 +764,20 @@ const amountLeftForFreeShipping =
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-[#a4a4a4]">CGST{halfLabel}</span>
-          <span className="font-medium text-[#2d8116]">₹{cgst.toFixed(2)}</span>
+          <span className="text-xs text-[#121412]">₹{cgst.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-[#a4a4a4]">SGST{halfLabel}</span>
-          <span className="font-medium text-[#2d8116]">₹{sgst.toFixed(2)}</span>
+          <span className="text-xs text-[#0c120a]">₹{sgst.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-[#a4a4a4]">Total GST{fullLabel}</span>
-          <span className="font-medium text-[#2d8116]">₹{totalGST.toFixed(2)}</span>
+          <span className="font-medium text-[#2d8116]">= ₹{totalGST.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm pt-1.5 border-t border-[#2d8116]/20">
           <span className="font-semibold text-[#024a21]">Total Product Cost</span>
-          <span className="font-semibold text-[#2d8116]">
-            ₹{taxableValue.toFixed(2)} + ₹{totalGST.toFixed(2)} = ₹{totalPrice.toFixed(2)}
+          <span className="font-bold text-md text-[#2d8116] ">
+            ₹{totalPrice.toFixed(2)}
           </span>
         </div>
       </>

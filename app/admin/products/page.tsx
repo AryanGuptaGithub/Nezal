@@ -6,10 +6,9 @@ import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import Image from "next/image"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Trash2, Edit2, Search, Eye, AlertTriangle } from "lucide-react"
+import { Trash2, Edit2, Search, AlertTriangle, Package, RefreshCw, Plus } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -41,8 +40,6 @@ export default function ProductsPage() {
   const [togglingId, setTogglingId] = useState<string | null>(null)
   const itemsPerPage = 12
 
-  // ── Delete confirmation state ──────────────────────────
-  // Step 1: first confirm dialog  |  Step 2: second confirm dialog
   const [deleteStep, setDeleteStep] = useState<1 | 2 | null>(null)
   const [productToDelete, setProductToDelete] = useState<Product | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -58,48 +55,43 @@ export default function ProductsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, session, router])
 
-const fetchProducts = async () => {
-  try {
-    const res = await fetch("/api/products?limit=1000&includeInactive=true")
-    if (!res.ok) throw new Error("Failed to fetch products")
-    const data = await res.json()
-    setProducts(data.products || data)
-  } catch (error) {
-    console.error("Error fetching products:", error)
-  } finally {
-    setLoading(false)
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch("/api/products?limit=1000&includeInactive=true")
+      if (!res.ok) throw new Error("Failed to fetch products")
+      const data = await res.json()
+      setProducts(data.products || data)
+    } catch (error) {
+      console.error("Error fetching products:", error)
+    } finally {
+      setLoading(false)
+    }
   }
-}
 
-const handleToggleActive = async (product: Product) => {
-  setTogglingId(product._id)
-  try {
-    const res = await fetch(`/api/products/${product._id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isActive: !product.isActive }),
-    })
-    if (!res.ok) throw new Error("Failed to update product")
-    await fetchProducts()
-  } catch (error) {
-    console.error("Error toggling product status:", error)
-  } finally {
-    setTogglingId(null)
+  const handleToggleActive = async (product: Product) => {
+    setTogglingId(product._id)
+    try {
+      const res = await fetch(`/api/products/${product._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !product.isActive }),
+      })
+      if (!res.ok) throw new Error("Failed to update product")
+      await fetchProducts()
+    } catch (error) {
+      console.error("Error toggling product status:", error)
+    } finally {
+      setTogglingId(null)
+    }
   }
-}
 
-  // ── Open first dialog ──────────────────────────────────
   const promptDelete = (product: Product) => {
     setProductToDelete(product)
     setDeleteStep(1)
   }
 
-  // ── User confirmed step 1 → show step 2 ───────────────
-  const handleFirstConfirm = () => {
-    setDeleteStep(2)
-  }
+  const handleFirstConfirm = () => setDeleteStep(2)
 
-  // ── User confirmed step 2 → actually delete ────────────
   const handleFinalConfirm = async () => {
     if (!productToDelete) return
     setDeleting(true)
@@ -116,48 +108,38 @@ const handleToggleActive = async (product: Product) => {
     }
   }
 
-  // ── Cancel / close either dialog ──────────────────────
   const handleCancelDelete = () => {
     setDeleteStep(null)
     setProductToDelete(null)
   }
 
-  // ── Filtered + paginated products ─────────────────────
   const filteredProducts = useMemo(() => {
-  const query = searchQuery.toLowerCase()
-  return products.filter((product) => {
-    const matchesSearch =
-      product.name.toLowerCase().includes(query) ||
-      product.company?.name?.toLowerCase().includes(query) ||
-      product.category?.name?.toLowerCase().includes(query)
+    const query = searchQuery.toLowerCase()
+    return products.filter((product) => {
+      const matchesSearch =
+        product.name.toLowerCase().includes(query) ||
+        product.company?.name?.toLowerCase().includes(query) ||
+        product.category?.name?.toLowerCase().includes(query)
+      const matchesCategory = selectedCategory === "all" || product.category?.name === selectedCategory
+      return matchesSearch && matchesCategory
+    })
+  }, [products, searchQuery, selectedCategory])
 
-    const matchesCategory =
-      selectedCategory === "all" || product.category?.name === selectedCategory
-
-    return matchesSearch && matchesCategory
-  })
-}, [products, searchQuery, selectedCategory])
-
-useEffect(() => {
-  setCurrentPage(1)
-}, [searchQuery, selectedCategory])
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, selectedCategory])
 
   const categories = useMemo(() => {
-  const set = new Set<string>()
-  products.forEach((p) => {
-    if (p.category?.name) set.add(p.category.name)
-  })
-  return Array.from(set).sort()
-}, [products])
-
+    const set = new Set<string>()
+    products.forEach((p) => {
+      if (p.category?.name) set.add(p.category.name)
+    })
+    return Array.from(set).sort()
+  }, [products])
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / itemsPerPage))
   const startIdx = (currentPage - 1) * itemsPerPage
   const paginatedProducts = filteredProducts.slice(startIdx, startIdx + itemsPerPage)
-
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [searchQuery])
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) setCurrentPage(page)
@@ -165,194 +147,228 @@ useEffect(() => {
 
   if (status === "loading" || loading) {
     return (
-      <main className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading products...</p>
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex items-center gap-2 text-gray-400 text-sm">
+          <RefreshCw className="w-4 h-4 animate-spin" /> Loading products...
+        </div>
       </main>
     )
   }
 
   if (status === "unauthenticated") return null
 
+  const activeCount = products.filter((p) => p.isActive).length
+  const outOfStockCount = products.filter((p) => p.stock <= 0).length
+
   return (
-    <main className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-          <h1 className="text-3xl font-bold text-foreground">Products Management</h1>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Link href="/admin/products/add">
-              <Button>Add Product</Button>
-            </Link>
+    <main className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+
+        {/* ── Page header ──────────────────────────────────── */}
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-700 flex items-center justify-center shrink-0">
+              <Package className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Products</h1>
+              <p className="text-sm text-gray-500 mt-0.5">Manage your product catalog</p>
+            </div>
           </div>
-        </div>
-
-   
-     
-
-
-        <Card>
-          <CardHeader className="flex justify-between items-center ">
-            <CardTitle>All Products</CardTitle>
-                      {/* Search + Category filter */}
-<div className="flex flex-col sm:flex-row items-center justify-between gap-4 ">
-  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-    <div className="relative w-full sm:w-80">
-      <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-      <Input
-        placeholder="Search products by name, company, or category..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="pl-9"
-      />
-    </div>
-
-    <select
-      value={selectedCategory}
-      onChange={(e) => setSelectedCategory(e.target.value)}
-      className="h-10 w-full sm:w-56 rounded-md border-2 border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-    >
-      <option value="all">All Categories</option>
-      {categories.map((c) => (
-        <option key={c} value={c}>
-          {c}
-        </option>
-      ))}
-    </select>
-  </div>
-
-  <div className="text-sm text-muted-foreground">
-    Showing {filteredProducts.length} result{filteredProducts.length !== 1 ? "s" : ""}
-  </div>
-</div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full table-auto border-collapse">
-                <thead>
-                  <tr className="text-left text-sm text-muted-foreground border-b">
-                    <th className="py-3 px-2 w-16">Image</th>
-                    <th className="py-3 px-2">Name</th>
-                    <th className="py-3 px-2 hidden md:table-cell">Company</th>
-                    <th className="py-3 px-2 hidden lg:table-cell">Category</th>
-                    <th className="py-3 px-2">Price</th>
-                    <th className="py-3 px-2">Stock</th>
-                    <th className="py-3 px-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredProducts.length === 0 ? (
-  <tr>
-    <td colSpan={7} className="py-8 text-center text-muted-foreground">
-      No products found
-    </td>
-  </tr>
-) : (
-  paginatedProducts.map((product) => (
-    <tr
-      key={product._id}
-      className={`border-b hover:bg-muted/40 transition ${!product.isActive ? "opacity-60" : ""}`}
-    >
-      <td className="py-3 px-2">
-        <div className="w-16 h-12 relative rounded overflow-hidden bg-muted">
-          {product.image ? (
-            <Image src={product.image} alt={product.name} width={64} height={48} className="object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">No image</div>
-          )}
-        </div>
-      </td>
-
-      <td className="py-3 px-2 align-top">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold line-clamp-2">{product.name}</span>
-          {!product.isActive && (
-            <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
-              Inactive
-            </span>
-          )}
-        </div>
-        <div className="text-xs text-muted-foreground hidden sm:block">ID: {product._id}</div>
-      </td>
-
-      <td className="py-3 px-2 hidden md:table-cell align-top">{product.company?.name}</td>
-      <td className="py-3 px-2 hidden lg:table-cell align-top">{product.category?.name}</td>
-
-      <td className="py-3 px-2 align-top">
-        <div className="font-bold">₹{product.discountPrice || product.price}</div>
-        {product.discountPrice && (
-          <div className="text-xs line-through text-muted-foreground">₹{product.price}</div>
-        )}
-      </td>
-
-      <td className="py-3 px-2 align-top text-sm text-muted-foreground">{product.stock}</td>
-
-      <td className="py-3 px-2 align-top">
-        <div className="flex gap-2 flex-wrap">
-          <Button
-            size="sm"
-            variant="outline"
-            className={product.isActive ? "text-amber-700 border-amber-300 hover:bg-amber-50" : "text-green-700 border-green-300 hover:bg-green-50"}
-            onClick={() => handleToggleActive(product)}
-            disabled={togglingId === product._id}
-          >
-            {togglingId === product._id ? "..." : product.isActive ? "Deactivate" : "Activate"}
-          </Button>
-
-          <Link href={`/admin/products/edit/${product._id}`}>
-            <Button size="sm" variant="outline">
-              <Edit2 className="w-4 h-4 mr-2" />
-              Edit
+          <Link href="/admin/products/add">
+            <Button className="bg-emerald-700 hover:bg-emerald-800">
+              <Plus className="w-4 h-4 mr-2" />
+              Add product
             </Button>
           </Link>
-
-          <Button
-            size="sm"
-            variant="destructive"
-            className="border-red-500 border hover:bg-[#eb2c2c] hover:text-white text-red-500"
-            onClick={() => promptDelete(product)}
-          >
-            <Trash2 className="w-4 h-4 mr-2" />
-            Delete
-          </Button>
         </div>
-      </td>
-    </tr>
-  ))
-)}
-                </tbody>
-              </table>
-            </div>
 
-            {/* Pagination */}
-            {filteredProducts.length > 0 && (
-              <div className="flex items-center justify-between gap-4 mt-6">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={currentPage === 1}
-                    onClick={() => handlePageChange(currentPage - 1)}
-                  >
-                    Previous
-                  </Button>
-                  <span className="text-sm text-muted-foreground">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={currentPage === totalPages}
-                    onClick={() => handlePageChange(currentPage + 1)}
-                  >
-                    Next
-                  </Button>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Showing {startIdx + 1} – {Math.min(startIdx + itemsPerPage, filteredProducts.length)} of {filteredProducts.length}
-                </div>
+        {/* ── Stats row ────────────────────────────────────── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { label: "Total products", value: products.length, dot: "bg-gray-400", color: "text-gray-900" },
+            { label: "Active", value: activeCount, dot: "bg-emerald-500", color: "text-emerald-700" },
+            { label: "Inactive", value: products.length - activeCount, dot: "bg-amber-500", color: "text-amber-700" },
+            { label: "Out of stock", value: outOfStockCount, dot: "bg-red-500", color: "text-red-600" },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-white rounded-2xl border border-gray-200 p-4">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className={`w-1.5 h-1.5 rounded-full ${stat.dot}`} />
+                <p className="text-xs font-medium text-gray-500">{stat.label}</p>
               </div>
-            )}
-          </CardContent>
-        </Card>
+              <p className={`text-2xl font-bold tabular-nums ${stat.color}`}>{stat.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Table card ───────────────────────────────────── */}
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50/60">
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <div className="relative w-full sm:w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search by name, company, or category..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 bg-white"
+                />
+              </div>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="h-10 w-full sm:w-56 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="all">All categories</option>
+                {categories.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+            <span className="text-xs text-gray-400 shrink-0">
+              {filteredProducts.length} result{filteredProducts.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full table-auto border-collapse">
+              <thead>
+                <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-400 border-b border-gray-100">
+                  <th className="py-3 px-6 w-16">Image</th>
+                  <th className="py-3 px-3">Name</th>
+                  <th className="py-3 px-3 hidden md:table-cell">Company</th>
+                  <th className="py-3 px-3 hidden lg:table-cell">Category</th>
+                  <th className="py-3 px-3">Price</th>
+                  <th className="py-3 px-3">Stock</th>
+                  <th className="py-3 px-6 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredProducts.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-16 text-center">
+                      <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                        <Package className="w-5 h-5 text-gray-400" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-700">No products found</p>
+                      <p className="text-xs text-gray-400 mt-1">Try a different search or filter.</p>
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedProducts.map((product) => (
+                    <tr
+                      key={product._id}
+                      className={`border-b border-gray-50 last:border-0 hover:bg-gray-50/60 transition-colors ${!product.isActive ? "opacity-60" : ""}`}
+                    >
+                      <td className="py-3 px-6">
+                        <div className="w-14 h-14 relative rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                          {product.image ? (
+                            <Image src={product.image} alt={product.name} fill className="object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-400 text-[10px]">No image</div>
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-3 align-top">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm text-gray-900 line-clamp-2">{product.name}</span>
+                          {!product.isActive && (
+                            <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">
+                              Inactive
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-300 hidden sm:block mt-0.5">ID: {product._id}</div>
+                      </td>
+
+                      <td className="py-3.5 px-3 hidden md:table-cell align-top text-sm text-gray-600">{product.company?.name}</td>
+                      <td className="py-3.5 px-3 hidden lg:table-cell align-top text-sm text-gray-600">{product.category?.name}</td>
+
+                      <td className="py-3.5 px-3 align-top">
+                        <div className="font-semibold text-sm text-gray-900">₹{product.discountPrice || product.price}</div>
+                        {product.discountPrice && (
+                          <div className="text-xs line-through text-gray-400">₹{product.price}</div>
+                        )}
+                      </td>
+
+                      <td className="py-3.5 px-3 align-top text-sm">
+                        <span className={product.stock <= 0 ? "text-red-600 font-semibold" : "text-gray-600"}>
+                          {product.stock}
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-6 align-top">
+                        <div className="flex gap-1.5 flex-wrap justify-end">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className={product.isActive
+                              ? "text-amber-700 border-amber-200 hover:bg-amber-50"
+                              : "text-emerald-700 border-emerald-200 hover:bg-emerald-50"}
+                            onClick={() => handleToggleActive(product)}
+                            disabled={togglingId === product._id}
+                          >
+                            {togglingId === product._id ? "..." : product.isActive ? "Deactivate" : "Activate"}
+                          </Button>
+
+                          <Link href={`/admin/products/edit/${product._id}`}>
+                            <Button size="sm" variant="outline" className="border-gray-200 text-gray-600 hover:text-emerald-700">
+                              <Edit2 className="w-3.5 h-3.5 mr-1.5" />
+                              Edit
+                            </Button>
+                          </Link>
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-red-200 text-red-500 hover:bg-red-500 hover:text-white"
+                            onClick={() => promptDelete(product)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                            Delete
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {filteredProducts.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/60">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  className="border-gray-200"
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-gray-500 px-2">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  className="border-gray-200"
+                >
+                  Next
+                </Button>
+              </div>
+              <div className="text-xs text-gray-400">
+                Showing {startIdx + 1}–{Math.min(startIdx + itemsPerPage, filteredProducts.length)} of {filteredProducts.length}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Step 1: First confirmation dialog ────────────── */}
@@ -360,22 +376,20 @@ useEffect(() => {
         <DialogContent className="sm:max-w-[420px] rounded-2xl">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-1">
-              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0">
                 <Trash2 className="w-5 h-5 text-red-600" />
               </div>
-              <DialogTitle className="text-lg font-bold text-foreground">Delete Product?</DialogTitle>
+              <DialogTitle className="text-lg font-bold text-gray-900">Delete product?</DialogTitle>
             </div>
-            <DialogDescription className="text-sm text-muted-foreground pt-1">
+            <DialogDescription className="text-sm text-gray-500 pt-1">
               You are about to delete{" "}
-              <span className="font-semibold text-foreground">{productToDelete?.name}</span>.
+              <span className="font-semibold text-gray-900">{productToDelete?.name}</span>.
               This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="flex gap-2 justify-end mt-4">
-            <Button variant="outline" onClick={handleCancelDelete}>
-              Cancel
-            </Button>
-            <Button variant="destructive" className="bg-[#e61d1d] hover:bg-[#450909]"  onClick={handleFirstConfirm}>
+            <Button variant="outline" onClick={handleCancelDelete}>Cancel</Button>
+            <Button variant="destructive" className="bg-red-600 hover:bg-red-700" onClick={handleFirstConfirm}>
               Yes, delete it
             </Button>
           </div>
@@ -387,28 +401,26 @@ useEffect(() => {
         <DialogContent className="sm:max-w-[420px] rounded-2xl">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-1">
-              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0">
                 <AlertTriangle className="w-5 h-5 text-red-600" />
               </div>
               <DialogTitle className="text-lg font-bold text-red-600">Are you absolutely sure?</DialogTitle>
             </div>
-            <DialogDescription className="text-sm text-muted-foreground pt-1">
+            <DialogDescription className="text-sm text-gray-500 pt-1">
               This will <span className="font-semibold text-red-500">permanently delete</span>{" "}
-              <span className="font-semibold text-foreground">{productToDelete?.name}</span> from the database.
+              <span className="font-semibold text-gray-900">{productToDelete?.name}</span> from the database.
               There is no way to recover it.
             </DialogDescription>
           </DialogHeader>
           <div className="flex gap-2 justify-end mt-4">
-            <Button variant="outline" onClick={handleCancelDelete} disabled={deleting}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={handleCancelDelete} disabled={deleting}>Cancel</Button>
             <Button
               variant="destructive"
               onClick={handleFinalConfirm}
               disabled={deleting}
-              className="min-w-[120px] bg-[#e61d1d] hover:bg-[#450909]"
+              className="min-w-[120px] bg-red-600 hover:bg-red-700"
             >
-              {deleting ? "Deleting..." : "Delete Forever"}
+              {deleting ? "Deleting..." : "Delete forever"}
             </Button>
           </div>
         </DialogContent>

@@ -13,7 +13,6 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Progress } from "@/components/ui/progress"
 import {
   Select,
   SelectContent,
@@ -47,11 +46,13 @@ import {
   Factory,
   Flame,
   Globe2,
-  Layers,
+  Home,
+  LayoutDashboard,
   Medal,
   MonitorDot,
   Package,
   PieChart as PieChartIcon,
+  RefreshCw,
   Star,
   TrendingDown,
   TrendingUp,
@@ -234,7 +235,11 @@ const numberFormatter = new Intl.NumberFormat("en-IN")
 
 const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
-const companyColors = ["#2563eb", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#0ea5e9", "#14b8a6"]
+// Emerald-forward palette so charts feel native to the brand instead of default recharts blues
+const companyColors = ["#1e6636", "#2563eb", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#0ea5e9", "#14b8a6"]
+
+// Shared card class so every Card on this dashboard matches the rest of the admin panel
+const cardCls = "border-gray-200 rounded-2xl shadow-sm"
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -468,8 +473,10 @@ export default function AdminDashboard() {
 
   if (status === "loading") {
     return (
-      <main className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading admin...</p>
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex items-center gap-2 text-gray-400 text-sm">
+          <RefreshCw className="w-4 h-4 animate-spin" /> Loading admin...
+        </div>
       </main>
     )
   }
@@ -480,16 +487,18 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading analytics...</p>
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex items-center gap-2 text-gray-400 text-sm">
+          <RefreshCw className="w-4 h-4 animate-spin" /> Loading analytics...
+        </div>
       </main>
     )
   }
 
   if (!analytics || error) {
     return (
-      <main className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">{error ?? "Loading admin panel..."}</p>
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-500 text-sm">{error ?? "Loading admin panel..."}</p>
       </main>
     )
   }
@@ -557,28 +566,40 @@ export default function AdminDashboard() {
   }, 0)
 
   return (
-    <main className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between ">
-          <div className="space-y-2 ">
-            <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Business performance overview for {dateRangeLabel}</p>
+    <main className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+
+        {/* ── Page header ──────────────────────────────────── */}
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-700 flex items-center justify-center shrink-0">
+              <LayoutDashboard className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Admin dashboard</h1>
+              <p className="text-sm text-gray-500 mt-0.5">Business performance overview for {dateRangeLabel}</p>
+            </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 items-center justify-start lg:justify-end">
-            {presetOptions.map((preset) => (
-              <Button
-                key={preset.value}
-                size="sm"
-                variant={rangePreset === preset.value ? "default" : "outline"}
-                onClick={() => handlePresetSelect(preset.value)}
-              >
-                {preset.label}
-              </Button>
-            ))}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap gap-1 bg-white border border-gray-200 rounded-xl p-1">
+              {presetOptions.map((preset) => (
+                <button
+                  key={preset.value}
+                  onClick={() => handlePresetSelect(preset.value)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                    rangePreset === preset.value
+                      ? "bg-emerald-700 text-white"
+                      : "text-gray-500 hover:bg-gray-50"
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
             <Popover>
               <PopoverTrigger asChild>
-                <Button size="sm" variant="outline">
+                <Button size="sm" variant="outline" className="border-gray-200 text-gray-600">
                   {customRange?.from && customRange?.to
                     ? `${format(customRange.from, "dd MMM")} - ${format(customRange.to, "dd MMM")}`
                     : "Select range"}
@@ -588,61 +609,42 @@ export default function AdminDashboard() {
                 <Calendar mode="range" selected={customRange} onSelect={handleCustomSelect} numberOfMonths={2} />
               </PopoverContent>
             </Popover>
-          </div>
-
-          
-
-          <div>
-            <button onClick={() => router.push('/')} className=" px-3 py-2 rounded-xl hover:bg-[#efa906] bg-[#0e7d09]  text-[#ffffff]">Home Page</button>
-            
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => router.push("/")}
+              className="border-gray-200 text-gray-500 hover:text-emerald-700"
+              title="Go to homepage"
+            >
+              <Home className="w-4 h-4" />
+            </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{numberFormatter.format(analytics.overview.totalOrders)}</div>
-              <p className="text-xs text-muted-foreground">Orders in selected period</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{currencyFormatter.format(analytics.overview.totalRevenue)}</div>
-              <p className="text-xs text-muted-foreground">Completed payments</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Products</CardTitle>
-              <MonitorDot className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{numberFormatter.format(analytics.overview.totalProducts)}</div>
-              <p className="text-xs text-muted-foreground">Active listings</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{numberFormatter.format(analytics.overview.totalUsers)}</div>
-              <p className="text-xs text-muted-foreground">Registered customers</p>
-            </CardContent>
-          </Card>
+        {/* ── Overview stat cards ──────────────────────────── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            { label: "Total orders", value: numberFormatter.format(analytics.overview.totalOrders), sub: "Orders in selected period", icon: Package, dot: "bg-gray-400" },
+            { label: "Total revenue", value: currencyFormatter.format(analytics.overview.totalRevenue), sub: "Completed payments", icon: TrendingUp, dot: "bg-emerald-500" },
+            { label: "Total products", value: numberFormatter.format(analytics.overview.totalProducts), sub: "Active listings", icon: MonitorDot, dot: "bg-blue-500" },
+            { label: "Total users", value: numberFormatter.format(analytics.overview.totalUsers), sub: "Registered customers", icon: Users, dot: "bg-amber-500" },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-white rounded-2xl border border-gray-200 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-1.5 h-1.5 rounded-full ${stat.dot}`} />
+                  <p className="text-xs font-medium text-gray-500">{stat.label}</p>
+                </div>
+                <stat.icon className="h-4 w-4 text-gray-300" />
+              </div>
+              <p className="text-2xl font-bold text-gray-900 tabular-nums">{stat.value}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{stat.sub}</p>
+            </div>
+          ))}
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          <Card className="xl:col-span-2">
+          <Card className={`xl:col-span-2 ${cardCls}`}>
             <CardHeader className="space-y-4">
               <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <div>
@@ -660,10 +662,10 @@ export default function AdminDashboard() {
                       <SelectItem value="bar">Bar</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button variant="outline" size="sm" onClick={handleSelectAllCompanies}>
+                  <Button variant="outline" size="sm" onClick={handleSelectAllCompanies} className="border-gray-200">
                     {selectedCompanyIds.length === allCompanyIds.length ? "Show Custom" : "Select All"}
                   </Button>
-                  <Button variant="outline" size="sm" onClick={handleExportCompanyRevenue}>
+                  <Button variant="outline" size="sm" onClick={handleExportCompanyRevenue} className="border-gray-200">
                     <Download className="h-4 w-4 mr-2" /> Export CSV
                   </Button>
                 </div>
@@ -673,7 +675,7 @@ export default function AdminDashboard() {
                   const color = companyColors[company.companyId.charCodeAt(0) % companyColors.length]
                   const checked = selectedCompanyIds.includes(company.companyId)
                   return (
-                    <label key={company.companyId} className="flex items-center gap-2 rounded-full border border-border px-3 py-1 text-sm">
+                    <label key={company.companyId} className="flex items-center gap-2 rounded-full border border-gray-200 px-3 py-1 text-sm">
                       <span className="flex h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
                       <Checkbox
                         checked={checked}
@@ -696,7 +698,7 @@ export default function AdminDashboard() {
                   <TrendingUp className="h-4 w-4 text-foreground" />
                   Average order value: {currencyFormatter.format(analytics.companyPerformance.averageOrderValue)}
                 </span>
-                <Badge variant={aovChangeVariant} className="gap-1">
+                <Badge variant={aovChangeVariant as any} className="gap-1">
                   <AovChangeIcon className="h-3 w-3" />
                   {aovChange !== null ? `${aovChange > 0 ? "+" : ""}${aovChange.toFixed(1)}% AOV change` : "AOV flat"}
                 </Badge>
@@ -778,7 +780,7 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className={cardCls}>
             <CardHeader>
               <CardTitle>Company Rankings</CardTitle>
             </CardHeader>
@@ -798,7 +800,7 @@ export default function AdminDashboard() {
                   const growthColor = growth >= 0 ? "text-emerald-600" : "text-red-500"
                   const medalColor = company.rank === 1 ? "text-yellow-500" : company.rank === 2 ? "text-slate-400" : company.rank === 3 ? "text-amber-700" : "text-muted-foreground"
                   return (
-                    <div key={company.companyId} className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
+                    <div key={company.companyId} className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
                       <div className="flex items-center gap-3">
                         <Medal className={`h-5 w-5 ${medalColor}`} />
                         <div>
@@ -819,7 +821,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          <Card>
+          <Card className={cardCls}>
             <CardHeader>
               <CardTitle>Revenue Distribution</CardTitle>
             </CardHeader>
@@ -841,7 +843,7 @@ export default function AdminDashboard() {
               )}
             </CardContent>
           </Card>
-          <Card>
+          <Card className={cardCls}>
             <CardHeader>
               <CardTitle>Product Performance by Company</CardTitle>
             </CardHeader>
@@ -849,7 +851,7 @@ export default function AdminDashboard() {
               {analytics.topProductCompanies.length ? (
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                    <tr className="border-b border-gray-200 text-left text-xs text-muted-foreground">
                       <th className="py-2 pr-4 font-medium">Company</th>
                       <th className="py-2 pr-4 font-medium">Products</th>
                       <th className="py-2 pr-4 font-medium">Active</th>
@@ -860,7 +862,7 @@ export default function AdminDashboard() {
                   </thead>
                   <tbody>
                     {analytics.topProductCompanies.map((company) => (
-                      <tr key={company.companyId} className="border-b border-border/60">
+                      <tr key={company.companyId} className="border-b border-gray-100">
                         <td className="py-3 pr-4 font-medium text-foreground">{company.name}</td>
                         <td className="py-3 pr-4">{numberFormatter.format(company.totalProducts)}</td>
                         <td className="py-3 pr-4">{numberFormatter.format(company.activeProducts)}</td>
@@ -891,7 +893,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          <Card>
+          <Card className={cardCls}>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Top Selling Products</CardTitle>
@@ -932,7 +934,7 @@ export default function AdminDashboard() {
                     const GrowthIcon = growth >= 0 ? ArrowUp : ArrowDown
                     const growthColor = growth >= 0 ? "text-emerald-600" : "text-red-500"
                     return (
-                      <div key={product.id} className="flex flex-col gap-4 rounded-lg border border-border p-4 md:flex-row md:items-center md:justify-between">
+                      <div key={product.id} className="flex flex-col gap-4 rounded-lg border border-gray-200 p-4 md:flex-row md:items-center md:justify-between">
                         <div className="flex items-center gap-3">
                           {product.image ? (
                             <Image src={product.image} alt={product.name} width={56} height={56} className="h-14 w-14 rounded-lg object-cover" />
@@ -963,7 +965,7 @@ export default function AdminDashboard() {
                             {product.growth === null ? "—" : `${growth > 0 ? "+" : ""}${growth.toFixed(1)}%`}
                           </div>
                           <div>
-                            <Link href={product.id ? `/shop/${product.company.slug}/product/${product.id}` : "#"} className="text-xs font-semibold text-primary hover:underline">
+                            <Link href={product.id ? `/shop/${product.company.slug}/product/${product.id}` : "#"} className="text-xs font-semibold text-emerald-700 hover:underline">
                               View product
                             </Link>
                           </div>
@@ -977,14 +979,14 @@ export default function AdminDashboard() {
               )}
             </CardContent>
           </Card>
-          <Card>
+          <Card className={cardCls}>
             <CardHeader>
               <CardTitle>Top Customers</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {analytics.topCustomers.length ? (
                 analytics.topCustomers.slice(0, 6).map((customer) => (
-                  <div key={customer.userId} className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
+                  <div key={customer.userId} className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
                     <div>
                       <p className="text-sm font-semibold text-foreground">{customer.name}</p>
                       <p className="text-xs text-muted-foreground">{customer.email}</p>
@@ -1003,7 +1005,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          <Card className="xl:col-span-2">
+          <Card className={`xl:col-span-2 ${cardCls}`}>
             <CardHeader>
               <CardTitle>Total Sales Trend</CardTitle>
             </CardHeader>
@@ -1016,8 +1018,8 @@ export default function AdminDashboard() {
                     <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => compactCurrencyFormatter.format(value)} />
                     <Tooltip formatter={(value: number) => currencyFormatter.format(value)} />
                     <Legend />
-                    <Line type="monotone" dataKey="revenue" stroke="#2563eb" strokeWidth={2} dot={false} name="Revenue" />
-                    <Line type="monotone" dataKey="orders" stroke="#10b981" strokeWidth={2} dot={false} name="Orders" yAxisId={1} />
+                    <Line type="monotone" dataKey="revenue" stroke={companyColors[0]} strokeWidth={2} dot={false} name="Revenue" />
+                    <Line type="monotone" dataKey="orders" stroke={companyColors[1]} strokeWidth={2} dot={false} name="Orders" yAxisId={1} />
                     <YAxis hide yAxisId={1} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -1026,7 +1028,7 @@ export default function AdminDashboard() {
               )}
             </CardContent>
           </Card>
-          <Card>
+          <Card className={cardCls}>
             <CardHeader>
               <CardTitle>Order Status</CardTitle>
             </CardHeader>
@@ -1051,7 +1053,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          <Card>
+          <Card className={cardCls}>
             <CardHeader>
               <CardTitle>Payment Analytics</CardTitle>
             </CardHeader>
@@ -1059,7 +1061,7 @@ export default function AdminDashboard() {
               {analytics.paymentAnalytics.length ? (
                 <div className="space-y-3">
                   {analytics.paymentAnalytics.map((method) => (
-                    <div key={method.method} className="rounded-lg border border-border px-3 py-2">
+                    <div key={method.method} className="rounded-lg border border-gray-200 px-3 py-2">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-semibold text-foreground">{method.method.toUpperCase()}</span>
                         <span className="text-xs text-muted-foreground">Success {method.successRate.toFixed(1)}%</span>
@@ -1080,35 +1082,35 @@ export default function AdminDashboard() {
               )}
             </CardContent>
           </Card>
-          <Card>
+          <Card className={cardCls}>
             <CardHeader>
               <CardTitle>Customer Acquisition</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="rounded-lg border border-border p-3">
+                <div className="rounded-lg border border-gray-200 p-3">
                   <p className="text-xs text-muted-foreground">New customers</p>
                   <p className="text-lg font-semibold">{numberFormatter.format(analytics.customerAnalytics.newCustomers)}</p>
                 </div>
-                <div className="rounded-lg border border-border p-3">
+                <div className="rounded-lg border border-gray-200 p-3">
                   <p className="text-xs text-muted-foreground">Returning customers</p>
                   <p className="text-lg font-semibold">{numberFormatter.format(analytics.customerAnalytics.returningCustomers)}</p>
                 </div>
-                <div className="rounded-lg border border-border p-3">
+                <div className="rounded-lg border border-gray-200 p-3">
                   <p className="text-xs text-muted-foreground">High value customers</p>
                   <p className="text-lg font-semibold">{numberFormatter.format(analytics.customerAnalytics.highValueCustomers)}</p>
                 </div>
-                <div className="rounded-lg border border-border p-3">
+                <div className="rounded-lg border border-gray-200 p-3">
                   <p className="text-xs text-muted-foreground">Average CLV</p>
                   <p className="text-lg font-semibold">{currencyFormatter.format(analytics.customerAnalytics.averageClv)}</p>
                 </div>
               </div>
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">Average order value</p>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <Badge variant="secondary">Current {currencyFormatter.format(analytics.customerAnalytics.averageOrderValue)}</Badge>
                   <Badge variant="outline">Previous {currencyFormatter.format(analytics.customerAnalytics.previousAverageOrderValue)}</Badge>
-                  <Badge variant={aovChangeVariant} className="gap-1">
+                  <Badge variant={aovChangeVariant as any} className="gap-1">
                     <AovChangeIcon className="h-3 w-3" />
                     {aovChange !== null ? `${aovChange > 0 ? "+" : ""}${aovChange.toFixed(1)}%` : "Flat"}
                   </Badge>
@@ -1116,12 +1118,12 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className={cardCls}>
             <CardHeader>
               <CardTitle>Peak Performance</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-lg border border-border p-3">
+              <div className="rounded-lg border border-gray-200 p-3">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Flame className="h-4 w-4 text-foreground" />
                   Peak hour
@@ -1129,7 +1131,7 @@ export default function AdminDashboard() {
                 <p className="text-lg font-semibold text-foreground mt-1">{peakHour ? `${String(peakHour.hour).padStart(2, "0")}:00` : "—"}</p>
                 <p className="text-xs text-muted-foreground">Revenue {peakHour ? currencyFormatter.format(peakHour.revenue) : "—"}</p>
               </div>
-              <div className="rounded-lg border border-border p-3">
+              <div className="rounded-lg border border-gray-200 p-3">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Award className="h-4 w-4 text-foreground" />
                   Top weekday
@@ -1142,7 +1144,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          <Card>
+          <Card className={cardCls}>
             <CardHeader>
               <CardTitle>Order Timing</CardTitle>
             </CardHeader>
@@ -1155,7 +1157,7 @@ export default function AdminDashboard() {
                       <XAxis dataKey="hour" tickLine={false} axisLine={false} />
                       <YAxis tickLine={false} axisLine={false} />
                       <Tooltip />
-                      <Area type="monotone" dataKey="orders" stroke="#2563eb" fill="#2563eb33" name="Orders" />
+                      <Area type="monotone" dataKey="orders" stroke={companyColors[0]} fill={`${companyColors[0]}33`} name="Orders" />
                     </AreaChart>
                   </ResponsiveContainer>
                 ) : (
@@ -1170,7 +1172,7 @@ export default function AdminDashboard() {
                       <XAxis dataKey="day" tickLine={false} axisLine={false} />
                       <YAxis tickLine={false} axisLine={false} />
                       <Tooltip />
-                      <Area type="monotone" dataKey="orders" stroke="#10b981" fill="#10b98133" name="Orders" />
+                      <Area type="monotone" dataKey="orders" stroke={companyColors[1]} fill={`${companyColors[1]}33`} name="Orders" />
                     </AreaChart>
                   </ResponsiveContainer>
                 ) : (
@@ -1179,7 +1181,7 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className={cardCls}>
             <CardHeader>
               <CardTitle>Geographic Performance</CardTitle>
             </CardHeader>
@@ -1231,31 +1233,31 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          <Card>
+          <Card className={cardCls}>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Inventory Health</CardTitle>
-              <Badge variant="outline" className="gap-1">
+              <Badge variant="outline" className="gap-1 border-gray-200">
                 <PieChartIcon className="h-3 w-3" />
                 {analytics.inventory.summary.inStock + analytics.inventory.summary.lowStock + analytics.inventory.summary.outOfStock}
               </Badge>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
-              <div className="rounded-lg border border-border p-4">
+              <div className="rounded-lg border border-gray-200 p-4">
                 <p className="text-xs text-muted-foreground">In Stock</p>
                 <p className="text-xl font-semibold">{numberFormatter.format(analytics.inventory.summary.inStock)}</p>
                 <p className="text-xs text-muted-foreground">{currencyFormatter.format(analytics.inventory.summary.inStockValue)}</p>
               </div>
-              <div className="rounded-lg border border-border p-4">
+              <div className="rounded-lg border border-gray-200 p-4">
                 <p className="text-xs text-muted-foreground">Low Stock</p>
                 <p className="text-xl font-semibold">{numberFormatter.format(analytics.inventory.summary.lowStock)}</p>
                 <p className="text-xs text-muted-foreground">{currencyFormatter.format(analytics.inventory.summary.lowStockValue)}</p>
               </div>
-              <div className="rounded-lg border border-border p-4">
+              <div className="rounded-lg border border-gray-200 p-4">
                 <p className="text-xs text-muted-foreground">Out of Stock</p>
                 <p className="text-xl font-semibold">{numberFormatter.format(analytics.inventory.summary.outOfStock)}</p>
                 <p className="text-xs text-muted-foreground">{currencyFormatter.format(analytics.inventory.summary.outOfStockValue)}</p>
               </div>
-              <div className="rounded-lg border border-border p-4">
+              <div className="rounded-lg border border-gray-200 p-4">
                 <p className="text-xs text-muted-foreground">Overstock</p>
                 <p className="text-xl font-semibold">{numberFormatter.format(analytics.inventory.summary.overStock)}</p>
                 <p className="text-xs text-muted-foreground">{currencyFormatter.format(analytics.inventory.summary.overStockValue)}</p>
@@ -1265,7 +1267,7 @@ export default function AdminDashboard() {
                 {analytics.inventory.attention.length ? (
                   <div className="space-y-2">
                     {analytics.inventory.attention.map((product) => (
-                      <div key={product.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
+                      <div key={product.id} className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 text-sm">
                         <span className="text-foreground">{product.name}</span>
                         <div className="text-right text-muted-foreground">
                           <p>{product.company}</p>
@@ -1280,7 +1282,7 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className={cardCls}>
             <CardHeader>
               <CardTitle>Customer Satisfaction</CardTitle>
             </CardHeader>
@@ -1302,7 +1304,7 @@ export default function AdminDashboard() {
               </div>
               <div className="space-y-3">
                 {analytics.customerSatisfaction.recentFeedback.map((feedback) => (
-                  <div key={feedback.id} className="rounded-lg border border-border p-3 text-sm">
+                  <div key={feedback.id} className="rounded-lg border border-gray-200 p-3 text-sm">
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>{feedback.userName ?? "Anonymous"}</span>
                       <span>{format(new Date(feedback.createdAt), "dd MMM yyyy")}</span>
@@ -1318,7 +1320,7 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        <Card>
+        <Card className={cardCls}>
           <CardHeader>
             <CardTitle>Recent Orders</CardTitle>
           </CardHeader>
@@ -1326,7 +1328,7 @@ export default function AdminDashboard() {
             {analytics.recentOrders.length ? (
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                  <tr className="border-b border-gray-200 text-left text-xs text-muted-foreground">
                     <th className="py-2 pr-4 font-medium">Order</th>
                     <th className="py-2 pr-4 font-medium">Customer</th>
                     <th className="py-2 pr-4 font-medium">Amount</th>
@@ -1336,7 +1338,7 @@ export default function AdminDashboard() {
                 </thead>
                 <tbody>
                   {analytics.recentOrders.map((order) => (
-                    <tr key={order._id} className="border-b border-border/60">
+                    <tr key={order._id} className="border-b border-gray-100">
                       <td className="py-3 pr-4 font-mono text-xs">{order.orderNumber}</td>
                       <td className="py-3 pr-4">{order.user?.name ?? "Unknown"}</td>
                       <td className="py-3 pr-4 font-semibold">{currencyFormatter.format(order.totalAmount)}</td>
