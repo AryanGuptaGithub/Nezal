@@ -13,6 +13,7 @@ interface CheckoutFormProps {
   totalAmount: number
   onSubmit: (address: any, paymentMethod: string) => Promise<void>
   onZipCodeChange?: (zip: string) => void
+  onPaymentMethodChange?: (method: string) => void 
   availablePaymentMethods: string[]
   initialData?: {
     name?: string
@@ -188,6 +189,7 @@ export function CheckoutForm({
   totalAmount,
   onSubmit,
   onZipCodeChange,
+  onPaymentMethodChange,
   availablePaymentMethods,
   initialData,
   isSubmitting = false,
@@ -224,6 +226,11 @@ export function CheckoutForm({
       ? savedPaymentMethod
       : availablePaymentMethods[0] || "ccavenue",
   )
+
+  useEffect(() => {
+  onPaymentMethodChange?.(paymentMethod)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [])
 
   // ---- Address autocomplete state ----
   const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([])
@@ -323,10 +330,11 @@ export function CheckoutForm({
     }
   }
 
-  const handleSelectPayment = (method: string) => {
-    setPaymentMethod(method)
-    persistPaymentMethod(method)
-  }
+const handleSelectPayment = (method: string) => {
+  setPaymentMethod(method)
+  persistPaymentMethod(method)
+  onPaymentMethodChange?.(method)   // ← add
+}
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

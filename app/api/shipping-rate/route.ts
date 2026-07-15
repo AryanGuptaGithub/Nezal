@@ -36,14 +36,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ serviceable: false, error: "Not serviceable to this pincode" });
     }
 
-    return NextResponse.json({
-      serviceable: true,
-      rate: cheapest.rate,
-      courierName: cheapest.courierName,
-      etd: cheapest.etd,
-      weight: totalWeight,
-      options,
-    });
+   return NextResponse.json({
+  serviceable: true,
+  rate: cheapest.rate,
+  freightCharge: cheapest.freightCharge,
+  codCharge: cheapest.codCharge,
+  courierName: cheapest.courierName,
+  etd: cheapest.etd,
+  weight: totalWeight,
+  options,
+});
+
   } catch (err: any) {
     console.error("Shipping rate error:", err.message);
     return NextResponse.json({ error: err.message ?? "Failed to fetch shipping rate" }, { status: 500 });

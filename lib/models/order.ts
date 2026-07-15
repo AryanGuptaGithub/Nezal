@@ -38,7 +38,7 @@ const orderSchema = new mongoose.Schema(
 
     totalAmount: { type: Number, required: true },
     shippingAmount: { type: Number, default: 0 }, 
-
+    codCharge: { type: Number, default: 0 },
     totalTaxableValue: { type: Number, default: 0 },  // ← add
     totalGstAmount:    { type: Number, default: 0 },  // ← add
 
@@ -101,6 +101,19 @@ ccavenueBankRefNo: { type: String, default: null },
     // ── Coupon ────────────────────────────────────────────
     couponCode:     { type: String, default: null },
     discountAmount: { type: Number, default: 0    },
+    cancellation: {
+  status: {
+    type: String,
+    enum: ["none", "requested", "approved", "rejected", "completed"],
+    default: "none",
+  },
+  type: { type: String, enum: ["cancel", "return", null], default: null },
+  reason: { type: String, default: null },
+  note: { type: String, default: null },
+  requestedAt: { type: Date, default: null },
+  processedAt: { type: Date, default: null },
+  adminNote: { type: String, default: null },
+},
   },
   { timestamps: true }   // ← second argument to mongoose.Schema, not a field
 

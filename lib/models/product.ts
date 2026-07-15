@@ -36,7 +36,11 @@ const productSchema = new mongoose.Schema(
       default: 0,
     },
     
-    sku: String,
+   sku: {
+  type: String,
+  required: true,
+  trim: true,
+},
 weight: {
   type: Number,
   default: 0.3, // kg — used for Shiprocket shipment weight calculation

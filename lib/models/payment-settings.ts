@@ -1,3 +1,4 @@
+// lib/models/payment-settings.ts
 import mongoose from "mongoose";
 
 const paymentSettingsSchema = new mongoose.Schema(
@@ -31,6 +32,23 @@ const paymentSettingsSchema = new mongoose.Schema(
       type: Number,
       default: 0, // order subtotal (after discount, before shipping) must be >= this
     },
+    codFeeEnabled: {
+  type: Boolean,
+  default: false,
+},
+codFeeType: {
+  type: String,
+  enum: ["flat", "percentage"],
+  default: "flat",
+},
+codFeeValue: {
+  type: Number,
+  default: 0, // flat: ₹ amount. percentage: % of order subtotal.
+},
+codFeeMin: {
+  type: Number,
+  default: 0, // floor for percentage-based fee, e.g. "2%, min ₹40"
+},
   },
   { timestamps: true }
 );

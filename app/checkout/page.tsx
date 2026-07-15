@@ -23,8 +23,12 @@ interface PaymentSettings {
   enableCOD: boolean
   enableRazorpay: boolean
   enableCCAvenue?: boolean
-   freeShippingEnabled?: boolean
+  freeShippingEnabled?: boolean
   freeShippingThreshold?: number
+  codFeeEnabled?: boolean
+  codFeeType?: "flat" | "percentage"
+  codFeeValue?: number
+  codFeeMin?: number
 }
 
 // ===== Loader components (unchanged) =====
@@ -87,8 +91,11 @@ function CheckoutPageInner() {
   const [userData, setUserData] = useState<any>(null)
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
   const [shippingRate, setShippingRate] = useState<number | null>(null)
-  const [shippingLoading, setShippingLoading] = useState(false)
-  const [shippingError, setShippingError] = useState<string | null>(null)
+    
+    const [shippingLoading, setShippingLoading] = useState(false)
+    const [shippingError, setShippingError] = useState<string | null>(null)
+    const [currentPincode, setCurrentPincode] = useState<string | null>(null)
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("")
 
   const [couponCode, setCouponCode] = useState("")
   const [couponInput, setCouponInput] = useState("")
@@ -228,32 +235,39 @@ function CheckoutPageInner() {
     }
   }, [])
 
-  const fetchShippingRate = async (pincode: string) => {
-    if (items.length === 0) return
-    setShippingLoading(true)
-    setShippingError(null)
-    try {
-      const res = await fetch("/api/shipping-rate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pincode,
-          items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-        }),
-      })
-      const data = await res.json()
-      if (!data.serviceable) {
-        setShippingRate(null)
-        setShippingError(data.error || "This pincode isn't serviceable.")
-      } else {
-        setShippingRate(data.rate)
-      }
-    } catch {
-      setShippingError("Couldn't fetch shipping rate.")
-    } finally {
-      setShippingLoading(false)
+const fetchShippingRate = async (pincode: string) => {
+  if (items.length === 0) return
+  setShippingLoading(true)
+  setShippingError(null)
+  try {
+    const res = await fetch("/api/shipping-rate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pincode,
+        items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+      }),
+    })
+    const data = await res.json()
+    if (!data.serviceable) {
+      setShippingRate(null)
+      setShippingError(data.error || "This pincode isn't serviceable.")
+    } else {
+      setShippingRate(data.freightCharge ?? data.rate)
     }
+  } catch {
+    setShippingError("Couldn't fetch shipping rate.")
+  } finally {
+    setShippingLoading(false)
   }
+}
+
+useEffect(() => {
+  if (!currentPincode) return
+  fetchShippingRate(currentPincode)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [currentPincode])
+
 
   const totalPrice = getTotalPrice()
 
@@ -311,7 +325,17 @@ const freeShippingApplied =
   totalPrice >= (paymentSettings!.freeShippingThreshold as number)
 
 const shippingCharge = freeShippingApplied ? 0 : (shippingRate ?? 0)
-const finalTotal = orderSubtotal + shippingCharge
+const codSurcharge = (() => {
+  if (selectedPaymentMethod !== "cod" || !paymentSettings?.codFeeEnabled) return 0
+  if (paymentSettings.codFeeType === "percentage") {
+    const pct = (paymentSettings.codFeeValue ?? 0) / 100
+    const computed = orderSubtotal * pct
+    return Math.max(computed, paymentSettings.codFeeMin ?? 0)
+  }
+  return paymentSettings.codFeeValue ?? 0
+})()
+
+const finalTotal = orderSubtotal + shippingCharge + codSurcharge
 
 const amountLeftForFreeShipping =
   !!paymentSettings?.freeShippingEnabled && (paymentSettings?.freeShippingThreshold ?? 0) > 0
@@ -323,25 +347,27 @@ const amountLeftForFreeShipping =
     setCheckoutError(null)
 
     try {
+      
       if (paymentMethod === "cod") {
-        const orderResponse = await fetch("/api/orders", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            items: items.map((item) => ({
-              product: item.productId,
-              quantity: item.quantity,
-              price: item.discountPrice || item.price,
-              selectedSize: item.selectedSize,
-            })),
-            shippingAddress,
-            totalAmount: finalTotal,
-            shippingAmount: shippingCharge,
-            couponCode: couponCode || undefined,
-            paymentMethod: "cod",
-            paymentStatus: "pending",
-          }),
-        })
+  const orderResponse = await fetch("/api/orders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      items: items.map((item) => ({
+        product: item.productId,
+        quantity: item.quantity,
+        price: item.discountPrice || item.price,
+        selectedSize: item.selectedSize,
+      })),
+      shippingAddress,
+      totalAmount: finalTotal,
+      shippingAmount: shippingCharge,
+      codCharge: codSurcharge,   // ← add
+      couponCode: couponCode || undefined,
+      paymentMethod: "cod",
+      paymentStatus: "pending",
+    }),
+  })
 
         const orderData = await orderResponse.json()
         if (!orderResponse.ok) throw new Error(orderData.error)
@@ -574,7 +600,8 @@ const amountLeftForFreeShipping =
             <CheckoutForm
               totalAmount={finalTotal}
               onSubmit={handleCheckout}
-              onZipCodeChange={fetchShippingRate}
+              onZipCodeChange={setCurrentPincode}
+              onPaymentMethodChange={setSelectedPaymentMethod}
               availablePaymentMethods={availablePaymentMethods}
               initialData={{
                 name: userData?.name || session?.user?.name || "",
@@ -733,51 +760,38 @@ const amountLeftForFreeShipping =
 <div className="border-t border-[#2d8116] pt-4 space-y-2.5">
   {(() => {
     const taxableValue = totalPrice - totalGST
-    const cgst = totalGST / 2
-    const sgst = totalGST / 2
 
-    const ratesInCart = [...new Set(
-      items
-        .map((item) => gstMap[item.productId])
-        .filter((rate): rate is number => typeof rate === "number" && rate > 0)
-    )].sort((a, b) => a - b)
+    const gstByRate = items.reduce((acc, item) => {
+      const rate = gstMap[item.productId]
+      if (!rate) return acc
+      const itemTotal = (item.discountPrice || item.price) * item.quantity
+      const base = itemTotal / (1 + rate / 100)
+      acc[rate] = (acc[rate] || 0) + (itemTotal - base)
+      return acc
+    }, {} as Record<number, number>)
 
-    const fullLabel =
-      ratesInCart.length === 0
-        ? ""
-        : ratesInCart.length === 1
-        ? ` (${ratesInCart[0]}%)`
-        : ` (${ratesInCart[0]}%–${ratesInCart[ratesInCart.length - 1]}%)`
-
-    const halfLabel =
-      ratesInCart.length === 0
-        ? ""
-        : ratesInCart.length === 1
-        ? ` (${ratesInCart[0] / 2}%)`
-        : ` (${ratesInCart[0] / 2}%–${ratesInCart[ratesInCart.length - 1] / 2}%)`
+    const sortedRates = Object.keys(gstByRate).map(Number).sort((a, b) => a - b)
 
     return (
       <>
         <div className="flex justify-between text-sm">
-          <span className="text-[#a4a4a4]">Real Product Cost</span>
+          <span className="text-[#a4a4a4]">Product Cost</span>
           <span className="font-medium text-[#2d8116]">₹{taxableValue.toFixed(2)}</span>
         </div>
+        {sortedRates.map((rate) => (
+          <div key={rate} className="flex justify-between text-sm pl-3">
+            <span className="text-[#a4a4a4]">GST {rate}%</span>
+            <span className="font-medium text-[#2d8116]">₹{gstByRate[rate].toFixed(2)}</span>
+          </div>
+        ))}
         <div className="flex justify-between text-sm">
-          <span className="text-[#a4a4a4]">CGST{halfLabel}</span>
-          <span className="text-xs text-[#121412]">₹{cgst.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-[#a4a4a4]">SGST{halfLabel}</span>
-          <span className="text-xs text-[#0c120a]">₹{sgst.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-[#a4a4a4]">Total GST{fullLabel}</span>
-          <span className="font-medium text-[#2d8116]">= ₹{totalGST.toFixed(2)}</span>
+          <span className="text-[#a4a4a4]">Total GST</span>
+          <span className="font-medium text-[#2d8116]">₹{totalGST.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm pt-1.5 border-t border-[#2d8116]/20">
           <span className="font-semibold text-[#024a21]">Total Product Cost</span>
-          <span className="font-bold text-md text-[#2d8116] ">
-            ₹{totalPrice.toFixed(2)}
+          <span className="font-semibold text-[#2d8116]">
+             = ₹{totalPrice.toFixed(2)}
           </span>
         </div>
       </>
@@ -818,6 +832,18 @@ const amountLeftForFreeShipping =
     )}
   </div>
   {shippingError && <p className="text-xs text-red-500"><span className="border">+</span>{shippingError}</p>}
+
+{selectedPaymentMethod === "cod" && codSurcharge > 0 && (
+  <div className="flex justify-between items-center text-sm">
+    <span className="text-[#858585]">COD Handling Charge</span>
+    <span className="font-medium text-[#2d8116]">₹{codSurcharge.toFixed(2)}</span>
+  </div>
+)}
+{selectedPaymentMethod === "cod" && codSurcharge > 0 && (
+  <p className="text-xs text-[#ffffff] bg-[#396336] border p-2 rounded-lg">
+   * Cash on Delivery orders include a small handling fee.
+  </p>
+)}
 
   {!freeShippingApplied && amountLeftForFreeShipping > 0 && (
     <p className="text-xs text-[#2d8116] bg-[#ebffe6] border border-[#2d8116]/30 rounded-lg px-3 py-2">

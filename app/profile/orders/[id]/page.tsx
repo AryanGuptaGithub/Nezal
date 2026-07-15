@@ -26,6 +26,8 @@ import {
   Wallet,
   Calendar,
 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
 
 const currencyFormatter = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" })
 const numberFormatter = new Intl.NumberFormat("en-IN")
@@ -105,6 +107,15 @@ interface OrderDetail {
   shippingAddress?: ShippingAddress
   razorpayOrderId?: string
   razorpayPaymentId?: string
+  cancellation?: {
+  status: "none" | "requested" | "approved" | "rejected" | "completed"
+  type?: "cancel" | "return" | null
+  reason?: string
+  note?: string
+  requestedAt?: string
+  processedAt?: string
+  adminNote?: string
+}
 }
 
 export default function OrderDetailsPage() {
@@ -115,6 +126,42 @@ export default function OrderDetailsPage() {
   const [order, setOrder] = useState<OrderDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const CANCELLATION_REASONS = [
+  "Changed my mind", "Ordered by mistake", "Found a better price elsewhere",
+  "Delivery taking too long", "Product is defective/damaged", "Other",
+]
+const [showCancelDialog, setShowCancelDialog] = useState(false)
+const [cancelReason, setCancelReason] = useState("")
+const [cancelNote, setCancelNote] = useState("")
+const [cancelSubmitting, setCancelSubmitting] = useState(false)
+const [cancelError, setCancelError] = useState<string | null>(null)
+
+const handleSubmitCancellation = async () => {
+  if (!cancelReason) { setCancelError("Please select a reason"); return }
+  setCancelSubmitting(true); setCancelError(null)
+  try {
+    const res = await fetch(`/api/orders/${orderId}/cancel`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: cancelReason, note: cancelNote }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || "Failed to submit request")
+    setShowCancelDialog(false); setCancelReason(""); setCancelNote("")
+    await fetchOrder()
+  } catch (err: any) {
+    setCancelError(err.message)
+  } finally {
+    setCancelSubmitting(false)
+  }
+}
+
+const canRequestCancellation =
+  order &&
+  order.orderStatus?.toLowerCase() !== "cancelled" &&
+  (!order.cancellation || ["none", "rejected"].includes(order.cancellation.status))
+
 
   const fetchOrder = useCallback(async () => {
     if (!orderId) {
@@ -156,6 +203,7 @@ export default function OrderDetailsPage() {
         shippingAddress: data.shippingAddress,
         razorpayOrderId: data.razorpayOrderId,
         razorpayPaymentId: data.razorpayPaymentId,
+        cancellation: data.cancellation,
       }
       setOrder(normalized)
     } catch (fetchError: any) {
@@ -284,8 +332,40 @@ export default function OrderDetailsPage() {
                 <CheckCircle2 className="h-3 w-3 mr-1" /> Completed
               </Badge>
             )}
+
+            {canRequestCancellation && (
+  <Button
+    variant="outline"
+    onClick={() => setShowCancelDialog(true)}
+    className="border-rose-200 text-rose-600 hover:bg-rose-50 rounded-full"
+  >
+    Cancel / Return order
+  </Button>
+)}
           </div>
         </motion.div>
+
+
+        {order.cancellation && order.cancellation.status !== "none" && (
+  <Card className="border-0 shadow-md rounded-2xl bg-amber-50 overflow-hidden">
+    <CardContent className="p-5 flex items-start gap-3">
+      <Clock className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+      <div>
+        <p className="font-semibold text-amber-800">
+          {order.cancellation.type === "return" ? "Return request" : "Cancellation"}{" "}
+          {order.cancellation.status === "requested" && "submitted — pending review"}
+          {order.cancellation.status === "approved" && "approved — awaiting pickup/refund"}
+          {order.cancellation.status === "rejected" && "request rejected"}
+          {order.cancellation.status === "completed" && "completed"}
+        </p>
+        <p className="text-sm text-amber-700 mt-0.5">Reason: {order.cancellation.reason}</p>
+        {order.cancellation.adminNote && (
+          <p className="text-sm text-amber-700 mt-0.5">Note from support: {order.cancellation.adminNote}</p>
+        )}
+      </div>
+    </CardContent>
+  </Card>
+)}
 
         {/* Order summary cards - modern stats */}
         <motion.div
@@ -626,6 +706,37 @@ export default function OrderDetailsPage() {
           </Card>
         </motion.div>
       </div>
+
+              <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+  <DialogContent className="max-w-md rounded-2xl">
+    <DialogHeader><DialogTitle>Cancel or return this order</DialogTitle></DialogHeader>
+    <div className="space-y-4">
+      <div>
+        <label className="text-sm font-medium text-[--color-text-heading] mb-1.5 block">Reason</label>
+        <select
+          value={cancelReason}
+          onChange={(e) => setCancelReason(e.target.value)}
+          className="w-full h-10 px-3 rounded-lg border border-[--color-border] text-sm focus:outline-none focus:ring-2 focus:ring-[--color-brand-primary]"
+        >
+          <option value="">Select a reason</option>
+          {CANCELLATION_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
+        </select>
+      </div>
+      <div>
+        <label className="text-sm font-medium text-[--color-text-heading] mb-1.5 block">Additional details (optional)</label>
+        <Textarea value={cancelNote} onChange={(e) => setCancelNote(e.target.value)} rows={3} placeholder="Anything else we should know?" />
+      </div>
+      {cancelError && <p className="text-sm text-rose-600">{cancelError}</p>}
+    </div>
+    <DialogFooter>
+      <Button variant="outline" onClick={() => setShowCancelDialog(false)}>Close</Button>
+      <Button onClick={handleSubmitCancellation} disabled={cancelSubmitting} className="bg-rose-600 hover:bg-rose-700 text-white">
+        {cancelSubmitting ? "Submitting..." : "Submit request"}
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+
     </main>
   )
 }

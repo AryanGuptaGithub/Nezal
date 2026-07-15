@@ -21,7 +21,7 @@ export async function autoCreateShiprocketOrder(orderId: string) {
   const addr = order.shippingAddress;
   const items = order.items.map((item: any) => ({
     name: item.product?.name ?? "Product",
-    sku: item.product?.sku ?? "SKU",
+    sku: item.product?.sku?.trim() || `NEZAL-${item.product?._id ?? "UNKNOWN"}`,
     units: item.quantity,
     selling_price: item.price,
     weight: item.product?.weight ?? 0.3,
@@ -77,6 +77,18 @@ const result = await createShiprocketOrder({
   }
 }
 
+export async function cancelShiprocketOrder(shiprocketOrderId: number) {
+  const token = await getToken();
+  const res = await fetch(`${SHIPROCKET_API}/orders/cancel`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ ids: [shiprocketOrderId] }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`Shiprocket cancel failed: ${JSON.stringify(data)}`);
+  return data;
+}
+
 
 const SHIPROCKET_API = "https://apiv2.shiprocket.in/v1/external";
 
@@ -115,6 +127,8 @@ async function getToken(): Promise<string> {
   if (!data.token) {
     throw new Error("Shiprocket auth response missing token");
   }
+
+ 
 
   tokenCache = { token: data.token, fetchedAt: now };
   return data.token;
@@ -261,6 +275,9 @@ export interface ShiprocketRateOption {
   courierId: number;
   courierName: string;
   rate: number;
+  freightCharge: number;
+  codCharge: number;
+  otherCharges: number;
   etd: string;
   codAvailable: boolean;
 }
@@ -298,6 +315,8 @@ export async function getShippingRate({
     throw new Error(`Shiprocket serviceability failed: ${JSON.stringify(data)}`);
   }
 
+
+
   const companies = data?.data?.available_courier_companies ?? [];
 
   if (!Array.isArray(companies) || companies.length === 0) {
@@ -305,12 +324,16 @@ export async function getShippingRate({
   }
 
   const options: ShiprocketRateOption[] = companies.map((c: any) => ({
-    courierId: c.courier_company_id,
-    courierName: c.courier_name,
-    rate: c.rate,
-    etd: c.etd,
-    codAvailable: c.cod === 1,
-  }));
+  courierId: c.courier_company_id,
+  courierName: c.courier_name,
+  rate: c.rate,
+  freightCharge: c.freight_charge ?? c.rate,
+  codCharge: c.cod_charges ?? 0,
+  otherCharges: c.other_charges ?? 0,
+  etd: c.etd,
+  codAvailable: c.cod === 1,
+}));
+
 
   options.sort((a, b) => a.rate - b.rate);
 

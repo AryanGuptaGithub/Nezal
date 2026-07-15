@@ -328,8 +328,8 @@ export default function AddProductPage() {
             </div>
 
             <div>
-              <label className={labelCls}>SKU</label>
-              <Input type="text" name="sku" value={formData.sku} onChange={handleChange} placeholder="SKU-001" className={inputCls} />
+             <label className={labelCls}>SKU *</label>
+<Input type="text" name="sku" value={formData.sku} onChange={handleChange} required placeholder="SKU-001" className={inputCls} />
             </div>
 
             <div className="bg-amber-50/60 border border-amber-100 rounded-xl p-4">

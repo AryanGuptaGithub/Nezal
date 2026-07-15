@@ -1,3 +1,4 @@
+// app/admin/settings/page.tsx
 "use client"
 
 import { useEffect, useState } from "react"
@@ -20,20 +21,28 @@ interface PaymentSettings {
   maxCODAmount: number
   freeShippingEnabled: boolean
   freeShippingThreshold: number
+  codFeeEnabled: boolean
+  codFeeType: "flat" | "percentage"
+  codFeeValue: number
+  codFeeMin: number
 }
 
 export default function SettingsPage() {
   const router = useRouter()
   const { data: session } = useSession()
   const [settings, setSettings] = useState<PaymentSettings>({
-    enableCOD: true,
-    enableRazorpay: false,
-    enableCCAvenue: true,
-    minCODAmount: 0,
-    maxCODAmount: 100000,
-    freeShippingEnabled: false,
+  enableCOD: true,
+  enableRazorpay: false,
+  enableCCAvenue: true,
+  minCODAmount: 0,
+  maxCODAmount: 100000,
+  freeShippingEnabled: false,
   freeShippingThreshold: 0,
-  })
+  codFeeEnabled: false,
+  codFeeType: "flat",
+  codFeeValue: 0,
+  codFeeMin: 0,
+})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState("")
@@ -53,20 +62,20 @@ export default function SettingsPage() {
   }, [session, router])
 
   const fetchSettings = async () => {
-    setLoading(true)
-    try {
-      const res = await fetch("/api/admin/payment-settings")
-      if (res.ok) {
-        const data = await res.json()
-        setSettings(data)
-      }
-    } catch (error) {
-      console.error("Error fetching settings:", error)
-      setMessage("error:Error loading settings")
-    } finally {
-      setLoading(false)
+  setLoading(true)
+  try {
+    const res = await fetch("/api/admin/payment-settings")
+    if (res.ok) {
+      const data = await res.json()
+      setSettings((prev) => ({ ...prev, ...data }))   // ← merge, don't replace
     }
+  } catch (error) {
+    console.error("Error fetching settings:", error)
+    setMessage("error:Error loading settings")
+  } finally {
+    setLoading(false)
   }
+}
 
   const handleChange = (field: string, value: any) => {
     setSettings((prev) => ({
@@ -206,46 +215,90 @@ export default function SettingsPage() {
               />
             </div>
 
-            {/* COD limits */}
-            {settings.enableCOD && (
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mt-1">
-                <div className="flex items-center gap-1.5 mb-3">
-                  <Banknote className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    COD order limits
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 mb-1.5 block">Minimum order amount (₹)</label>
-                    <Input
-                      type="number"
-                      value={settings.minCODAmount}
-                      onChange={(e) => handleChange("minCODAmount", Number(e.target.value))}
-                      min={0}
-                      className="bg-white"
-                    />
-                    <p className="text-xs text-gray-400 mt-1">Minimum order value to allow COD.</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 mb-1.5 block">Maximum order amount (₹)</label>
-                    <Input
-                      type="number"
-                      value={settings.maxCODAmount}
-                      onChange={(e) => handleChange("maxCODAmount", Number(e.target.value))}
-                      min={0}
-                      className="bg-white"
-                    />
-                    <p className="text-xs text-gray-400 mt-1">Maximum order value to allow COD.</p>
-                  </div>
-                </div>
-                {settings.maxCODAmount > 0 && settings.minCODAmount > settings.maxCODAmount && (
-                  <p className="flex items-center gap-1.5 text-xs text-red-600 mt-3">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0" /> Minimum amount is greater than the maximum amount.
-                  </p>
-                )}
-              </div>
-            )}
+           {settings.enableCOD && (
+  <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mt-1">
+    <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-1.5">
+        <Banknote className="w-3.5 h-3.5 text-gray-400" />
+        <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          COD handling charge
+        </span>
+      </div>
+      <Switch
+        id="codFee"
+        checked={settings.codFeeEnabled}
+        onCheckedChange={(checked) => handleChange("codFeeEnabled", checked)}
+      />
+    </div>
+    <p className="text-xs text-gray-400 mb-3">
+      Passed on to the customer at checkout to cover courier COD collection costs.
+    </p>
+
+    {settings.codFeeEnabled && (
+      <div className="space-y-3">
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => handleChange("codFeeType", "flat")}
+            className={`flex-1 text-xs font-medium rounded-lg px-3 py-2 border transition-colors ${
+              settings.codFeeType === "flat"
+                ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                : "border-gray-200 bg-white text-gray-500"
+            }`}
+          >
+            Flat amount (₹)
+          </button>
+          <button
+            type="button"
+            onClick={() => handleChange("codFeeType", "percentage")}
+            className={`flex-1 text-xs font-medium rounded-lg px-3 py-2 border transition-colors ${
+              settings.codFeeType === "percentage"
+                ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                : "border-gray-200 bg-white text-gray-500"
+            }`}
+          >
+            Percentage of order
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1.5 block">
+              {settings.codFeeType === "flat" ? "Fee amount (₹)" : "Fee percentage (%)"}
+            </label>
+            <Input
+              type="number"
+              value={settings.codFeeValue}
+              onChange={(e) => handleChange("codFeeValue", Number(e.target.value))}
+              min={0}
+              step={settings.codFeeType === "percentage" ? 0.1 : 1}
+              className="bg-white"
+            />
+          </div>
+          {settings.codFeeType === "percentage" && (
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1.5 block">Minimum fee (₹)</label>
+              <Input
+                type="number"
+                value={settings.codFeeMin}
+                onChange={(e) => handleChange("codFeeMin", Number(e.target.value))}
+                min={0}
+                className="bg-white"
+              />
+              <p className="text-xs text-gray-400 mt-1">Fee never drops below this, even on small orders.</p>
+            </div>
+          )}
+        </div>
+
+        <p className="text-xs text-gray-400">
+          {settings.codFeeType === "flat"
+            ? `Every COD order is charged ₹${settings.codFeeValue || 0} extra.`
+            : `Every COD order is charged ${settings.codFeeValue || 0}% of the order value, minimum ₹${settings.codFeeMin || 0}.`}
+        </p>
+      </div>
+    )}
+  </div>
+)}
 
             {noMethodEnabled && (
               <p className="flex items-center gap-1.5 text-xs text-red-600 pt-1">

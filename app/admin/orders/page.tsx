@@ -60,6 +60,7 @@ interface Order {
   shippingAddress?: ShippingAddress
   totalAmount: number
   shippingAmount?: number
+  codCharge?: number   // ← add
   totalTaxableValue?: number
   totalGstAmount?: number
   paymentStatus?: string
@@ -74,6 +75,15 @@ interface Order {
   courierName?: string
   trackingUrl?: string
   shippingStatus?: string
+  cancellation?: {
+    status: "none" | "requested" | "approved" | "rejected" | "completed"
+    type?: "cancel" | "return" | null
+    reason?: string
+    note?: string
+    requestedAt?: string
+    processedAt?: string
+    adminNote?: string
+  }
 }
 
 export default function AdminOrdersPage() {
@@ -87,6 +97,30 @@ export default function AdminOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [showDetails, setShowDetails] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+
+
+  const [cancellationActionId, setCancellationActionId] = useState<string | null>(null)
+const [adminNoteInput, setAdminNoteInput] = useState("")
+
+const handleCancellationAction = async (orderId: string, action: "approve" | "reject" | "complete") => {
+  setCancellationActionId(orderId)
+  try {
+    const res = await fetch(`/api/admin/orders/${orderId}/cancellation`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, adminNote: adminNoteInput }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error("Failed to update")
+    await fetchOrders()
+    if (selectedOrder && selectedOrder._id === orderId) setSelectedOrder({ ...selectedOrder, ...data.order })
+    setAdminNoteInput("")
+  } catch (error) {
+    console.error("Error updating cancellation:", error)
+  } finally {
+    setCancellationActionId(null)
+  }
+}
 
   useEffect(() => {
     if (!session) {
@@ -287,7 +321,9 @@ export default function AdminOrdersPage() {
                     <th className="py-3 px-3">Method</th>
                     <th className="py-3 px-3">GST</th>
                     <th className="py-3 px-3">Shipping</th>
+                    <th className="py-3 px-3">COD Fee</th>
                     <th className="py-3 px-3">Date</th>
+                    <th className="py-3 px-3">Return/Cancel</th>
                     <th className="py-3 px-6 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -337,7 +373,7 @@ export default function AdminOrdersPage() {
                                 href={order.trackingUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-xs text-emerald-700 hover:underline flex items-center gap-1"
+                                className="text-xs text-emerald-700 hover:underline flex items-center gap-1 hover:bg-emerald-700 hover:text-white border px-2 py-1 rounded-xl"
                               >
                                 Track <ExternalLink className="w-3 h-3" />
                               </a>
@@ -349,9 +385,26 @@ export default function AdminOrdersPage() {
                           <Badge variant="outline" className="text-xs text-gray-500 border-gray-200">Awaiting payment</Badge>
                         )}
                       </td>
+                      <td className="py-3.5 px-3 text-xs text-gray-500">
+  {order.paymentMethod === "cod" && (order.codCharge ?? 0) > 0
+    ? `₹${(order.codCharge ?? 0).toFixed(2)}`
+    : "—"}
+</td>
                       <td className="py-3.5 px-3 text-xs text-gray-400">
                         {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "—"}
                       </td>
+                      <td className="py-3.5 px-3">
+  {order.cancellation && order.cancellation.status !== "none" ? (
+    <Badge className={
+      order.cancellation.status === "requested" ? "bg-amber-50 text-amber-700 border-amber-100 text-xs" :
+      order.cancellation.status === "approved" ? "bg-blue-50 text-blue-700 border-blue-100 text-xs" :
+      order.cancellation.status === "completed" ? "bg-rose-50 text-rose-700 border-rose-100 text-xs" :
+      "bg-gray-50 text-gray-600 border-gray-100 text-xs"
+    }>
+      {order.cancellation.type === "return" ? "Return" : "Cancel"} · {order.cancellation.status}
+    </Badge>
+  ) : <span className="text-xs text-gray-300">—</span>}
+</td>
                       <td className="py-3.5 px-6 text-right">
                         <Button
                           variant="ghost"
@@ -497,23 +550,29 @@ export default function AdminOrdersPage() {
                 </h3>
 
                 <div className="space-y-1.5 text-sm mb-4 pb-4 border-b border-gray-200">
-                  <div className="flex justify-between text-gray-600">
-                    <span>Taxable value</span>
-                    <span>₹{(selectedOrder.totalTaxableValue ?? 0).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>GST</span>
-                    <span>₹{(selectedOrder.totalGstAmount ?? 0).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Shipping</span>
-                    <span>₹{(selectedOrder.shippingAmount ?? 0).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between font-semibold text-gray-900 pt-1.5 border-t border-gray-200">
-                    <span>Total</span>
-                    <span>₹{(selectedOrder.totalAmount || 0).toFixed(2)}</span>
-                  </div>
-                </div>
+  <div className="flex justify-between text-gray-600">
+    <span>Taxable value</span>
+    <span>₹{(selectedOrder.totalTaxableValue ?? 0).toFixed(2)}</span>
+  </div>
+  <div className="flex justify-between text-gray-600">
+    <span>GST</span>
+    <span>₹{(selectedOrder.totalGstAmount ?? 0).toFixed(2)}</span>
+  </div>
+  <div className="flex justify-between text-gray-600">
+    <span>Shipping</span>
+    <span>₹{(selectedOrder.shippingAmount ?? 0).toFixed(2)}</span>
+  </div>
+  {selectedOrder.paymentMethod === "cod" && (selectedOrder.codCharge ?? 0) > 0 && (
+    <div className="flex justify-between text-gray-600">
+      <span>COD handling charge</span>
+      <span>₹{(selectedOrder.codCharge ?? 0).toFixed(2)}</span>
+    </div>
+  )}
+  <div className="flex justify-between font-semibold text-gray-900 pt-1.5 border-t border-gray-200">
+    <span>Total</span>
+    <span>₹{(selectedOrder.totalAmount || 0).toFixed(2)}</span>
+  </div>
+</div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -581,6 +640,45 @@ export default function AdminOrdersPage() {
                   </p>
                 )}
               </div>
+
+              {selectedOrder.cancellation && selectedOrder.cancellation.status !== "none" && (
+  <div className="bg-rose-50 border border-rose-200 p-4 rounded-xl">
+    <h3 className="text-xs font-semibold uppercase tracking-wide text-rose-700 mb-3">
+      {selectedOrder.cancellation.type === "return" ? "Return request" : "Cancellation"}
+    </h3>
+    <div className="space-y-1.5 text-sm mb-3">
+      <p><span className="text-gray-500">Status:</span> <span className="font-medium capitalize">{selectedOrder.cancellation.status}</span></p>
+      <p><span className="text-gray-500">Reason:</span> {selectedOrder.cancellation.reason}</p>
+      {selectedOrder.cancellation.note && <p><span className="text-gray-500">Note:</span> {selectedOrder.cancellation.note}</p>}
+      {selectedOrder.cancellation.requestedAt && (
+        <p><span className="text-gray-500">Requested:</span> {new Date(selectedOrder.cancellation.requestedAt).toLocaleString()}</p>
+      )}
+    </div>
+    {selectedOrder.cancellation.status === "requested" && (
+      <div className="space-y-2">
+        <input type="text" placeholder="Admin note (optional)" value={adminNoteInput}
+          onChange={(e) => setAdminNoteInput(e.target.value)}
+          className="w-full h-9 px-3 text-sm rounded-lg border border-gray-200" />
+        <div className="flex gap-2">
+          <Button size="sm" disabled={cancellationActionId === selectedOrder._id}
+            onClick={() => handleCancellationAction(selectedOrder._id, "approve")}
+            className="bg-emerald-700 hover:bg-emerald-800">Approve</Button>
+          <Button size="sm" variant="outline" disabled={cancellationActionId === selectedOrder._id}
+            onClick={() => handleCancellationAction(selectedOrder._id, "reject")}
+            className="border-gray-200">Reject</Button>
+        </div>
+      </div>
+    )}
+    {selectedOrder.cancellation.status === "approved" && (
+      <div className="space-y-2">
+        <p className="text-xs text-gray-500">Once the item is picked up/returned and refunded, mark complete to close the order.</p>
+        <Button size="sm" disabled={cancellationActionId === selectedOrder._id}
+          onClick={() => handleCancellationAction(selectedOrder._id, "complete")}
+          className="bg-rose-600 hover:bg-rose-700">Mark returned & cancel order</Button>
+      </div>
+    )}
+  </div>
+)}
             </div>
           </DialogContent>
         </Dialog>
