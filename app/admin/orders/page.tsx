@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Eye, MapPin, CreditCard, Package, Truck, ExternalLink, Search, ShoppingBag, RefreshCw } from "lucide-react"
+import { Eye, MapPin, CreditCard, Package, Truck, ExternalLink, Search, ShoppingBag, RefreshCw, Ban, RotateCw } from "lucide-react"
 
 interface OrderItem {
   product?: {
@@ -76,14 +76,21 @@ interface Order {
   trackingUrl?: string
   shippingStatus?: string
   cancellation?: {
-    status: "none" | "requested" | "approved" | "rejected" | "completed"
-    type?: "cancel" | "return" | null
-    reason?: string
-    note?: string
-    requestedAt?: string
-    processedAt?: string
-    adminNote?: string
+  status: "none" | "requested" | "approved" | "rejected" | "completed"
+  type?: "cancel" | "return" | null
+  reason?: string
+  note?: string
+  requestedAt?: string
+  processedAt?: string
+  adminNote?: string
+  refund?: {
+    status: "none" | "not_applicable" | "initiated" | "success" | "failed"
+    amount?: number
+    initiatedAt?: string
+    completedAt?: string
+    failureReason?: string
   }
+}
 }
 
 export default function AdminOrdersPage() {
@@ -101,6 +108,55 @@ export default function AdminOrdersPage() {
 
   const [cancellationActionId, setCancellationActionId] = useState<string | null>(null)
 const [adminNoteInput, setAdminNoteInput] = useState("")
+
+const [cancelTarget, setCancelTarget] = useState<Order | null>(null)
+const [cancelReason, setCancelReason] = useState("")
+const [cancellingId, setCancellingId] = useState<string | null>(null)
+
+  const [syncingId, setSyncingId] = useState<string | null>(null)
+
+const handleSyncShiprocket = async (orderId: string) => {
+  setSyncingId(orderId)
+  try {
+    const res = await fetch(`/api/admin/orders/${orderId}/sync-shiprocket`, { method: "POST" })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || "Sync failed")
+    await fetchOrders()
+    if (selectedOrder && selectedOrder._id === orderId) {
+      setSelectedOrder({ ...selectedOrder, ...data.order })
+    }
+  } catch (error: any) {
+    console.error("Error syncing with Shiprocket:", error)
+    alert(error.message || "Sync failed")
+  } finally {
+    setSyncingId(null)
+  }
+}
+
+
+const handleAdminCancel = async (orderId: string) => {
+  setCancellingId(orderId)
+  try {
+    const res = await fetch(`/api/admin/orders/${orderId}/cancellation`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "admin_cancel", adminNote: cancelReason }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || "Failed to cancel order")
+    await fetchOrders()
+    if (selectedOrder && selectedOrder._id === orderId) {
+      setSelectedOrder({ ...selectedOrder, ...data.order })
+    }
+    setCancelTarget(null)
+    setCancelReason("")
+  } catch (error: any) {
+    console.error("Error cancelling order:", error)
+    alert(error.message || "Failed to cancel order")
+  } finally {
+    setCancellingId(null)
+  }
+}
 
 const handleCancellationAction = async (orderId: string, action: "approve" | "reject" | "complete") => {
   setCancellationActionId(orderId)
@@ -404,18 +460,42 @@ const handleCancellationAction = async (orderId: string, action: "approve" | "re
       {order.cancellation.type === "return" ? "Return" : "Cancel"} · {order.cancellation.status}
     </Badge>
   ) : <span className="text-xs text-gray-300">—</span>}
+</td><td className="py-3.5 px-6 text-right">
+  <div className="flex items-center justify-end gap-1">
+    {order.shiprocketOrderId && order.cancellation?.status !== "completed" && (
+  <Button
+    variant="ghost"
+    size="icon"
+    onClick={() => handleSyncShiprocket(order._id)}
+    disabled={syncingId === order._id}
+    className="text-gray-400 hover:text-blue-600"
+    title="Sync status from Shiprocket"
+  >
+    <RotateCw className={`w-4 h-4 ${syncingId === order._id ? "animate-spin" : ""}`} />
+  </Button>
+)}
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => handleViewDetails(order)}
+      className="text-gray-400 hover:text-emerald-700"
+      title="View details"
+    >
+      <Eye className="w-4 h-4" />
+    </Button>
+    {order.orderStatus !== "cancelled" && order.orderStatus !== "delivered" && (
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setCancelTarget(order)}
+        className="text-gray-400 hover:text-rose-600"
+        title="Cancel order"
+      >
+        <Ban className="w-4 h-4" />
+      </Button>
+    )}
+  </div>
 </td>
-                      <td className="py-3.5 px-6 text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleViewDetails(order)}
-                          className="text-gray-400 hover:text-emerald-700"
-                          title="View details"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -679,10 +759,94 @@ const handleCancellationAction = async (orderId: string, action: "approve" | "re
     )}
   </div>
 )}
+
+{selectedOrder.cancellation?.refund && selectedOrder.cancellation.refund.status !== "none" && (
+  <div className="mt-3 pt-3 border-t border-rose-200 text-sm">
+    <span className="text-gray-500">Refund:</span>{" "}
+    {selectedOrder.cancellation.refund.status === "success" && (
+      <span className="text-emerald-700 font-medium">
+        ✅ ₹{(selectedOrder.cancellation.refund.amount ?? 0).toFixed(2)} refunded successfully
+      </span>
+    )}
+    {selectedOrder.cancellation.refund.status === "initiated" && (
+      <span className="text-amber-700 font-medium">⏳ Refund initiated, awaiting confirmation</span>
+    )}
+    {selectedOrder.cancellation.refund.status === "failed" && (
+      <span className="text-rose-700 font-medium">
+        ⚠️ Refund failed — {selectedOrder.cancellation.refund.failureReason || "check logs"}. Needs manual refund.
+      </span>
+    )}
+    {selectedOrder.cancellation.refund.status === "not_applicable" && (
+      <span className="text-gray-500">No refund needed (no payment collected)</span>
+    )}
+  </div>
+)}
             </div>
           </DialogContent>
         </Dialog>
       )}
+
+      {cancelTarget && (
+  <Dialog open={!!cancelTarget} onOpenChange={(open) => { if (!open) { setCancelTarget(null); setCancelReason("") } }}>
+    <DialogContent className="max-w-md rounded-2xl">
+      <DialogHeader>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-rose-600 flex items-center justify-center shrink-0">
+            <Ban className="w-4 h-4 text-white" />
+          </div>
+          <DialogTitle>Cancel order {cancelTarget.orderNumber || cancelTarget._id.slice(-6)}?</DialogTitle>
+        </div>
+      </DialogHeader>
+
+      <div className="space-y-4">
+        <p className="text-sm text-gray-600">
+          This will mark the order as <span className="font-medium text-gray-900">cancelled</span>,
+          cancel its Shiprocket shipment (if any), and can't be undone from here.
+        </p>
+
+        {cancelTarget.paymentStatus === "completed" && (
+  <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-lg p-3">
+    {cancelTarget.paymentMethod === "ccavenue" ? (
+      <>Payment was already collected via CCAvenue. Cancelling will automatically attempt a refund of ₹{cancelTarget.totalAmount.toFixed(2)} to the original payment method.</>
+    ) : cancelTarget.paymentMethod === "cod" ? (
+      <>This is a COD order — no payment was collected, so no refund is needed.</>
+    ) : (
+      <>Payment was already collected via {cancelTarget.paymentMethod}. Cancelling here does <b>not</b> issue a refund automatically — you'll need to refund manually.</>
+    )}
+  </div>
+)}
+
+        <div>
+          <label className="text-xs text-gray-500 mb-1 block">Reason (optional, visible to you only)</label>
+          <input
+            type="text"
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            placeholder="e.g. Out of stock, customer requested by phone..."
+            className="w-full h-9 px-3 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500"
+          />
+        </div>
+
+        <div className="flex justify-end gap-2 pt-1">
+          <Button
+            variant="outline"
+            className="border-gray-200"
+            onClick={() => { setCancelTarget(null); setCancelReason("") }}
+          >
+            Keep order
+          </Button>
+          <Button
+            disabled={cancellingId === cancelTarget._id}
+            onClick={() => handleAdminCancel(cancelTarget._id)}
+            className="bg-rose-600 hover:bg-rose-700"
+          >
+            {cancellingId === cancelTarget._id ? "Cancelling..." : "Cancel order"}
+          </Button>
+        </div>
+      </div>
+    </DialogContent>
+  </Dialog>
+)}
     </main>
   )
 }

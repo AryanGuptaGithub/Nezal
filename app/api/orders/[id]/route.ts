@@ -6,6 +6,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { sendEmail, getOrderStatusUpdateEmail } from "@/lib/email"
 import "@/lib/models/product"
 import "@/lib/models/user"
+import { BRAND } from "@/lib/config"
 
 
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
 
 export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await context.params // ✅ await params
+    const { id } = await context.params
 
     const session = await getServerSession()
     if (!session?.user?.email) {
@@ -60,6 +61,17 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
 
     const body = await request.json()
     const { orderStatus, paymentStatus } = body
+
+    // Cancellations must go through /api/admin/orders/[id]/cancellation —
+    // that route handles Shiprocket cancellation, refunds, and the
+    // correct customer-facing email. Blocking it here so it can't be
+    // bypassed accidentally.
+    if (orderStatus === "cancelled") {
+      return NextResponse.json(
+        { error: "Use the order cancellation endpoint to cancel orders, not this route." },
+        { status: 400 }
+      )
+    }
 
     const updateData: any = {}
     if (orderStatus) updateData.orderStatus = orderStatus

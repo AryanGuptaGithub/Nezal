@@ -1,8 +1,7 @@
-// app/api/webhooks/shipment-updates/route.ts
-
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { Order } from "@/lib/models/order";
+import { finalizeOrderCancellation } from "@/lib/orderCancellation";
 
 /**
  * Shiprocket sends webhook POST requests whenever a shipment status changes.
@@ -10,26 +9,13 @@ import { Order } from "@/lib/models/order";
  *
  * Setup (do this in Shiprocket dashboard):
  *   Settings → API → Configure → Webhooks
- *   URL: https://yourdomain.com/api/webhooks/shiprocket
- *   Add a custom header: X-Api-Key: <your SHIPROCKET_WEBHOOK_SECRET>
- *   (Shiprocket lets you set a custom token that they'll echo back in headers,
- *    OR sends the API secret you configured — verify exact field name once
- *    you reach the Webhooks config screen, as Shiprocket's UI varies.)
- *
- * Shiprocket webhook payload shape (typical):
- * {
- *   "awb": "...",
- *   "courier_name": "...",
- *   "current_status": "...",
- *   "shipment_status": "...",  // numeric or string status code
- *   "order_id": "...",         // your order_id you sent at creation
- *   "sr_order_id": 123,        // shiprocket's internal id
- *   "etd": "...",
- *   ...
- * }
+ *   URL: https://yourdomain.com/api/webhooks/shipment-updates   ← must match this route's actual path
+ *   Add a custom header matching SHIPROCKET_WEBHOOK_SECRET below.
+ *   IMPORTANT: verify the exact header name Shiprocket sends on your account's
+ *   webhook config screen — log req.headers once in test mode to confirm
+ *   before relying on this in production.
  */
 
-// Map Shiprocket's status strings to your internal shippingStatus enum
 const STATUS_MAP: Record<string, string> = {
   "NEW": "processing",
   "PICKUP SCHEDULED": "processing",
@@ -43,16 +29,13 @@ const STATUS_MAP: Record<string, string> = {
   "CANCELED": "cancelled",
 };
 
-// When shippingStatus hits these, also update the order's main orderStatus
 const ORDER_STATUS_SYNC: Record<string, string> = {
   shipped: "shipped",
   out_for_delivery: "shipped",
   delivered: "delivered",
-  cancelled: "cancelled",
 };
 
 export async function POST(req: NextRequest) {
-  // ─── Verify the request is really from Shiprocket ───────────────────────
   const incomingSecret =
     req.headers.get("x-api-key") ?? req.headers.get("x-webhook-secret");
 
@@ -72,43 +55,58 @@ export async function POST(req: NextRequest) {
 
   await connectDB();
 
-  // Shiprocket sends order_id (the one we set at creation = our Mongo _id)
   const orderId = body.order_id;
   const awb = body.awb;
   const rawStatus =
     (body.current_status || body.shipment_status || "").toString().toUpperCase();
 
   if (!orderId && !awb) {
-    return NextResponse.json(
-      { error: "Missing order_id and awb in payload" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Missing order_id and awb in payload" }, { status: 400 });
   }
 
-  // Find the order by our internal order_id first, fallback to AWB
-  const order = orderId
-    ? await Order.findById(orderId).catch(() => null)
+  const resolvedOrder = orderId
+    ? await Order.findById(orderId).catch(() => null) ?? await Order.findOne({ awbCode: awb })
     : await Order.findOne({ awbCode: awb });
-
-  const resolvedOrder = order ?? (orderId ? null : await Order.findOne({ awbCode: awb }));
 
   if (!resolvedOrder) {
     console.warn(`Shiprocket webhook: order not found (order_id=${orderId}, awb=${awb})`);
-    // Return 200 anyway — Shiprocket will retry on non-2xx and we don't want retry storms
     return NextResponse.json({ received: true, matched: false });
   }
 
   const mappedShippingStatus = STATUS_MAP[rawStatus] ?? null;
 
+  // ── Cancellation: route through the shared cancel/refund/email flow ──
+  if (mappedShippingStatus === "cancelled" && resolvedOrder.orderStatus !== "cancelled") {
+    const alreadyHandledByUs =
+      resolvedOrder.cancellation &&
+      ["approved", "completed"].includes(resolvedOrder.cancellation.status)
+
+    if (!alreadyHandledByUs) {
+      resolvedOrder.cancellation = {
+        status: "requested",
+        type: "cancel",
+        reason: resolvedOrder.cancellation?.reason || null,
+        note: resolvedOrder.cancellation?.note || null,
+        requestedAt: resolvedOrder.cancellation?.requestedAt || new Date(),
+        processedAt: null,
+        adminNote: resolvedOrder.cancellation?.adminNote || null,
+      }
+      await finalizeOrderCancellation(resolvedOrder, {
+        reason: "cancelled directly in Shiprocket",
+        skipShiprocketCancel: true, // already cancelled there — don't call the cancel API again
+      })
+      console.log(`Order ${resolvedOrder._id} cancellation synced from Shiprocket webhook`)
+    }
+    return NextResponse.json({ received: true, matched: true, synced: "cancellation" })
+  }
+
+  // ── Everything else: simple field sync, as before ──
   const update: Record<string, any> = {};
 
   if (mappedShippingStatus) {
     update.shippingStatus = mappedShippingStatus;
-
     const syncedOrderStatus = ORDER_STATUS_SYNC[mappedShippingStatus];
-    if (syncedOrderStatus) {
-      update.orderStatus = syncedOrderStatus;
-    }
+    if (syncedOrderStatus) update.orderStatus = syncedOrderStatus;
   }
 
   if (awb && !resolvedOrder.awbCode) {
@@ -122,10 +120,7 @@ export async function POST(req: NextRequest) {
 
   if (Object.keys(update).length > 0) {
     await Order.findByIdAndUpdate(resolvedOrder._id, update);
-    console.log(
-      `Order ${resolvedOrder._id} updated:`,
-      JSON.stringify(update)
-    );
+    console.log(`Order ${resolvedOrder._id} updated:`, JSON.stringify(update));
   }
 
   return NextResponse.json({ received: true, matched: true });

@@ -339,3 +339,28 @@ export async function getShippingRate({
 
   return { cheapest: options[0], options };
 }
+
+
+/**
+ * Fetches the current order status directly from Shiprocket.
+ * Response shape isn't fully documented publicly — I'm reading the most
+ * commonly reported fields (data.status / data.order_status). Log the raw
+ * response once against a real order and adjust if the field names differ.
+ */
+export async function getShiprocketOrderStatus(shiprocketOrderId: number) {
+  const token = await getToken();
+  const res = await fetch(`${SHIPROCKET_API}/orders/show/${shiprocketOrderId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(`Shiprocket order status fetch failed: ${JSON.stringify(data)}`);
+  }
+  const record = data?.data ?? data;
+  return {
+    status: (record?.status ?? record?.order_status ?? "").toString().toUpperCase(),
+    awb: record?.shipments?.[0]?.awb ?? record?.awb_code ?? null,
+    courierName: record?.shipments?.[0]?.courier ?? record?.courier_name ?? null,
+    raw: data,
+  };
+}

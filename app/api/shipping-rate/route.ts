@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getShippingRate } from "@/lib/shiprocket";
 import { Product } from "@/lib/models/product";
-import { connectDB } from "@/lib/db"; // adjust to your actual export name in lib/db.ts
+import { connectDB } from "@/lib/db";
+
+// Shiprocket charges these on top of the quoted courier rate at actual
+// shipment-booking time — the /courier/serviceability quote API used below
+// does NOT include them, so we add them back in here to avoid under-charging
+// customers for shipping.
+const SMART_ORDER_FEE = 5;      // Notify → WhatsApp Communication, flat per shipment (confirmed in Shiprocket settings)
+const RATE_DRIFT_BUFFER = 3;    // covers Shiprocket picking a "Recommended" courier instead of the cheapest one we quoted
+const SHIPPING_BUFFER = SMART_ORDER_FEE + RATE_DRIFT_BUFFER; // ₹8 total
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,7 +23,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "items array required" }, { status: 400 });
     }
 
-   await connectDB();
+    await connectDB();
 
     const productIds = items.map((i: any) => i.productId);
     const products = await Product.find({ _id: { $in: productIds } }).select("weight");
@@ -36,16 +44,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ serviceable: false, error: "Not serviceable to this pincode" });
     }
 
-   return NextResponse.json({
-  serviceable: true,
-  rate: cheapest.rate,
-  freightCharge: cheapest.freightCharge,
-  codCharge: cheapest.codCharge,
-  courierName: cheapest.courierName,
-  etd: cheapest.etd,
-  weight: totalWeight,
-  options,
-});
+    return NextResponse.json({
+      serviceable: true,
+      rate: cheapest.rate + SHIPPING_BUFFER,
+      freightCharge: cheapest.freightCharge,
+      codCharge: cheapest.codCharge,
+      courierName: cheapest.courierName,
+      etd: cheapest.etd,
+      weight: totalWeight,
+      options,
+    });
 
   } catch (err: any) {
     console.error("Shipping rate error:", err.message);

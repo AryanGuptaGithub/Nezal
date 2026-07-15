@@ -106,3 +106,80 @@ export function parseCCAvenueResponse(decryptedText: string): Record<string, str
   }
   return result;
 }
+
+
+
+
+// ── Refund API (separate from checkout flow) ──────────────────────────
+// Requires CCAvenue to have whitelisted your server's IP for API access.
+// Confirm exact response field names against a real test refund before
+// relying on this in production — see rawResponse logging below.
+
+const CCAVENUE_API_URL = "https://api.ccavenue.com/apis/servlet/DoWebTrans";
+
+export interface CCAvenueRefundParams {
+  referenceNo: string;   // CCAvenue's tracking_id from the original successful transaction
+  refundAmount: number;
+  refundRefNo: string;   // your own unique id for this refund attempt, e.g. `${orderId}-${Date.now()}`
+}
+
+export interface CCAvenueRefundResult {
+  success: boolean;
+  errorDesc?: string;
+  raw: any;
+}
+
+export async function refundCCAvenueOrder(params: CCAvenueRefundParams): Promise<CCAvenueRefundResult> {
+  const payload = JSON.stringify({
+    reference_no: params.referenceNo,
+    refund_amount: params.refundAmount.toFixed(2),
+    refund_ref_no: params.refundRefNo,
+  });
+
+  const encRequest = encrypt(payload);
+
+  const body = new URLSearchParams({
+    request_type: "JSON",
+    access_code: ACCESS_CODE,
+    command: "refundOrder",
+    response_type: "JSON",
+    version: "1.2",
+    enc_request: encRequest,
+  });
+
+  const res = await fetch(CCAVENUE_API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: body.toString(),
+  });
+
+  const text = await res.text();
+
+  // CCAvenue replies as a query string: enc_response=<hex>
+  const parsedReply = new URLSearchParams(text);
+  const encResponse = parsedReply.get("enc_response");
+
+  if (!encResponse) {
+    return { success: false, errorDesc: "No enc_response from CCAvenue", raw: { text } };
+  }
+
+  let json: any;
+  try {
+    const decrypted = decrypt(encResponse);
+    json = JSON.parse(decrypted);
+  } catch (err: any) {
+    return { success: false, errorDesc: `Failed to parse refund response: ${err.message}`, raw: { text } };
+  }
+
+  const result = json.Refund_Order_Result ?? json;
+  // status "0" = success is the CCAvenue convention seen elsewhere in their API (e.g. Confirm/Cancel).
+  // Log `raw` on your first real test to confirm this holds for refundOrder too.
+  const statusVal = result?.status ?? result?.Status;
+  const success = statusVal === "0" || statusVal === 0;
+
+  return {
+    success,
+    errorDesc: result?.reason ?? result?.error_desc ?? (success ? undefined : "Unknown failure"),
+    raw: json,
+  };
+}

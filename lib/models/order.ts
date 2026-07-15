@@ -58,7 +58,7 @@ const orderSchema = new mongoose.Schema(
 
     paymentStatus: {
       type:    String,
-      enum:    ["pending", "completed", "failed"],
+      enum:    ["pending", "completed", "failed", "refunded"],
       default: "pending",
     },
     paymentMethod: {
@@ -113,6 +113,19 @@ ccavenueBankRefNo: { type: String, default: null },
   requestedAt: { type: Date, default: null },
   processedAt: { type: Date, default: null },
   adminNote: { type: String, default: null },
+  refund: {
+    status: {
+      type: String,
+      enum: ["none", "not_applicable", "initiated", "success", "failed"],
+      default: "none",
+    },
+    refundRefNo: { type: String, default: null },   // our own unique ref sent to CCAvenue
+    amount: { type: Number, default: null },
+    initiatedAt: { type: Date, default: null },
+    completedAt: { type: Date, default: null },
+    failureReason: { type: String, default: null },
+    rawResponse: { type: mongoose.Schema.Types.Mixed, default: null }, // for debugging, remove once stable
+  },
 },
   },
   { timestamps: true }   // ← second argument to mongoose.Schema, not a field

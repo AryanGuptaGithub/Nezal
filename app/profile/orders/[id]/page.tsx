@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { BRAND } from "@/lib/config"
 
 const currencyFormatter = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" })
 const numberFormatter = new Intl.NumberFormat("en-IN")
@@ -115,6 +116,12 @@ interface OrderDetail {
   requestedAt?: string
   processedAt?: string
   adminNote?: string
+  refund?: {
+    status: "none" | "not_applicable" | "initiated" | "success" | "failed"
+    amount?: number
+    initiatedAt?: string
+    completedAt?: string
+  }
 }
 }
 
@@ -348,20 +355,60 @@ const canRequestCancellation =
 
         {order.cancellation && order.cancellation.status !== "none" && (
   <Card className="border-0 shadow-md rounded-2xl bg-amber-50 overflow-hidden">
-    <CardContent className="p-5 flex items-start gap-3">
-      <Clock className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
-      <div>
-        <p className="font-semibold text-amber-800">
-          {order.cancellation.type === "return" ? "Return request" : "Cancellation"}{" "}
-          {order.cancellation.status === "requested" && "submitted — pending review"}
-          {order.cancellation.status === "approved" && "approved — awaiting pickup/refund"}
-          {order.cancellation.status === "rejected" && "request rejected"}
-          {order.cancellation.status === "completed" && "completed"}
-        </p>
-        <p className="text-sm text-amber-700 mt-0.5">Reason: {order.cancellation.reason}</p>
-        {order.cancellation.adminNote && (
-          <p className="text-sm text-amber-700 mt-0.5">Note from support: {order.cancellation.adminNote}</p>
-        )}
+    <CardContent className="p-5 space-y-3">
+      <div className="flex items-start gap-3">
+        <Clock className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+        <div>
+          <p className="font-semibold text-amber-800">
+            {order.cancellation.type === "return" ? "Return request" : "Cancellation"}{" "}
+            {order.cancellation.status === "requested" && "submitted — pending review"}
+            {order.cancellation.status === "approved" && "approved — awaiting pickup/refund"}
+            {order.cancellation.status === "rejected" && "request rejected"}
+            {order.cancellation.status === "completed" && "completed"}
+          </p>
+          <p className="text-sm text-amber-700 mt-0.5">Reason: {order.cancellation.reason}</p>
+          {order.cancellation.adminNote && (
+            <p className="text-sm text-amber-700 mt-0.5">Note from support: {order.cancellation.adminNote}</p>
+          )}
+        </div>
+      </div>
+
+      {order.cancellation.refund && order.cancellation.refund.status !== "none" && (
+        <div className="ml-8 pl-3 border-l-2 border-amber-300 space-y-1">
+          {order.cancellation.refund.status === "initiated" && (
+            <p className="text-sm text-amber-700">
+              💳 Refund of {currencyFormatter.format(order.cancellation.refund.amount || 0)} initiated —
+              usually reflects in 5–7 business days.
+            </p>
+          )}
+          {order.cancellation.refund.status === "success" && (
+            <p className="text-sm text-emerald-700 font-medium">
+              ✅ Refund of {currencyFormatter.format(order.cancellation.refund.amount || 0)} completed
+              {order.cancellation.refund.completedAt &&
+                ` on ${new Date(order.cancellation.refund.completedAt).toLocaleDateString()}`}.
+            </p>
+          )}
+          {order.cancellation.refund.status === "failed" && (
+            <p className="text-sm text-rose-700 font-medium">
+              ⚠️ We had trouble processing your refund automatically. Our team has been notified — reach
+              out below if you don't hear from us within 2 business days.
+            </p>
+          )}
+          {order.cancellation.refund.status === "not_applicable" && (
+            <p className="text-sm text-amber-700">No payment was collected on this order, so no refund is due.</p>
+          )}
+        </div>
+      )}
+
+      <div className="ml-8 pl-3 pt-1 border-t border-amber-200/60 flex items-center gap-3 text-sm">
+        <span className="text-amber-700">Need help with this?</span>
+        <a href={`mailto:${BRAND.supportEmail}`} className="font-medium text-amber-900 hover:underline">
+          Email support
+        </a>
+        <span className="text-amber-300">·</span>
+        <a href={`tel:${BRAND.whatsapp.primary}`} className="font-medium text-amber-900 hover:underline">
+          Call us
+        </a>
       </div>
     </CardContent>
   </Card>
