@@ -4,7 +4,7 @@ import { Order } from "@/lib/models/order"
 import { sendEmail, getAbandonedPaymentEmail } from "@/lib/email"
 
 const ABANDONED_THRESHOLD_MS = 10 * 60 * 1000 // 10 minutes
-const SUPPORT_PHONE = process.env.SUPPORT_PHONE || "+91 00000 00000"
+const SUPPORT_PHONE = process.env.SUPPORT_PHONE || "+91 7710076400"
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -14,10 +14,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (!order || order.paymentMethod !== "ccavenue" || order.paymentStatus !== "pending") {
       // Resolved already (paid/failed), not found, or not a ccavenue order — nothing to do.
       return NextResponse.json({ stillPending: false })
-    }
-
-    if (order.abandonedEmailSentAt) {
-      return NextResponse.json({ stillPending: true, alreadySent: true })
     }
 
     const elapsed = Date.now() - new Date(order.createdAt).getTime()
@@ -30,29 +26,41 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       })
     }
 
+    // Threshold passed — close the order out now instead of waiting for the cron.
+    await Order.findByIdAndUpdate(order._id, {
+      paymentStatus: "failed",
+      orderStatus: "cancelled",
+    })
+
     const recipientEmail = order.guestEmail || (order.shippingAddress as any)?.email
     const recipientName = order.guestName || order.shippingAddress?.name || "Customer"
 
-    if (recipientEmail) {
-      const html = getAbandonedPaymentEmail({
-        customerName: recipientName,
-        orderId: order.orderNumber,
-        totalAmount: order.totalAmount,
-        supportPhone: SUPPORT_PHONE,
-      })
+    if (recipientEmail && !order.abandonedEmailSentAt) {
+      try {
+        const html = getAbandonedPaymentEmail({
+          customerName: recipientName,
+          orderId: order.orderNumber,
+          totalAmount: order.totalAmount,
+          supportPhone: SUPPORT_PHONE,
+        })
 
-      const sent = await sendEmail({
-        to: recipientEmail,
-        subject: `You left something behind - Order ${order.orderNumber}`,
-        html,
-      })
+        const sent = await sendEmail({
+          to: recipientEmail,
+          subject: `You left something behind - Order ${order.orderNumber}`,
+          html,
+        })
 
-      if (sent) {
-        await Order.findByIdAndUpdate(order._id, { abandonedEmailSentAt: new Date() })
+        if (sent) {
+          await Order.findByIdAndUpdate(order._id, { abandonedEmailSentAt: new Date() })
+        }
+      } catch (emailErr) {
+        // Order is already marked failed/cancelled above — an email hiccup
+        // here shouldn't change the response the client gets.
+        console.error(`Failed to send abandoned-payment email for order ${order._id}:`, emailErr)
       }
     }
 
-    return NextResponse.json({ stillPending: true, emailSent: true })
+    return NextResponse.json({ stillPending: false, marked: "failed" })
   } catch (err) {
     console.error("check-abandonment error:", err)
     return NextResponse.json({ error: "failed" }, { status: 500 })
