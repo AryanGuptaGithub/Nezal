@@ -140,28 +140,31 @@ export async function PUT(
     const body = await request.json();
 
     const {
-      name,
-      slug,
-      description,
-      price,
-      discountPrice,
-      image,
-      images,
-      category,      // subcategory ID (preferred)
-      mainCategory,  // fallback when no subcategory is selected
-      company,
-      stock,
-      sku,
-      weight,
-       amazonUrl,
-      ingredients,
-      benefits,
-      usage,
-      suitableFor,
-      results,
-      sizes,
-      isActive,
-      whyYoullLoveIt,
+  name,
+  slug,
+  description,
+  price,
+  discountPrice,
+  image,
+  images,
+  category,
+  mainCategory,
+  company,
+  stock,
+  sku,
+  weight,
+  length,      // ← add
+  breadth,     // ← add
+  height,      // ← add
+  amazonUrl,
+  ingredients,
+  benefits,
+  usage,
+  suitableFor,
+  results,
+  sizes,
+  isActive,
+  whyYoullLoveIt,
   fragranceExp,
   whoIsItFor,
   skinHairConcern,
@@ -169,7 +172,7 @@ export async function PUT(
   keyIngredients,
   gstPercent,
   hsn,
-    } = body;
+} = body;
 
     // ── FIX: resolve category — prefer subcategory, fall back to mainCategory ──
     const resolvedCategory =
@@ -180,18 +183,21 @@ export async function PUT(
         : undefined;
 
     const updateData: any = {
-      name,
-      slug,
-      description,
-      price,
-      discountPrice,
-      image: image || (images && images.length > 0 ? images[0] : undefined),
-      images: images || (image ? [image] : []),
-      company,
-      stock,
-      sku,
-        weight: weight !== undefined ? Number(weight) : 0.3,
-        amazonUrl: typeof amazonUrl === "string" ? amazonUrl.trim() : "",
+  name,
+  slug,
+  description,
+  price,
+  discountPrice,
+  image: image || (images && images.length > 0 ? images[0] : undefined),
+  images: images || (image ? [image] : []),
+  company,
+  stock,
+  sku,
+  weight: weight !== undefined ? Number(weight) : 0.3,
+  length: length !== undefined ? Number(length) : 10,     // ← add
+  breadth: breadth !== undefined ? Number(breadth) : 10,   // ← add
+  height: height !== undefined ? Number(height) : 10,      // ← add
+  amazonUrl: typeof amazonUrl === "string" ? amazonUrl.trim() : "",
       ingredients: normalizeStringArray(ingredients),  // ← fixed: handles \n and ,
       benefits:    normalizeStringArray(benefits),
       suitableFor: normalizeStringArray(suitableFor),

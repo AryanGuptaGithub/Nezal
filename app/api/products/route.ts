@@ -248,31 +248,12 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    const {
-      name,
-      slug,
-      description,
-      price,
-      discountPrice,
-      image,
-      images,
-      category,      // subcategory ID (set when a subcategory is selected)
-      mainCategory,  // fallback when the main category has no subcategories
-      company,
-      stock,
-      sku,
-      weight,
-      amazonUrl,
-      ingredients,
-      benefits,
-      usage,
-      suitableFor,
-      results,
-      sizes,
-      isActive,
-      gstPercent,
-      hsn,
-    } = body;
+  const {
+  name, slug, description, price, discountPrice, image, images,
+  category, mainCategory, company, stock, sku, weight, length, breadth, height, amazonUrl,
+  ingredients, benefits, usage, suitableFor, results, sizes,
+  isActive, gstPercent, hsn,
+} = body;
 
     // ── FIX: resolve category — prefer subcategory, fall back to mainCategory ──
     const resolvedCategory =
@@ -295,6 +276,9 @@ export async function POST(request: Request) {
       stock,
       sku,
       weight: weight ? Number(weight) : 0.3,
+  length: length ? Number(length) : 10,     // ← add
+  breadth: breadth ? Number(breadth) : 10,   // ← add
+  height: height ? Number(height) : 10,      // ← add
       amazonUrl: amazonUrl?.trim() || "",
       ingredients: normalizeStringArray(ingredients),  // ← fixed: handles \n and ,
       benefits:    normalizeStringArray(benefits),
