@@ -38,6 +38,12 @@ const orderSchema = new mongoose.Schema(
 
     totalAmount: { type: Number, required: true },
     shippingAmount: { type: Number, default: 0 }, 
+     shippingBreakdown: {
+      baseCourierRate:  { type: Number, default: 0 }, // Shiprocket's quoted cheapest-courier rate
+      smartOrderFee:    { type: Number, default: 0 }, // ₹5 Notify/WhatsApp fee
+      rateDriftBuffer:  { type: Number, default: 0 }, // buffer for courier-selection drift
+      courierNameQuoted: { type: String, default: null }, // which courier the quote was based on
+    },
     codCharge: { type: Number, default: 0 },
     totalTaxableValue: { type: Number, default: 0 },  // ← add
     totalGstAmount:    { type: Number, default: 0 },  // ← add

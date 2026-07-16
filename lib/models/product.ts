@@ -45,6 +45,18 @@ weight: {
   type: Number,
   default: 0.3, // kg — used for Shiprocket shipment weight calculation
 },
+length: {
+  type: Number,
+  default: 10, // cm
+},
+breadth: {
+  type: Number,
+  default: 10, // cm
+},
+height: {
+  type: Number,
+  default: 10, // cm
+},
 hsn: {
   type: String,
   default: "",

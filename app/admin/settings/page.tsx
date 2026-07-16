@@ -25,6 +25,7 @@ interface PaymentSettings {
   codFeeType: "flat" | "percentage"
   codFeeValue: number
   codFeeMin: number
+  useRealTimeCodCharge: boolean 
 }
 
 export default function SettingsPage() {
@@ -42,6 +43,7 @@ export default function SettingsPage() {
   codFeeType: "flat",
   codFeeValue: 0,
   codFeeMin: 0,
+  useRealTimeCodCharge: false, 
 })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -215,7 +217,7 @@ export default function SettingsPage() {
               />
             </div>
 
-           {settings.enableCOD && (
+{settings.enableCOD && (
   <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mt-1">
     <div className="flex items-center justify-between mb-3">
       <div className="flex items-center gap-1.5">
@@ -235,66 +237,94 @@ export default function SettingsPage() {
     </p>
 
     {settings.codFeeEnabled && (
-      <div className="space-y-3">
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => handleChange("codFeeType", "flat")}
-            className={`flex-1 text-xs font-medium rounded-lg px-3 py-2 border transition-colors ${
-              settings.codFeeType === "flat"
-                ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                : "border-gray-200 bg-white text-gray-500"
-            }`}
-          >
-            Flat amount (₹)
-          </button>
-          <button
-            type="button"
-            onClick={() => handleChange("codFeeType", "percentage")}
-            className={`flex-1 text-xs font-medium rounded-lg px-3 py-2 border transition-colors ${
-              settings.codFeeType === "percentage"
-                ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                : "border-gray-200 bg-white text-gray-500"
-            }`}
-          >
-            Percentage of order
-          </button>
-        </div>
+      <div className="space-y-4">
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="text-xs font-medium text-gray-500 mb-1.5 block">
-              {settings.codFeeType === "flat" ? "Fee amount (₹)" : "Fee percentage (%)"}
-            </label>
-            <Input
-              type="number"
-              value={settings.codFeeValue}
-              onChange={(e) => handleChange("codFeeValue", Number(e.target.value))}
-              min={0}
-              step={settings.codFeeType === "percentage" ? 0.1 : 1}
-              className="bg-white"
-            />
+        {/* Real-time vs static toggle */}
+        <div className={`flex items-center gap-3 rounded-lg border px-3.5 py-3 transition-colors ${
+          settings.useRealTimeCodCharge ? "border-emerald-200 bg-emerald-50/60" : "border-gray-200 bg-white"
+        }`}>
+          <div className="flex-1 min-w-0">
+            <Label htmlFor="realTimeCod" className="text-xs font-semibold text-gray-900 cursor-pointer">
+              Use real-time Shiprocket COD charge
+            </Label>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Charges the exact COD fee Shiprocket quotes per shipment (based on weight &amp; distance) instead of a fixed amount below.
+            </p>
           </div>
-          {settings.codFeeType === "percentage" && (
-            <div>
-              <label className="text-xs font-medium text-gray-500 mb-1.5 block">Minimum fee (₹)</label>
-              <Input
-                type="number"
-                value={settings.codFeeMin}
-                onChange={(e) => handleChange("codFeeMin", Number(e.target.value))}
-                min={0}
-                className="bg-white"
-              />
-              <p className="text-xs text-gray-400 mt-1">Fee never drops below this, even on small orders.</p>
-            </div>
-          )}
+          <Switch
+            id="realTimeCod"
+            checked={settings.useRealTimeCodCharge}
+            onCheckedChange={(checked) => handleChange("useRealTimeCodCharge", checked)}
+          />
         </div>
 
-        <p className="text-xs text-gray-400">
-          {settings.codFeeType === "flat"
-            ? `Every COD order is charged ₹${settings.codFeeValue || 0} extra.`
-            : `Every COD order is charged ${settings.codFeeValue || 0}% of the order value, minimum ₹${settings.codFeeMin || 0}.`}
-        </p>
+        {settings.useRealTimeCodCharge ? (
+          <p className="text-xs text-gray-400 bg-white border border-gray-200 rounded-lg px-3 py-2.5">
+            The fixed amount/percentage fields below are disabled while real-time charging is on — each COD order will be charged whatever Shiprocket quotes for that specific shipment.
+          </p>
+        ) : (
+          <>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => handleChange("codFeeType", "flat")}
+                className={`flex-1 text-xs font-medium rounded-lg px-3 py-2 border transition-colors ${
+                  settings.codFeeType === "flat"
+                    ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                    : "border-gray-200 bg-white text-gray-500"
+                }`}
+              >
+                Flat amount (₹)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleChange("codFeeType", "percentage")}
+                className={`flex-1 text-xs font-medium rounded-lg px-3 py-2 border transition-colors ${
+                  settings.codFeeType === "percentage"
+                    ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                    : "border-gray-200 bg-white text-gray-500"
+                }`}
+              >
+                Percentage of order
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1.5 block">
+                  {settings.codFeeType === "flat" ? "Fee amount (₹)" : "Fee percentage (%)"}
+                </label>
+                <Input
+                  type="number"
+                  value={settings.codFeeValue}
+                  onChange={(e) => handleChange("codFeeValue", Number(e.target.value))}
+                  min={0}
+                  step={settings.codFeeType === "percentage" ? 0.1 : 1}
+                  className="bg-white"
+                />
+              </div>
+              {settings.codFeeType === "percentage" && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 mb-1.5 block">Minimum fee (₹)</label>
+                  <Input
+                    type="number"
+                    value={settings.codFeeMin}
+                    onChange={(e) => handleChange("codFeeMin", Number(e.target.value))}
+                    min={0}
+                    className="bg-white"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Fee never drops below this, even on small orders.</p>
+                </div>
+              )}
+            </div>
+
+            <p className="text-xs text-gray-400">
+              {settings.codFeeType === "flat"
+                ? `Every COD order is charged ₹${settings.codFeeValue || 0} extra.`
+                : `Every COD order is charged ${settings.codFeeValue || 0}% of the order value, minimum ₹${settings.codFeeMin || 0}.`}
+            </p>
+          </>
+        )}
       </div>
     )}
   </div>

@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       
 
 
-    const { items, shippingAddress, totalAmount, paymentMethod, shippingAmount, codCharge } = body;
+    const { items, shippingAddress, totalAmount, paymentMethod, shippingAmount, codCharge, shippingBreakdown } = body;
 
 
 
@@ -79,8 +79,16 @@ export async function POST(request: NextRequest) {
       }
 
 const realShipping = shippingAmount ?? 0;
-const realCodCharge = paymentMethod === "cod" ? (codCharge ?? 0) : 0;  // ← add
-const realTotal = computedTotal + realShipping + realCodCharge;  // ← updated
+const realCodCharge = paymentMethod === "cod" ? (codCharge ?? 0) : 0;
+const realTotal = computedTotal + realShipping + realCodCharge;
+
+// fallback if the checkout page doesn't send a breakdown (e.g. old cached client bundle)
+const realShippingBreakdown = shippingBreakdown ?? {
+  baseCourierRate: Math.max(realShipping - 8, 0),
+  smartOrderFee: 5,
+  rateDriftBuffer: 3,
+  courierNameQuoted: null,
+};
 
     const orderNumber = `ORD-${Date.now()}`;
 
@@ -97,22 +105,23 @@ const realTotal = computedTotal + realShipping + realCodCharge;  // ← updated
     };
 
     const order = await Order.create({
-  orderNumber,
-  user: user?._id,
-  guestEmail: user ? undefined : shippingAddress.email,
-  guestName: user ? undefined : shippingAddress.name,
-  guestPhone: user ? undefined : shippingAddress.phone,
-  items: verifiedItems,
-  totalAmount: realTotal,
-  shippingAmount: realShipping,
-  codCharge: realCodCharge,   // ← add
-  shippingAddress: mappedAddress,
-  paymentMethod: paymentMethod || "cod",
-  paymentStatus: "pending",
-  orderStatus: "pending",
-  totalTaxableValue: Math.round(totalTaxableValue * 100) / 100,
-  totalGstAmount: Math.round(totalGstAmount * 100) / 100,
-});
+      orderNumber,
+      user: user?._id,
+      guestEmail: user ? undefined : shippingAddress.email,
+      guestName: user ? undefined : shippingAddress.name,
+      guestPhone: user ? undefined : shippingAddress.phone,
+      items: verifiedItems,
+      totalAmount: realTotal,
+      shippingAmount: realShipping,
+      shippingBreakdown: realShippingBreakdown,
+      codCharge: realCodCharge,
+      shippingAddress: mappedAddress,
+      paymentMethod: paymentMethod || "cod",
+      paymentStatus: "pending",
+      orderStatus: "pending",
+      totalTaxableValue: Math.round(totalTaxableValue * 100) / 100,
+      totalGstAmount: Math.round(totalGstAmount * 100) / 100,
+    });
 
     const recipientEmail = user?.email || shippingAddress.email;
     const recipientName = user?.name || shippingAddress.name;

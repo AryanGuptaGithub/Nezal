@@ -26,18 +26,41 @@ export async function POST(req: NextRequest) {
     await connectDB();
 
     const productIds = items.map((i: any) => i.productId);
-    const products = await Product.find({ _id: { $in: productIds } }).select("weight");
-    const weightMap = new Map(products.map((p: any) => [p._id.toString(), p.weight ?? 0.3]));
+const products = await Product.find({ _id: { $in: productIds } })
+  .select("weight length breadth height"); // ← add dimension fields
 
-    const totalWeight = items.reduce((sum: number, i: any) => {
-      const w = weightMap.get(i.productId) ?? 0.3;
-      return sum + w * (i.quantity ?? 1);
-    }, 0);
+const dimensionMap = new Map(
+  products.map((p: any) => [
+    p._id.toString(),
+    { length: p.length ?? 10, breadth: p.breadth ?? 10, height: p.height ?? 10 },
+  ])
+);
+const weightMap = new Map(products.map((p: any) => [p._id.toString(), p.weight ?? 0.3]));
+
+const totalWeight = items.reduce((sum: number, i: any) => {
+  const w = weightMap.get(i.productId) ?? 0.3;
+  return sum + w * (i.quantity ?? 1);
+}, 0);
+
+// Same heuristic as the order-creation side, so the quote matches reality
+const boxLength = Math.max(
+  ...items.map((i: any) => dimensionMap.get(i.productId)?.length ?? 10)
+);
+const boxBreadth = Math.max(
+  ...items.map((i: any) => dimensionMap.get(i.productId)?.breadth ?? 10)
+);
+const boxHeight = items.reduce((sum: number, i: any) => {
+  const h = dimensionMap.get(i.productId)?.height ?? 10;
+  return sum + h * (i.quantity ?? 1);
+}, 0);
 
     const { cheapest, options } = await getShippingRate({
       deliveryPincode: String(pincode),
       weight: Math.max(totalWeight, 0.1),
       cod: !!cod,
+       length: boxLength,     // ← new
+      breadth: boxBreadth,   // ← new
+      height: boxHeight,     // ← new
     });
 
     if (!cheapest) {
@@ -45,15 +68,21 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({
-      serviceable: true,
-      rate: cheapest.rate + SHIPPING_BUFFER,
-      freightCharge: cheapest.freightCharge,
-      codCharge: cheapest.codCharge,
-      courierName: cheapest.courierName,
-      etd: cheapest.etd,
-      weight: totalWeight,
-      options,
-    });
+  serviceable: true,
+  rate: cheapest.rate + SHIPPING_BUFFER,      // final padded number, unchanged for checkout UI
+  breakdown: {
+    baseCourierRate: cheapest.rate,
+    smartOrderFee: SMART_ORDER_FEE,
+    rateDriftBuffer: RATE_DRIFT_BUFFER,
+    courierNameQuoted: cheapest.courierName,
+  },
+  freightCharge: cheapest.freightCharge,
+  codCharge: cheapest.codCharge,
+  courierName: cheapest.courierName,
+  etd: cheapest.etd,
+  weight: totalWeight,
+  options,
+});
 
   } catch (err: any) {
     console.error("Shipping rate error:", err.message);

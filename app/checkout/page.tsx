@@ -29,6 +29,7 @@ interface PaymentSettings {
   codFeeType?: "flat" | "percentage"
   codFeeValue?: number
   codFeeMin?: number
+  useRealTimeCodCharge?: boolean 
 }
 
 // ===== Loader components (unchanged) =====
@@ -108,6 +109,9 @@ function CheckoutPageInner() {
     discountAmount: number
   } | null>(null)
   const [gstMap, setGstMap] = useState<Record<string, number>>({})
+
+  const [shippingBreakdown, setShippingBreakdown] = useState<any>(null)
+  const [shippingCodCharge, setShippingCodCharge] = useState<number>(0)
 
       useEffect(() => {
         if (items.length === 0) { setGstMap({}); return }
@@ -246,14 +250,19 @@ const fetchShippingRate = async (pincode: string) => {
       body: JSON.stringify({
         pincode,
         items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+        cod: true, // ← always request COD-inclusive quote so codCharge is meaningful
       }),
     })
     const data = await res.json()
     if (!data.serviceable) {
       setShippingRate(null)
+      setShippingBreakdown(null)
+      setShippingCodCharge(0)
       setShippingError(data.error || "This pincode isn't serviceable.")
     } else {
-      setShippingRate(data.freightCharge ?? data.rate)
+      setShippingRate(data.rate)
+      setShippingBreakdown(data.breakdown ?? null)
+      setShippingCodCharge(data.codCharge ?? 0) // ← new
     }
   } catch {
     setShippingError("Couldn't fetch shipping rate.")
@@ -325,8 +334,15 @@ const freeShippingApplied =
   totalPrice >= (paymentSettings!.freeShippingThreshold as number)
 
 const shippingCharge = freeShippingApplied ? 0 : (shippingRate ?? 0)
+
 const codSurcharge = (() => {
   if (selectedPaymentMethod !== "cod" || !paymentSettings?.codFeeEnabled) return 0
+
+  if (paymentSettings.useRealTimeCodCharge) {
+    return shippingCodCharge // real per-shipment Shiprocket quote
+  }
+
+  // existing static admin-configured logic, unchanged
   if (paymentSettings.codFeeType === "percentage") {
     const pct = (paymentSettings.codFeeValue ?? 0) / 100
     const computed = orderSubtotal * pct
@@ -353,20 +369,21 @@ const amountLeftForFreeShipping =
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      items: items.map((item) => ({
-        product: item.productId,
-        quantity: item.quantity,
-        price: item.discountPrice || item.price,
-        selectedSize: item.selectedSize,
-      })),
-      shippingAddress,
-      totalAmount: finalTotal,
-      shippingAmount: shippingCharge,
-      codCharge: codSurcharge,   // ← add
-      couponCode: couponCode || undefined,
-      paymentMethod: "cod",
-      paymentStatus: "pending",
-    }),
+  items: items.map((item) => ({
+    product: item.productId,
+    quantity: item.quantity,
+    price: item.discountPrice || item.price,
+    selectedSize: item.selectedSize,
+  })),
+  shippingAddress,
+  totalAmount: finalTotal,
+  shippingAmount: shippingCharge,
+  shippingBreakdown: freeShippingApplied ? null : shippingBreakdown,  // ← add this line
+  codCharge: codSurcharge,
+  couponCode: couponCode || undefined,
+  paymentMethod: "cod",
+  paymentStatus: "pending",
+}),
   })
 
         const orderData = await orderResponse.json()
@@ -784,14 +801,14 @@ const amountLeftForFreeShipping =
             <span className="font-medium text-[#2d8116]">₹{gstByRate[rate].toFixed(2)}</span>
           </div>
         ))}
-        <div className="flex justify-between text-sm">
+        {/* <div className="flex justify-between text-sm">
           <span className="text-[#a4a4a4]">Total GST</span>
           <span className="font-medium text-[#2d8116]">₹{totalGST.toFixed(2)}</span>
-        </div>
+        </div> */}
         <div className="flex justify-between text-sm pt-1.5 border-t border-[#2d8116]/20">
           <span className="font-semibold text-[#024a21]">Total Product Cost</span>
           <span className="font-semibold text-[#2d8116]">
-             = ₹{totalPrice.toFixed(2)}
+              ₹{totalPrice.toFixed(2)}
           </span>
         </div>
       </>

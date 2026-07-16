@@ -19,15 +19,18 @@ export async function autoCreateShiprocketOrder(orderId: string) {
   if (order.shiprocketOrderId) return; // already created, avoid dupes
 
   const addr = order.shippingAddress;
-  const items = order.items.map((item: any) => ({
-    name: item.product?.name ?? "Product",
-    sku: item.product?.sku?.trim() || `NEZAL-${item.product?._id ?? "UNKNOWN"}`,
-    units: item.quantity,
-    selling_price: item.price,
-    weight: item.product?.weight ?? 0.3,
-    gstPercent: item.product?.gstPercent ?? 0,  
-    hsn: item.product?.hsn ?? "",                 
-  }));
+ const items = order.items.map((item: any) => ({
+  name: item.product?.name ?? "Product",
+  sku: item.product?.sku?.trim() || `NEZAL-${item.product?._id ?? "UNKNOWN"}`,
+  units: item.quantity,
+  selling_price: item.price,
+  weight: item.product?.weight ?? 0.3,
+  gstPercent: item.product?.gstPercent ?? 0,
+  hsn: item.product?.hsn ?? "",
+  length: item.product?.length ?? 10,     // ← new
+  breadth: item.product?.breadth ?? 10,   // ← new
+  height: item.product?.height ?? 10,     // ← new
+}));
 
   const shippingAddress = {
     name: addr?.name ?? order.guestName ?? "Customer",
@@ -144,6 +147,9 @@ export interface ShiprocketOrderItem {
   weight: number;
   gstPercent?: number;   // ← add
   hsn?: string;           // ← add
+  length?: number;   // ← new
+  breadth?: number;  // ← new
+  height?: number;   // ← new
 }
 
 export interface ShiprocketAddress {
@@ -189,6 +195,8 @@ export async function createShiprocketOrder(
     0
   );
 
+  const box = computeBoxDimensions(params.items);
+
   const payload = {
     order_id: params.orderId,
     order_date: params.orderDate,
@@ -220,6 +228,11 @@ export async function createShiprocketOrder(
     shipping_email: params.shipping.email,
     shipping_phone: params.shipping.phone,
 
+     length: box.length,      // ← CHANGE from 2.8
+    breadth: box.breadth,    // ← CHANGE from 3.5
+    height: box.height,      // ← CHANGE from 2
+    weight: parseFloat(totalWeight.toFixed(2)),
+
     order_items: params.items.map((item) => ({
   name: item.name,
   sku: item.sku,
@@ -237,10 +250,7 @@ export async function createShiprocketOrder(
     total_discount: params.totalDiscount ?? 0,
     sub_total: params.subTotal,
 
-    length: 15,  // cm — default box size
-    breadth: 10,
-    height: 10,
-    weight: parseFloat(totalWeight.toFixed(2)),
+   
   };
 
   const res = await fetch(`${SHIPROCKET_API}/orders/create/adhoc`, {
@@ -284,12 +294,18 @@ export interface ShiprocketRateOption {
 
 export async function getShippingRate({
   deliveryPincode,
-  weight, // kg
+  weight,        // ← add this back
   cod = false,
+  length,
+  breadth,
+  height,
 }: {
   deliveryPincode: string;
   weight: number;
   cod?: boolean;
+  length?: number;   // ← also worth adding these to the type
+  breadth?: number;  // since your route.ts is already passing them
+  height?: number;
 }): Promise<{ cheapest: ShiprocketRateOption | null; options: ShiprocketRateOption[] }> {
   const token = await getToken();
   const pickupPincode = process.env.SHIPROCKET_PICKUP_PINCODE;
@@ -299,11 +315,15 @@ export async function getShippingRate({
   }
 
   const params = new URLSearchParams({
-    pickup_postcode: pickupPincode,
-    delivery_postcode: deliveryPincode,
-    weight: weight.toFixed(2),
-    cod: cod ? "1" : "0",
+  pickup_postcode: pickupPincode,
+  delivery_postcode: deliveryPincode,
+  weight: weight.toFixed(2),   // ← ReferenceError: weight is not defined
+  cod: cod ? "1" : "0",
   });
+
+  if (length) params.set("length", length.toFixed(1));
+  if (breadth) params.set("breadth", breadth.toFixed(1));
+  if (height) params.set("height", height.toFixed(1));
 
   const res = await fetch(`${SHIPROCKET_API}/courier/serviceability/?${params.toString()}`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -363,4 +383,22 @@ export async function getShiprocketOrderStatus(shiprocketOrderId: number) {
     courierName: record?.shipments?.[0]?.courier ?? record?.courier_name ?? null,
     raw: data,
   };
+}
+
+
+// Combines multiple products into one approximate shipping box.
+// Heuristic: take the largest footprint (L×B) among items, and stack
+// heights (× quantity) as if everything were placed in a single box.
+// Not perfect bin-packing, but far closer to reality than one fixed size.
+function computeBoxDimensions(items: ShiprocketOrderItem[]) {
+  if (items.length === 0) {
+    return { length: 10, breadth: 10, height: 10 };
+  }
+  const length = Math.max(...items.map((i) => i.length ?? 10));
+  const breadth = Math.max(...items.map((i) => i.breadth ?? 10));
+  const height = items.reduce(
+    (sum, i) => sum + (i.height ?? 10) * i.units,
+    0
+  );
+  return { length, breadth, height };
 }

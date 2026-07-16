@@ -16,42 +16,33 @@ const DEFAULT_SETTINGS = {
   codFeeType: "flat",
   codFeeValue: 0,
   codFeeMin: 0,
+  useRealTimeCodCharge: false, // ← new
 };
 
 export async function GET(request: NextRequest) {
   try {
     await connectDB();
-
-    // Atomic upsert — guarantees exactly one document ever exists,
-    // no race between concurrent GET/PUT calls creating duplicates.
     const settings = await PaymentSettings.findOneAndUpdate(
       {},
       { $setOnInsert: DEFAULT_SETTINGS },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
-
     return NextResponse.json(settings);
   } catch (error) {
     console.error("Error fetching payment settings:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch payment settings" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch payment settings" }, { status: 500 });
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession();
-
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     await connectDB();
-
     const user = await User.findOne({ email: session.user.email });
-
     if (!user || user.role !== "admin") {
       return NextResponse.json({ error: "Access denied. Admin privileges required." }, { status: 403 });
     }
@@ -60,10 +51,9 @@ export async function PUT(request: NextRequest) {
       enableCOD, enableRazorpay, enableCCAvenue, minCODAmount, maxCODAmount,
       freeShippingEnabled, freeShippingThreshold,
       codFeeEnabled, codFeeType, codFeeValue, codFeeMin,
+      useRealTimeCodCharge, // ← new
     } = await request.json();
 
-    // Same atomic upsert pattern — updates the one true document,
-    // creates it if it somehow doesn't exist yet, never creates a duplicate.
     const settings = await PaymentSettings.findOneAndUpdate(
       {},
       {
@@ -71,6 +61,7 @@ export async function PUT(request: NextRequest) {
           enableCOD, enableRazorpay, enableCCAvenue, minCODAmount, maxCODAmount,
           freeShippingEnabled, freeShippingThreshold,
           codFeeEnabled, codFeeType, codFeeValue, codFeeMin,
+          useRealTimeCodCharge, // ← new
         },
       },
       { new: true, upsert: true }
@@ -79,9 +70,6 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(settings);
   } catch (error) {
     console.error("Error updating payment settings:", error);
-    return NextResponse.json(
-      { error: "Failed to update payment settings" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to update payment settings" }, { status: 500 });
   }
 }

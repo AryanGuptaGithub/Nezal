@@ -75,6 +75,9 @@ export default function AddProductPage() {
     category: "", mainCategory: "", company: "",
     stock: "", sku: "",
     weight: "0.3",
+    length: "10",
+    breadth: "10",
+    height: "10",
     amazonUrl: "",
     ingredients: "", benefits: "", usage: "", suitableFor: "",
     isActive: true,
@@ -215,6 +218,9 @@ export default function AddProductPage() {
         suitableFor: normalizeByNewlineOnly(formData.suitableFor),
         usage: formData.usage, isActive: formData.isActive, results,
         weight: formData.weight ? Number(formData.weight) : 0.3,
+        length: formData.length ? Number(formData.length) : 10,
+        breadth: formData.breadth ? Number(formData.breadth) : 10,
+        height: formData.height ? Number(formData.height) : 10,
         sizes: sizes.map((s) => ({ ...s, quantity: Number(s.quantity), price: Number(s.price), discountPrice: s.discountPrice ? Number(s.discountPrice) : undefined, stock: Number(s.stock) })),
         whyYoullLoveIt: normalizeByNewlineOnly(formData.whyYoullLoveIt),
         fragranceExp: normalizeByNewlineOnly(formData.fragranceExp),
@@ -304,15 +310,31 @@ export default function AddProductPage() {
           {/* Pricing & stock */}
           <SectionCard icon={Tag} title="Pricing & stock">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div><label className={labelCls}>Price (₹) *</label><Input type="number" name="price" value={formData.price} onChange={handleChange} required placeholder="0" className={inputCls} /></div>
-              <div><label className={labelCls}>Discount Price (₹)</label><Input type="number" name="discountPrice" value={formData.discountPrice} onChange={handleChange} placeholder="0" className={inputCls} /></div>
-              <div><label className={labelCls}>Stock *</label><Input type="number" name="stock" value={formData.stock} onChange={handleChange} required placeholder="0" className={inputCls} /></div>
-              <div>
-                <label className={labelCls}>Weight (kg) *</label>
-                <Input type="number" step="0.01" name="weight" value={formData.weight} onChange={handleChange} required placeholder="0.3" className={inputCls} />
-                <p className="text-xs text-gray-400 mt-1">Used for shipping cost calculation</p>
-              </div>
-            </div>
+  <div><label className={labelCls}>Price (₹) *</label><Input type="number" name="price" value={formData.price} onChange={handleChange} required placeholder="0" className={inputCls} /></div>
+  <div><label className={labelCls}>Discount Price (₹)</label><Input type="number" name="discountPrice" value={formData.discountPrice} onChange={handleChange} placeholder="0" className={inputCls} /></div>
+  <div><label className={labelCls}>Stock *</label><Input type="number" name="stock" value={formData.stock} onChange={handleChange} required placeholder="0" className={inputCls} /></div>
+  <div>
+    <label className={labelCls}>Weight (kg) *</label>
+    <Input type="number" step="0.01" name="weight" value={formData.weight} onChange={handleChange} required placeholder="0.3" className={inputCls} />
+    <p className="text-xs text-gray-400 mt-1">Used for shipping cost calculation</p>
+  </div>
+</div>
+
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div>
+    <label className={labelCls}>Length (cm) *</label>
+    <Input type="number" step="0.1" name="length" value={formData.length} onChange={handleChange} required placeholder="10" className={inputCls} />
+  </div>
+  <div>
+    <label className={labelCls}>Breadth (cm) *</label>
+    <Input type="number" step="0.1" name="breadth" value={formData.breadth} onChange={handleChange} required placeholder="10" className={inputCls} />
+  </div>
+  <div>
+    <label className={labelCls}>Height (cm) *</label>
+    <Input type="number" step="0.1" name="height" value={formData.height} onChange={handleChange} required placeholder="10" className={inputCls} />
+  </div>
+</div>
+<p className="text-xs text-gray-400 -mt-3">Actual packed box dimensions — used to calculate volumetric weight for accurate shipping quotes.</p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>

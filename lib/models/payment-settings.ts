@@ -49,6 +49,7 @@ codFeeMin: {
   type: Number,
   default: 0, // floor for percentage-based fee, e.g. "2%, min ₹40"
 },
+useRealTimeCodCharge: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

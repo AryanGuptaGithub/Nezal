@@ -386,10 +386,10 @@ const totalGST = items.reduce((sum, item) => {
             <span className="font-medium text-foreground">₹{gstByRate[rate].toFixed(2)}</span>
           </div>
         ))}
-        <div className="flex justify-between text-sm">
+        {/* <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Total GST</span>
           <span className="font-semibold text-foreground">₹{totalGST.toFixed(2)}</span>
-        </div>
+        </div> */}
         <div className="flex justify-between text-sm pt-2 border-t border-border">
           <span className="font-medium text-foreground">Total Product Cost</span>
           <span className="font-semibold text-foreground">

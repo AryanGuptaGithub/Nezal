@@ -58,6 +58,12 @@ interface Order {
   guestPhone?: string
   items: OrderItem[]
   shippingAddress?: ShippingAddress
+  shippingBreakdown?: {
+    baseCourierRate?: number
+    smartOrderFee?: number
+    rateDriftBuffer?: number
+    courierNameQuoted?: string
+  }
   totalAmount: number
   shippingAmount?: number
   codCharge?: number   // ← add
@@ -323,6 +329,12 @@ const handleCancellationAction = async (orderId: string, action: "approve" | "re
             { label: "Payment completed", value: completedCount, dot: "bg-emerald-500", color: "text-emerald-700" },
             { label: "Payment pending", value: pendingCount, dot: "bg-amber-500", color: "text-amber-700" },
             { label: "Shipped", value: shippedCount, dot: "bg-blue-500", color: "text-blue-700" },
+            {
+  label: "Fees collected (shipping)",
+  value: `₹${orders.reduce((sum, o) => sum + ((o.shippingBreakdown?.smartOrderFee ?? 0) + (o.shippingBreakdown?.rateDriftBuffer ?? 0)), 0).toFixed(2)}`,
+  dot: "bg-purple-500",
+  color: "text-purple-700",
+}
           ].map((stat) => (
             <div key={stat.label} className="bg-white rounded-2xl border border-gray-200 p-4">
               <div className="flex items-center gap-1.5 mb-1.5">
@@ -368,137 +380,138 @@ const handleCancellationAction = async (orderId: string, action: "approve" | "re
             <div className="overflow-x-auto">
               <table className="w-full text-sm border-collapse">
                 <thead>
-                  <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-400 border-b border-gray-100">
-                    <th className="py-3 px-6">Order ID</th>
-                    <th className="py-3 px-3">Customer</th>
-                    <th className="py-3 px-3">Items</th>
-                    <th className="py-3 px-3">Amount</th>
-                    <th className="py-3 px-3">Payment</th>
-                    <th className="py-3 px-3">Method</th>
-                    <th className="py-3 px-3">GST</th>
-                    <th className="py-3 px-3">Shipping</th>
-                    <th className="py-3 px-3">COD Fee</th>
-                    <th className="py-3 px-3">Date</th>
-                    <th className="py-3 px-3">Return/Cancel</th>
-                    <th className="py-3 px-6 text-right">Actions</th>
-                  </tr>
-                </thead>
+  <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-400 border-b border-gray-100">
+    <th className="py-3 px-3 sticky text-center left-0 bg-gray-50/60 z-10 border">Actions</th>
+    <th className="py-3 px-6 border text-center">Order ID</th>
+    <th className="py-3 px-3 border text-center">Customer</th>
+    <th className="py-3 px-3 border text-center">Items</th>
+    <th className="py-3 px-3 border text-center">Amount</th>
+    <th className="py-3 px-3 border text-center">Payment</th>
+    <th className="py-3 px-3 border text-center">Method</th>
+    <th className="py-3 px-3 border text-center">GST</th>
+    <th className="py-3 px-3 border text-center">Shipping</th>
+    <th className="py-3 px-3 border text-center">COD Fee</th>
+    <th className="py-3 px-3 border text-center">Date</th>
+    <th className="py-3 px-3 border text-center">Return/Cancel</th>
+  </tr>
+</thead>
                 <tbody>
-                  {filteredOrders.map((order) => (
-                    <tr key={order._id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60 transition-colors">
-                      <td className="py-3.5 px-6 font-mono text-xs font-semibold text-gray-700">
-                        {order.orderNumber || order._id.slice(-6)}
-                      </td>
-                      <td className="py-3.5 px-3">
-                        <p className="font-medium text-sm text-gray-900">{order.user?.name || order.guestName || "Guest"}</p>
-                        <p className="text-xs text-gray-400">{order.user?.email || order.guestEmail}</p>
-                      </td>
-                      <td className="py-3.5 px-3 text-xs">
-                        <Badge variant="outline" className="border-gray-200 text-gray-600">{order.items?.length || 0} items</Badge>
-                      </td>
-                      <td className="py-3.5 px-3 font-semibold text-sm text-gray-900">₹{(order.totalAmount || 0).toFixed(2)}</td>
-                      <td className="py-3.5 px-3">
-                        <Badge
-                          className={
-                            order.paymentStatus === "completed"
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-                              : order.paymentStatus === "failed"
-                              ? "bg-red-50 text-red-700 border-red-100"
-                              : "bg-amber-50 text-amber-700 border-amber-100"
-                          }
-                        >
-                          {order.paymentStatus === "completed" ? "Completed" : order.paymentStatus === "failed" ? "Failed" : "Pending"}
-                        </Badge>
-                      </td>
-                      <td className="py-3.5 px-3">
-                        <Badge
-                          variant={order.paymentMethod === "cod" ? "secondary" : order.paymentMethod === "ccavenue" ? "outline" : "default"}
-                          className={order.paymentMethod !== "cod" && order.paymentMethod !== "ccavenue" ? "bg-emerald-700 hover:bg-emerald-700" : ""}
-                        >
-                          {order.paymentMethod === "cod" ? "COD" : order.paymentMethod === "ccavenue" ? "CCAvenue" : "Razorpay"}
-                        </Badge>
-                      </td>
-                      <td className="py-3.5 px-3 text-xs text-gray-500">₹{(order.totalGstAmount ?? 0).toFixed(2)}</td>
-                      <td className="py-3.5 px-3">
-                        {order.shiprocketOrderId ? (
-                          <div className="space-y-1">
-                            <Badge className="bg-blue-50 text-blue-700 border-blue-100 text-xs">Shipped</Badge>
-                            {order.awbCode && <p className="text-xs text-gray-400 font-mono">AWB: {order.awbCode}</p>}
-                            {order.trackingUrl && (
-                              <a
-                                href={order.trackingUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-emerald-700 hover:underline flex items-center gap-1 hover:bg-emerald-700 hover:text-white border px-2 py-1 rounded-xl"
-                              >
-                                Track <ExternalLink className="w-3 h-3" />
-                              </a>
-                            )}
-                          </div>
-                        ) : order.paymentStatus === "completed" || order.paymentMethod === "cod" ? (
-                          <Badge variant="outline" className="text-xs text-gray-500 border-gray-200">Processing…</Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-xs text-gray-500 border-gray-200">Awaiting payment</Badge>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-3 text-xs text-gray-500">
-  {order.paymentMethod === "cod" && (order.codCharge ?? 0) > 0
-    ? `₹${(order.codCharge ?? 0).toFixed(2)}`
-    : "—"}
-</td>
-                      <td className="py-3.5 px-3 text-xs text-gray-400">
-                        {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "—"}
-                      </td>
-                      <td className="py-3.5 px-3">
-  {order.cancellation && order.cancellation.status !== "none" ? (
-    <Badge className={
-      order.cancellation.status === "requested" ? "bg-amber-50 text-amber-700 border-amber-100 text-xs" :
-      order.cancellation.status === "approved" ? "bg-blue-50 text-blue-700 border-blue-100 text-xs" :
-      order.cancellation.status === "completed" ? "bg-rose-50 text-rose-700 border-rose-100 text-xs" :
-      "bg-gray-50 text-gray-600 border-gray-100 text-xs"
-    }>
-      {order.cancellation.type === "return" ? "Return" : "Cancel"} · {order.cancellation.status}
-    </Badge>
-  ) : <span className="text-xs text-gray-300">—</span>}
-</td><td className="py-3.5 px-6 text-right">
-  <div className="flex items-center justify-end gap-1">
-    {order.shiprocketOrderId && order.cancellation?.status !== "completed" && (
-  <Button
-    variant="ghost"
-    size="icon"
-    onClick={() => handleSyncShiprocket(order._id)}
-    disabled={syncingId === order._id}
-    className="text-gray-400 hover:text-blue-600"
-    title="Sync status from Shiprocket"
-  >
-    <RotateCw className={`w-4 h-4 ${syncingId === order._id ? "animate-spin" : ""}`} />
-  </Button>
-)}
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={() => handleViewDetails(order)}
-      className="text-gray-400 hover:text-emerald-700"
-      title="View details"
-    >
-      <Eye className="w-4 h-4" />
-    </Button>
-    {order.orderStatus !== "cancelled" && order.orderStatus !== "delivered" && (
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setCancelTarget(order)}
-        className="text-gray-400 hover:text-rose-600"
-        title="Cancel order"
-      >
-        <Ban className="w-4 h-4" />
-      </Button>
-    )}
-  </div>
-</td>
-                    </tr>
-                  ))}
-                </tbody>
+  {filteredOrders.map((order) => (
+    <tr key={order._id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60 transition-colors border">
+      <td className="py-3.5 px-3 sticky left-0 bg-white hover:bg-gray-50/60 z-10 border-gray-300 border">
+        <div className="flex items-center gap-1">
+          {order.shiprocketOrderId && order.cancellation?.status !== "completed" && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleSyncShiprocket(order._id)}
+              disabled={syncingId === order._id}
+              className="text-gray-400 hover:text-blue-600 border"
+              title="Sync status from Shiprocket"
+            >
+              <RotateCw className={`w-4 h-4 ${syncingId === order._id ? "animate-spin" : ""}`} />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleViewDetails(order)}
+            className="text-gray-400 hover:text-emerald-700 border"
+            title="View details"
+          >
+            <Eye className="w-4 h-4" />
+          </Button>
+          {order.orderStatus !== "cancelled" && order.orderStatus !== "delivered" && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCancelTarget(order)}
+              className="text-gray-400 hover:text-rose-60 border bg-[#fb6c6c] hover:bg-[#a90303] text-white"
+              title="Cancel order"
+            >
+              <Ban className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+      </td>
+      <td className="py-3.5 px-6 font-mono text-xs font-semibold text-gray-700 border-gray-300 border">
+        {order.orderNumber || order._id.slice(-6)}
+      </td>
+      <td className="py-3.5 px-3 border-gray-300 border">
+        <p className="font-medium text-sm text-gray-900">{order.user?.name || order.guestName || "Guest"}</p>
+        <p className="text-xs text-gray-400">{order.user?.email || order.guestEmail}</p>
+      </td>
+      <td className="py-3.5 px-3 text-xs border-gray-300 border">
+        <Badge variant="outline" className="border-gray-200 text-gray-600">{order.items?.length || 0} items</Badge>
+      </td>
+      <td className="py-3.5 px-3 font-semibold text-sm text-gray-900 border-gray-300 border">₹{(order.totalAmount || 0).toFixed(2)}</td>
+      <td className="py-3.5 px-3 border-gray-300 border">
+        <Badge
+          className={
+            order.paymentStatus === "completed"
+              ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+              : order.paymentStatus === "failed"
+              ? "bg-red-50 text-red-700 border-red-100"
+              : "bg-amber-50 text-amber-700 border-amber-100"
+          }
+        >
+          {order.paymentStatus === "completed" ? "Completed" : order.paymentStatus === "failed" ? "Failed" : "Pending"}
+        </Badge>
+      </td>
+      <td className="py-3.5 px-3 border-gray-300 border">
+        <Badge
+          variant={order.paymentMethod === "cod" ? "secondary" : order.paymentMethod === "ccavenue" ? "outline" : "default"}
+          className={order.paymentMethod !== "cod" && order.paymentMethod !== "ccavenue" ? "bg-emerald-700 hover:bg-emerald-700" : ""}
+        >
+          {order.paymentMethod === "cod" ? "COD" : order.paymentMethod === "ccavenue" ? "CCAvenue" : "Razorpay"}
+        </Badge>
+      </td>
+      <td className="py-3.5 px-3 text-xs text-gray-500 border-gray-300 border">₹{(order.totalGstAmount ?? 0).toFixed(2)}</td>
+      <td className="py-3.5 px-3 border-gray-300 border">
+        {order.shiprocketOrderId ? (
+          <div className="space-y-1">
+            <Badge className="bg-blue-50 text-blue-700 border-blue-100 text-xs">Shipped</Badge>
+            {order.awbCode && <p className="text-xs text-gray-400 font-mono">AWB: {order.awbCode}</p>}
+            {order.trackingUrl && (
+              <a
+                href={order.trackingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-emerald-700 hover:underline flex items-center gap-1 hover:bg-emerald-700 hover:text-white border px-2 py-1 rounded-xl"
+              >
+                Track <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+          </div>
+        ) : order.paymentStatus === "completed" || order.paymentMethod === "cod" ? (
+          <Badge variant="outline" className="text-xs text-gray-500 border-gray-200">Processing…</Badge>
+        ) : (
+          <Badge variant="outline" className="text-xs text-gray-500 border-gray-200">Awaiting payment</Badge>
+        )}
+      </td>
+      <td className="py-3.5 px-3 text-xs text-gray-500 border-gray-300 border">
+        {order.paymentMethod === "cod" && (order.codCharge ?? 0) > 0
+          ? `₹${(order.codCharge ?? 0).toFixed(2)}`
+          : "—"}
+      </td>
+      <td className="py-3.5 px-3 text-xs text-gray-400 border-gray-300 border">
+        {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "—"}
+      </td>
+      <td className="py-3.5 px-3 border-gray-300 border">
+        {order.cancellation && order.cancellation.status !== "none" ? (
+          <Badge className={
+            order.cancellation.status === "requested" ? "bg-amber-50 text-amber-700 border-amber-100 text-xs" :
+            order.cancellation.status === "approved" ? "bg-blue-50 text-blue-700 border-blue-100 text-xs" :
+            order.cancellation.status === "completed" ? "bg-rose-50 text-rose-700 border-rose-100 text-xs" :
+            "bg-gray-50 text-gray-600 border-gray-100 text-xs"
+          }>
+            {order.cancellation.type === "return" ? "Return" : "Cancel"} · {order.cancellation.status}
+          </Badge>
+        ) : <span className="text-xs text-gray-300">—</span>}
+      </td>
+    </tr>
+  ))}
+</tbody>
               </table>
             </div>
           )}
@@ -639,9 +652,25 @@ const handleCancellationAction = async (orderId: string, action: "approve" | "re
     <span>₹{(selectedOrder.totalGstAmount ?? 0).toFixed(2)}</span>
   </div>
   <div className="flex justify-between text-gray-600">
-    <span>Shipping</span>
-    <span>₹{(selectedOrder.shippingAmount ?? 0).toFixed(2)}</span>
+  <span>Shipping</span>
+  <span>₹{(selectedOrder.shippingAmount ?? 0).toFixed(2)}</span>
+</div>
+{selectedOrder.shippingBreakdown && (
+  <div className="pl-3 space-y-1 text-xs text-gray-400 border-l-2 border-gray-200 ml-1">
+    <div className="flex justify-between">
+      <span>Courier base rate {selectedOrder.shippingBreakdown.courierNameQuoted ? `(${selectedOrder.shippingBreakdown.courierNameQuoted})` : ""}</span>
+      <span>₹{(selectedOrder.shippingBreakdown.baseCourierRate ?? 0).toFixed(2)}</span>
+    </div>
+    <div className="flex justify-between">
+      <span>Smart Order fee</span>
+      <span>₹{(selectedOrder.shippingBreakdown.smartOrderFee ?? 0).toFixed(2)}</span>
+    </div>
+    <div className="flex justify-between">
+      <span>Rate-drift buffer</span>
+      <span>₹{(selectedOrder.shippingBreakdown.rateDriftBuffer ?? 0).toFixed(2)}</span>
+    </div>
   </div>
+)}
   {selectedOrder.paymentMethod === "cod" && (selectedOrder.codCharge ?? 0) > 0 && (
     <div className="flex justify-between text-gray-600">
       <span>COD handling charge</span>

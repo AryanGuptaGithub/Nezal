@@ -77,6 +77,9 @@ interface FormData {
   category: string; mainCategory: string; company: string
   stock: number; sku: string
   weight: number
+length: number
+breadth: number
+height: number
   amazonUrl: string
   gstPercent: number | ""
   hsn: string
@@ -111,6 +114,9 @@ export default function EditProductPage() {
     category: "", mainCategory: "", company: "",
     stock: 0, sku: "",
     weight: 0.3,
+    length: 10,
+    breadth: 10,
+    height: 10,
     amazonUrl: "",
     gstPercent: "",
     hsn: "",
@@ -182,6 +188,9 @@ export default function EditProductPage() {
         stock: productData.stock || 0,
         sku: productData.sku || "",
         weight: productData.weight ?? 0.3,
+        length: productData.length ?? 10,
+        breadth: productData.breadth ?? 10,
+        height: productData.height ?? 10,
         amazonUrl: productData.amazonUrl || "",
         gstPercent: typeof productData.gstPercent === "number" ? productData.gstPercent : "",
         hsn: productData.hsn || "",
@@ -326,6 +335,9 @@ export default function EditProductPage() {
         suitableFor: normalizeByNewlineOnly(formData.suitableFor),
         usage: formData.usage, isActive: formData.isActive, results,
         weight: Number(formData.weight) || 0.3,
+        length: Number(formData.length) || 10,
+        breadth: Number(formData.breadth) || 10,
+        height: Number(formData.height) || 10,
         gstPercent: formData.gstPercent !== "" ? Number(formData.gstPercent) : undefined,
         hsn: formData.hsn.trim(),
         sizes: sizes.map((s) => ({ ...s, quantity: Number(s.quantity), price: Number(s.price), discountPrice: s.discountPrice ? Number(s.discountPrice) : undefined, stock: Number(s.stock) })),
@@ -426,24 +438,31 @@ export default function EditProductPage() {
           {/* Pricing & stock */}
           <SectionCard icon={Tag} title="Pricing & stock">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className={labelCls}>Price (₹) *</label>
-                <Input type="number" name="price" value={formData.price} onChange={handleChange} required placeholder="0" className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Discount Price (₹)</label>
-                <Input type="number" name="discountPrice" value={formData.discountPrice || ""} onChange={handleChange} placeholder="0" className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Stock *</label>
-                <Input type="number" name="stock" value={formData.stock} onChange={handleChange} required placeholder="0" className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Weight (kg) *</label>
-                <Input type="number" step="0.01" name="weight" value={formData.weight} onChange={handleChange} required placeholder="0.3" className={inputCls} />
-                <p className="text-xs text-gray-400 mt-1">Used for shipping cost calculation</p>
-              </div>
-            </div>
+  <div><label className={labelCls}>Price (₹) *</label><Input type="number" name="price" value={formData.price} onChange={handleChange} required placeholder="0" className={inputCls} /></div>
+  <div><label className={labelCls}>Discount Price (₹)</label><Input type="number" name="discountPrice" value={formData.discountPrice} onChange={handleChange} placeholder="0" className={inputCls} /></div>
+  <div><label className={labelCls}>Stock *</label><Input type="number" name="stock" value={formData.stock} onChange={handleChange} required placeholder="0" className={inputCls} /></div>
+  <div>
+    <label className={labelCls}>Weight (kg) *</label>
+    <Input type="number" step="0.01" name="weight" value={formData.weight} onChange={handleChange} required placeholder="0.3" className={inputCls} />
+    <p className="text-xs text-gray-400 mt-1">Used for shipping cost calculation</p>
+  </div>
+</div>
+
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div>
+    <label className={labelCls}>Length (cm) *</label>
+    <Input type="number" step="0.1" name="length" value={formData.length} onChange={handleChange} required placeholder="10" className={inputCls} />
+  </div>
+  <div>
+    <label className={labelCls}>Breadth (cm) *</label>
+    <Input type="number" step="0.1" name="breadth" value={formData.breadth} onChange={handleChange} required placeholder="10" className={inputCls} />
+  </div>
+  <div>
+    <label className={labelCls}>Height (cm) *</label>
+    <Input type="number" step="0.1" name="height" value={formData.height} onChange={handleChange} required placeholder="10" className={inputCls} />
+  </div>
+</div>
+<p className="text-xs text-gray-400 -mt-3">Actual packed box dimensions — used to calculate volumetric weight for accurate shipping quotes.</p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
